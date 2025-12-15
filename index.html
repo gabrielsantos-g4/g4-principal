@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reddit Ads Dashboard</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Babel for JSX transformation -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <!-- Import Map to handle module imports -->
+    <script type="importmap">
+    {
+        "imports": {
+            "react": "https://esm.sh/react@18.2.0",
+            "react-dom": "https://esm.sh/react-dom@18.2.0",
+            "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
+            "recharts": "https://esm.sh/recharts@2.12.0?external=react,react-dom"
+        }
+    }
+    </script>
+</head>
+
+<body class="bg-slate-900 text-white min-h-screen">
+    <div id="root"></div>
+
+    <!-- Application Script -->
+    <script type="text/babel" data-type="module">
+        import React, { useState } from 'react';
+        import ReactDOM from 'react-dom/client';
+        import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+
+        const RedditAdsDashboard = () => {
+            const [activeTab, setActiveTab] = useState('overview');
+
+            // Data for Overall Performance
+            const overallMetrics = [
+                { metric: 'Total Spend', value: '$3,347', benchmark: '$4,000', status: 'under' },
+                { metric: 'CTR', value: '0.46%', benchmark: '0.35-0.55%', status: 'good' },
+                { metric: 'CPC', value: '$1.71', benchmark: '$1.20-$2.50', status: 'good' },
+                { metric: 'eCPM', value: '$7.90', benchmark: '$6-$10', status: 'good' }
+            ];
+
+            // Campaign Comparison Data
+            const campaignComparison = [
+                { campaign: 'Cold Campaign', ctr: 0.466, cpc: 1.60, frequency: 3.2, impressions: 325804 },
+                { campaign: 'Retargeting', ctr: 0.448, cpc: 2.09, frequency: 8.25, impressions: 97004 }
+            ];
+
+            // Ad Performance Data (sorted by CTR)
+            const adPerformance = [
+                { name: 'Fast - Var B', ctr: 0.937, category: 'scale' },
+                { name: 'Fast - Var A', ctr: 0.837, category: 'scale' },
+                { name: 'Change - Var B', ctr: 0.805, category: 'scale' },
+                { name: 'Chaos - Var B', ctr: 0.786, category: 'scale' },
+                { name: 'Ebook - Var B', ctr: 0.632, category: 'scale' },
+                { name: 'AI - Var B', ctr: 0.623, category: 'scale' },
+                { name: 'AI - Var A', ctr: 0.600, category: 'scale' },
+                { name: 'Drift - Var A', ctr: 0.578, category: 'scale' },
+                { name: 'Drift - Var B', ctr: 0.555, category: 'scale' },
+                { name: 'Scaling - Var B', ctr: 0.539, category: 'scale' },
+                { name: 'Chaos - Var A', ctr: 0.532, category: 'monitor' },
+                { name: 'Standard - Var B', ctr: 0.515, category: 'monitor' },
+                { name: 'Ebook - Var A', ctr: 0.514, category: 'monitor' },
+                { name: 'Standard - Var A', ctr: 0.507, category: 'monitor' },
+                { name: 'Cost Drift - Var B', ctr: 0.422, category: 'pause' },
+                { name: 'Cost Drift - Var A', ctr: 0.404, category: 'pause' }
+            ];
+
+            // Budget Utilization
+            const budgetData = [
+                { name: 'Spent', value: 3347 },
+                { name: 'Remaining', value: 653 }
+            ];
+
+            // Frequency Analysis
+            const frequencyData = [
+                { audience: 'Cold', frequency: 3.2, status: 'Healthy' },
+                { audience: 'Retargeting', frequency: 8.25, status: 'Saturated' }
+            ];
+
+            const COLORS = {
+                scale: '#10b981',
+                monitor: '#f59e0b',
+                pause: '#ef4444',
+                cold: '#3b82f6',
+                retargeting: '#8b5cf6'
+            };
+
+            const getAdColor = (category) => COLORS[category];
+
+            return (
+                <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white p-8">
+                    <div className="max-w-7xl mx-auto">
+                        {/* Header */}
+                        <div className="mb-8">
+                            <h1 className="text-4xl font-bold mb-2 bg-gradient-to-r from-orange-400 to-red-500 bg-clip-text text-transparent">
+                                Ads Performance Report
+                            </h1>
+                            <p className="text-slate-400 text-lg">November 2025 Report</p>
+                        </div>
+
+                        {/* Navigation Tabs */}
+                        <div className="flex gap-2 mb-8 border-b border-slate-700 overflow-x-auto pb-1 scrollbar-hide">
+                            {['overview', 'campaigns', 'ads', 'actions'].map((tab) => (
+                                <button
+                                    key={tab}
+                                    onClick={() => setActiveTab(tab)}
+                                    className={`px-6 py-3 font-medium capitalize transition-all whitespace-nowrap ${activeTab === tab
+                                        ? 'border-b-2 border-orange-500 text-orange-500'
+                                        : 'text-slate-400 hover:text-slate-200'
+                                        }`}
+                                >
+                                    {tab}
+                                </button>
+                            ))}
+                        </div>
+
+                        {/* Overview Tab */}
+                        {activeTab === 'overview' && (
+                            <div className="space-y-6">
+                                {/* Key Metrics Cards */}
+                                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                                    {overallMetrics.map((item, idx) => (
+                                        <div key={idx} className="bg-slate-800/50 backdrop-blur-sm rounded-lg p-6 border border-slate-700">
+                                            <h3 className="text-slate-400 text-sm mb-2">{item.metric}</h3>
+                                            <p className="text-3xl font-bold mb-1">{item.value}</p>
+                                            <p className="text-xs text-slate-500">Benchmark: {item.benchmark}</p>
+                                            <div className={`mt-2 inline-block px-2 py-1 rounded text-xs ${item.status === 'good' ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'
+                                                }`}>
+                                                {item.status === 'good' ? '✓ Within Range' : '⚠ Below Target'}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+
+                                {/* Budget Utilization */}
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div className="bg-slate-800/50 backdrop-blur-sm rounded-lg p-6 border border-slate-700">
+                                        <h2 className="text-xl font-bold mb-4">Budget Utilization</h2>
+                                        <ResponsiveContainer width="100%" height={250}>
+                                            <PieChart>
+                                                <Pie
+                                                    data={budgetData}
+                                                    cx="50%"
+                                                    cy="50%"
+                                                    labelLine={false}
+                                                    label={({ name, value }) => `${name}: $${value}`}
+                                                    outerRadius={80}
+                                                    fill="#8884d8"
+                                                    dataKey="value"
+                                                >
+                                                    <Cell fill="#f97316" />
+                                                    <Cell fill="#334155" />
+                                                </Pie>
+                                                <Tooltip />
+                                            </PieChart>
+                                        </ResponsiveContainer>
+                                        <p className="text-center text-sm text-slate-400 mt-4">
+                                            83.7% budget utilized - Retargeting fatigue limited spend
+                                        </p>
+                                    </div>
+
+                                    <div className="bg-slate-800/50 backdrop-blur-sm rounded-lg p-6 border border-slate-700">
+                                        <h2 className="text-xl font-bold mb-4">Total Impressions</h2>
+                                        <div className="flex items-center justify-center h-[250px]">
+                                            <div className="text-center">
+                                                <p className="text-6xl font-bold text-orange-500">423,808</p>
+                                                <p className="text-slate-400 mt-2">Total Impressions</p>
+                                                <div className="mt-4 space-y-2 text-sm">
+                                                    <p className="text-slate-300">Cold: 325,804 (77%)</p>
+                                                    <p className="text-slate-300">Retargeting: ~98,004 (23%)</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Campaigns Tab */}
+                        {activeTab === 'campaigns' && (
+                            <div className="space-y-6">
+                                {/* CTR Comparison */}
+                                <div className="bg-slate-800/50 backdrop-blur-sm rounded-lg p-6 border border-slate-700">
+                                    <h2 className="text-xl font-bold mb-4">CTR Comparison</h2>
+                                    <ResponsiveContainer width="100%" height={300}>
+                                        <BarChart data={campaignComparison}>
+                                            <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
+                                            <XAxis dataKey="campaign" stroke="#94a3b8" />
+                                            <YAxis stroke="#94a3b8" />
+                                            <Tooltip
+                                                contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155' }}
+                                                labelStyle={{ color: '#f1f5f9' }}
+                                            />
+                                            <Bar dataKey="ctr" fill="#3b82f6" name="CTR %" />
+                                        </BarChart>
+                                    </ResponsiveContainer>
+                                </div>
+
+                                {/* CPC & Frequency */}
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div className="bg-slate-800/50 backdrop-blur-sm rounded-lg p-6 border border-slate-700">
+                                        <h2 className="text-xl font-bold mb-4">CPC by Campaign</h2>
+                                        <ResponsiveContainer width="100%" height={250}>
+                                            <BarChart data={campaignComparison}>
+                                                <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
+                                                <XAxis dataKey="campaign" stroke="#94a3b8" />
+                                                <YAxis stroke="#94a3b8" />
+                                                <Tooltip
+                                                    contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155' }}
+                                                    labelStyle={{ color: '#f1f5f9' }}
+                                                />
+                                                <Bar dataKey="cpc" fill="#8b5cf6" name="CPC ($)" />
+                                            </BarChart>
+                                        </ResponsiveContainer>
+                                    </div>
+
+                                    <div className="bg-slate-800/50 backdrop-blur-sm rounded-lg p-6 border border-slate-700">
+                                        <h2 className="text-xl font-bold mb-4">Ad Frequency Analysis</h2>
+                                        <ResponsiveContainer width="100%" height={250}>
+                                            <BarChart data={frequencyData}>
+                                                <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
+                                                <XAxis dataKey="audience" stroke="#94a3b8" />
+                                                <YAxis stroke="#94a3b8" />
+                                                <Tooltip
+                                                    contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155' }}
+                                                    labelStyle={{ color: '#f1f5f9' }}
+                                                />
+                                                <Bar dataKey="frequency" fill="#f59e0b" name="Frequency">
+                                                    {frequencyData.map((entry, index) => (
+                                                        <Cell key={`cell-${index}`} fill={entry.frequency > 5 ? '#ef4444' : '#10b981'} />
+                                                    ))}
+                                                </Bar>
+                                            </BarChart>
+                                        </ResponsiveContainer>
+                                    </div>
+                                </div>
+
+                                {/* Campaign Summary Cards */}
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div className="bg-gradient-to-br from-blue-900/30 to-blue-800/20 rounded-lg p-6 border border-blue-700/50">
+                                        <h3 className="text-xl font-bold mb-3 flex items-center">
+                                            <span className="text-2xl mr-2">✅</span> Cold Campaign - Winning
+                                        </h3>
+                                        <ul className="space-y-2 text-slate-300">
+                                            <li>• CTR: 0.466% (at/above benchmark)</li>
+                                            <li>• CPC: $1.60 (excellent)</li>
+                                            <li>• Frequency: 3.2 (healthy)</li>
+                                            <li>• Volume: 325,804 impressions</li>
+                                        </ul>
+                                    </div>
+
+                                    <div className="bg-gradient-to-br from-purple-900/30 to-purple-800/20 rounded-lg p-6 border border-purple-700/50">
+                                        <h3 className="text-xl font-bold mb-3 flex items-center">
+                                            <span className="text-2xl mr-2">⚠️</span> Retargeting - Needs Refresh
+                                        </h3>
+                                        <ul className="space-y-2 text-slate-300">
+                                            <li>• Frequency: 8.25 (saturated)</li>
+                                            <li>• CTR: 0.448% (bottom of benchmark)</li>
+                                            <li>• CPC: $2.09 (high due to fatigue)</li>
+                                            <li>• Main cause of underspend</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Ads Performance Tab */}
+                        {activeTab === 'ads' && (
+                            <div className="space-y-6">
+                                <div className="bg-slate-800/50 backdrop-blur-sm rounded-lg p-6 border border-slate-700">
+                                    <h2 className="text-xl font-bold mb-4">Ad Performance by CTR</h2>
+                                    <ResponsiveContainer width="100%" height={500}>
+                                        <BarChart data={adPerformance} layout="vertical">
+                                            <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
+                                            <XAxis type="number" stroke="#94a3b8" />
+                                            <YAxis dataKey="name" type="category" width={150} stroke="#94a3b8" />
+                                            <Tooltip
+                                                contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155' }}
+                                                labelStyle={{ color: '#f1f5f9' }}
+                                            />
+                                            <Bar dataKey="ctr" name="CTR (%)">
+                                                {adPerformance.map((entry, index) => (
+                                                    <Cell key={`cell-${index}`} fill={getAdColor(entry.category)} />
+                                                ))}
+                                            </Bar>
+                                        </BarChart>
+                                    </ResponsiveContainer>
+
+                                    {/* Legend */}
+                                    <div className="flex gap-6 mt-6 justify-center">
+                                        <div className="flex items-center gap-2">
+                                            <div className="w-4 h-4 rounded bg-green-500"></div>
+                                            <span className="text-sm">Scale (CTR &gt; 0.55%)</span>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <div className="w-4 h-4 rounded bg-yellow-500"></div>
+                                            <span className="text-sm">Monitor (0.45-0.55%)</span>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <div className="w-4 h-4 rounded bg-red-500"></div>
+                                            <span className="text-sm">Pause (CTR &lt; 0.45%)</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Performance Categories */}
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    <div className="bg-green-900/20 rounded-lg p-4 border border-green-700/50">
+                                        <h3 className="font-bold text-green-400 mb-2">Scale (10 ads)</h3>
+                                        <p className="text-sm text-slate-300">CTR &gt; 0.55% - Maintain or increase budget</p>
+                                    </div>
+                                    <div className="bg-yellow-900/20 rounded-lg p-4 border border-yellow-700/50">
+                                        <h3 className="font-bold text-yellow-400 mb-2">Monitor (4 ads)</h3>
+                                        <p className="text-sm text-slate-300">CTR 0.45-0.55% - Watch performance</p>
+                                    </div>
+                                    <div className="bg-red-900/20 rounded-lg p-4 border border-red-700/50">
+                                        <h3 className="font-bold text-red-400 mb-2">Pause (6 ads)</h3>
+                                        <p className="text-sm text-slate-300">CTR &lt; 0.45% - Replace creatives</p>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Actions Tab */}
+                        {activeTab === 'actions' && (
+                            <div className="space-y-6">
+                                <div className="bg-slate-800/50 backdrop-blur-sm rounded-lg p-6 border border-slate-700">
+                                    <h2 className="text-2xl font-bold mb-6 text-orange-400">Priority Actions</h2>
+
+                                    <div className="space-y-4">
+                                        {[
+                                            { priority: 'HIGH', action: 'Replace Demo Request creative', reason: 'Fix retargeting saturation and budget underspend', impact: 'Unlock ~$650+ in additional spend' },
+                                            { priority: 'HIGH', action: 'Launch new blog-post creative', reason: 'Prevent cold audience saturation', impact: 'Maintain CTR performance in December' },
+                                            { priority: 'MEDIUM', action: 'Add LinkedIn billboard ads to Reddit', reason: 'Increase creative variation without audience expansion', impact: 'Extend creative lifespan' },
+                                            { priority: 'MEDIUM', action: 'Pause 6 underperforming ads', reason: 'CTR below 0.45% threshold', impact: 'Improve overall campaign efficiency' },
+                                            { priority: 'LOW', action: 'Monthly creative refresh cycle', reason: 'Subreddit expansion not viable', impact: 'Prevent long-term fatigue' }
+                                        ].map((item, idx) => (
+                                            <div key={idx} className="bg-slate-700/30 rounded-lg p-4 border-l-4" style={{
+                                                borderColor: item.priority === 'HIGH' ? '#ef4444' : item.priority === 'MEDIUM' ? '#f59e0b' : '#10b981'
+                                            }}>
+                                                <div className="flex items-start gap-4">
+                                                    <div className={`px-3 py-1 rounded text-xs font-bold ${item.priority === 'HIGH' ? 'bg-red-500/20 text-red-400' :
+                                                        item.priority === 'MEDIUM' ? 'bg-yellow-500/20 text-yellow-400' :
+                                                            'bg-green-500/20 text-green-400'
+                                                        }`}>
+                                                        {item.priority}
+                                                    </div>
+                                                    <div className="flex-1">
+                                                        <h3 className="font-bold text-lg mb-1">{item.action}</h3>
+                                                        <p className="text-slate-300 text-sm mb-2">{item.reason}</p>
+                                                        <p className="text-slate-400 text-xs italic">Impact: {item.impact}</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* Key Insights */}
+                                <div className="bg-gradient-to-r from-orange-900/20 to-red-900/20 rounded-lg p-6 border border-orange-700/50">
+                                    <h3 className="text-xl font-bold mb-4 flex items-center">
+                                        <span className="text-2xl mr-2">💡</span> Key Insights
+                                    </h3>
+                                    <ul className="space-y-3 text-slate-300">
+                                        <li className="flex items-start">
+                                            <span className="text-orange-400 mr-2">•</span>
+                                            <span>Traffic quality is solid overall, but retargeting saturation is the main blocker</span>
+                                        </li>
+                                        <li className="flex items-start">
+                                            <span className="text-orange-400 mr-2">•</span>
+                                            <span>Cold campaign is the primary driver with 77% of total impressions</span>
+                                        </li>
+                                        <li className="flex items-start">
+                                            <span className="text-orange-400 mr-2">•</span>
+                                            <span>Demo Request creative at 8.25 frequency needs immediate replacement</span>
+                                        </li>
+                                        <li className="flex items-start">
+                                            <span className="text-orange-400 mr-2">•</span>
+                                            <span>"Let Spacelift Deal With It" series shows strongest performance (0.6-0.9% CTR)</span>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(
+            <React.StrictMode>
+                <RedditAdsDashboard />
+            </React.StrictMode>
+        );
+    </script>
+</body>
+
+</html>
