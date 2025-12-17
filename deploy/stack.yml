@@ -1,0 +1,70 @@
+version: "3.7"
+
+services:
+  ads-metrics-front:
+    image: fmguardia/g4-ads-metrics:v0.02
+    networks:
+      - network_public
+    environment:
+      - NODE_ENV=production
+      - NEXT_TELEMETRY_DISABLED=1
+      # Supabase Configuration
+      - SUPABASE_URL=https://eookwjdxufyrokrajdfu.supabase.co
+      - SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVvb2t3amR4dWZ5cm9rcmFqZGZ1Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NTE5NjgzMiwiZXhwIjoyMDcwNzcyODMyfQ.NAm-SZuucaZ78x-VOl3vdvdGT0qt7MqDjp9pwZo7l7U
+      
+      # Frontend URL
+      - NEXT_PUBLIC_APP_URL=https://ads.startg4.com
+      
+      # Note: This stack assumes 'network_public' and Traefik are already compliant with the swarm environment
+      # described in the user's template.
+
+    deploy:
+      mode: replicated
+      replicas: 1
+      update_config:
+        order: start-first
+        failure_action: rollback
+        delay: 10s
+      rollback_config:
+        parallelism: 0
+        order: stop-first
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+        window: 120s
+      labels:
+        # Traefik configuration
+        - "traefik.enable=true"
+        - "traefik.http.routers.ads-metrics.rule=Host(`ads.startg4.com`)"
+        - "traefik.http.routers.ads-metrics.entrypoints=websecure"
+        - "traefik.http.routers.ads-metrics.tls.certresolver=letsencryptresolver"
+        - "traefik.http.services.ads-metrics.loadbalancer.server.port=3000"
+
+        # Security Headers
+        - "traefik.http.middlewares.ads-headers.headers.customResponseHeaders.X-Robots-Tag=noindex,nofollow,nosnippet,noarchive,notranslate,noimageindex"
+        - "traefik.http.middlewares.ads-headers.headers.sslRedirect=true"
+        - "traefik.http.middlewares.ads-headers.headers.stsSeconds=31536000"
+        - "traefik.http.middlewares.ads-headers.headers.stsIncludeSubdomains=true"
+        - "traefik.http.middlewares.ads-headers.headers.stsPreload=true"
+        - "traefik.http.middlewares.ads-headers.headers.forceSTSHeader=true"
+        - "traefik.http.middlewares.ads-headers.headers.customFrameOptionsValue=SAMEORIGIN"
+        
+        # Apply middlewares
+        - "traefik.http.routers.ads-metrics.middlewares=ads-headers"
+
+        # Compression
+        - "traefik.http.middlewares.ads-compress.compress=true"
+        - "traefik.http.routers.ads-metrics.middlewares=ads-compress,ads-headers"
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+
+networks:
+  network_public:
+    external: true
+    name: network_public
