@@ -2,7 +2,7 @@ version: "3.7"
 
 services:
   ads-metrics-front:
-    image: fmguardia/g4-ads-metrics:v0.02
+    image: fmguardia/g4-ads-metrics:v0.03
     networks:
       - network_public
     environment:
