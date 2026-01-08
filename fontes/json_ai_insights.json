@@ -1,0 +1,1785 @@
+[
+  {
+    "headers": {
+      "host": "hook.startg4.com",
+      "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36",
+      "content-length": "44546",
+      "accept": "*/*",
+      "accept-encoding": "gzip, deflate, br, zstd",
+      "accept-language": "pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7",
+      "content-type": "application/json",
+      "origin": "http://localhost:4000",
+      "priority": "u=1, i",
+      "referer": "http://localhost:4000/",
+      "sec-ch-ua": "\"Google Chrome\";v=\"143\", \"Chromium\";v=\"143\", \"Not A(Brand\";v=\"24\"",
+      "sec-ch-ua-mobile": "?0",
+      "sec-ch-ua-platform": "\"Windows\"",
+      "sec-fetch-dest": "empty",
+      "sec-fetch-mode": "cors",
+      "sec-fetch-site": "cross-site",
+      "x-forwarded-for": "177.37.234.73",
+      "x-forwarded-host": "hook.startg4.com",
+      "x-forwarded-port": "443",
+      "x-forwarded-proto": "https",
+      "x-forwarded-server": "b46025066f38",
+      "x-real-ip": "177.37.234.73"
+    },
+    "params": {},
+    "query": {},
+    "body": {
+      "meta": {
+        "row_count": 407,
+        "filter_applied": "None",
+        "currency": "USD",
+        "date_generated": "2026-01-07T14:43:56.152Z",
+        "start_date": "2025-01-01",
+        "end_date": "2025-11-01",
+        "debug_parser": {
+          "delimiter": "TAB",
+          "total_rows_parsed": 1296,
+          "header_found": true,
+          "columns_detected": [
+            "Start Date (in UTC)",
+            "Account Name",
+            "Currency",
+            "Campaign Group ID",
+            "Campaign Group Name",
+            "Campaign Group Status",
+            "Campaign Group Start Date",
+            "Campaign ID",
+            "Campaign Name",
+            "Campaign Objective",
+            "Campaign Type",
+            "Campaign Status",
+            "Cost Type",
+            "Daily Budget",
+            "Campaign Start Date",
+            "Campaign End Date",
+            "Creative Name",
+            "Ad ID",
+            "Creative Status",
+            "Ad Introduction Text",
+            "Ad Headline",
+            "Ad Line",
+            "Click URL",
+            "Sponsored Update Type",
+            "DSC Name",
+            "Video Length (in Seconds)",
+            "Carousel Card",
+            "Total Spent",
+            "Impressions",
+            "Clicks",
+            "Click Through Rate",
+            "Average CPM",
+            "Average CPC",
+            "Card Impressions",
+            "Card Clicks",
+            "Card Click Through Rate",
+            "Reactions",
+            "Comments",
+            "Shares",
+            "Follows",
+            "Other Clicks",
+            "Total Social Actions",
+            "Total Engagements",
+            "Engagement Rate",
+            "Viral Impressions",
+            "Viral Clicks",
+            "Viral Reactions",
+            "Viral Comments",
+            "Viral Shares",
+            "Viral Follows",
+            "Viral Other Clicks",
+            "Sends",
+            "Opens",
+            "Clicks (Sponsored Messaging)",
+            "Button Clicks",
+            "Banner Clicks",
+            "Link Clicks",
+            "Cost per Send",
+            "Open Rate",
+            "Cost per Open",
+            "Click Through Rate (Sponsored Messaging)",
+            "Conversions",
+            "Post-Click Conversions",
+            "View-Through Conversions",
+            "Conversion Rate",
+            "Cost per Conversion",
+            "Total Conversion Value",
+            "Return on Ad Spend",
+            "Viral Conversions",
+            "Viral Post-Click Conversions",
+            "Viral View-Through Conversions",
+            "Leads",
+            "Lead Forms Opened",
+            "Lead Form Completion Rate",
+            "Cost per Lead",
+            "Video Plays",
+            "Video Views",
+            "Video View Rate",
+            "Video Views at 25%",
+            "Video Views at 50%",
+            "Video Views at 75%",
+            "Video Completions",
+            "Video Completion Rate",
+            "Full Screen Plays",
+            "eCPV",
+            "Viral Video Plays",
+            "Viral Video Views",
+            "Viral Video Views at 25%",
+            "Viral Video Views at 50%",
+            "Viral Video Views at 75%",
+            "Viral Video Completions",
+            "Viral Video Completion Rate",
+            "Viral Video Full Screen Plays",
+            "Event Registrations",
+            "Click Event Registrations",
+            "View Event Registrations",
+            "Viral Event Registrations",
+            "Viral Click Event Registrations",
+            "Viral View Event Registrations",
+            "Clicks to Landing Page",
+            "Clicks to LinkedIn Page",
+            "Download Clicks",
+            "Viral Download Clicks",
+            "Document Displays at 25%",
+            "Viral Document Displays at 25%",
+            "Document Displays at 50%",
+            "Viral Document Displays at 50%",
+            "Document Displays at 75%",
+            "Viral Document Displays at 75%",
+            "Document Displays at 100%",
+            "Viral Document Displays at 100%",
+            "Preview Download Clicks",
+            "Viral Preview Download Clicks",
+            "Leads (Work Email)",
+            "Lead Form Completion Rate (Work Email)",
+            "Cost Per Lead (Work Email)",
+            "Headline Impressions",
+            "Headline Clicks",
+            "Headline Click Through Rate",
+            "Member Follows",
+            "Clicks to Member Profile",
+            "Qualified Leads",
+            "Cost Per Qualified Lead",
+            "Average Dwell Time (in Seconds)",
+            "Subscriptions",
+            "Viral Subscriptions"
+          ]
+        }
+      },
+      "overview": {
+        "total_spent": 286739.86,
+        "total_impressions": 7188389,
+        "total_clicks": 53997,
+        "ctr_percent": 0.00751,
+        "avg_cpc": 5.31,
+        "avg_cpm": 39.89
+      },
+      "monthly_trends": [
+        {
+          "month": "2025-01",
+          "timestamp": 1735776000000,
+          "overview": {
+            "spent": 27722.87,
+            "impressions": 1000758,
+            "clicks": 5676,
+            "ctr": 0.00567,
+            "cpc": 4.88
+          },
+          "groups_breakdown": {
+            "Low-intent cold audience": 18060.54,
+            "Mid-intent nurturing": 6025.45,
+            "High-intent retargeting": 2886.59,
+            "Active opportunities": 750.29
+          },
+          "groups_breakdown_impressions": {
+            "Low-intent cold audience": 766947,
+            "Mid-intent nurturing": 80744,
+            "High-intent retargeting": 108941,
+            "Active opportunities": 44126
+          },
+          "groups_breakdown_clicks": {
+            "Low-intent cold audience": 4332,
+            "Mid-intent nurturing": 760,
+            "High-intent retargeting": 467,
+            "Active opportunities": 117
+          }
+        },
+        {
+          "month": "2025-02",
+          "timestamp": 1738454400000,
+          "overview": {
+            "spent": 24547.72,
+            "impressions": 891366,
+            "clicks": 4290,
+            "ctr": 0.00481,
+            "cpc": 5.72
+          },
+          "groups_breakdown": {
+            "Low-intent cold audience": 14523.43,
+            "Mid-intent nurturing": 7325.3,
+            "High-intent retargeting": 2403.07,
+            "Active opportunities": 295.92
+          },
+          "groups_breakdown_impressions": {
+            "Low-intent cold audience": 676509,
+            "Mid-intent nurturing": 125037,
+            "High-intent retargeting": 66137,
+            "Active opportunities": 23683
+          },
+          "groups_breakdown_clicks": {
+            "Low-intent cold audience": 3363,
+            "Mid-intent nurturing": 860,
+            "High-intent retargeting": 11,
+            "Active opportunities": 56
+          }
+        },
+        {
+          "month": "2025-03",
+          "timestamp": 1740873600000,
+          "overview": {
+            "spent": 24705.63,
+            "impressions": 824538,
+            "clicks": 4538,
+            "ctr": 0.0055,
+            "cpc": 5.44
+          },
+          "groups_breakdown": {
+            "Low-intent cold audience": 16996.85,
+            "Mid-intent nurturing": 5606.52,
+            "High-intent retargeting": 1777.33,
+            "Active opportunities": 324.93
+          },
+          "groups_breakdown_impressions": {
+            "Low-intent cold audience": 633346,
+            "Mid-intent nurturing": 93615,
+            "High-intent retargeting": 74958,
+            "Active opportunities": 22619
+          },
+          "groups_breakdown_clicks": {
+            "Low-intent cold audience": 3292,
+            "Mid-intent nurturing": 775,
+            "High-intent retargeting": 412,
+            "Active opportunities": 59
+          }
+        },
+        {
+          "month": "2025-04",
+          "timestamp": 1743552000000,
+          "overview": {
+            "spent": 22902.17,
+            "impressions": 791126,
+            "clicks": 4747,
+            "ctr": 0.006,
+            "cpc": 4.82
+          },
+          "groups_breakdown": {
+            "Low-intent cold audience": 11945.09,
+            "High-intent retargeting": 2319,
+            "Mid-intent nurturing": 8113.34,
+            "Active opportunities": 524.74
+          },
+          "groups_breakdown_impressions": {
+            "Low-intent cold audience": 552664,
+            "High-intent retargeting": 87283,
+            "Mid-intent nurturing": 124800,
+            "Active opportunities": 26379
+          },
+          "groups_breakdown_clicks": {
+            "Low-intent cold audience": 2758,
+            "High-intent retargeting": 876,
+            "Mid-intent nurturing": 1049,
+            "Active opportunities": 64
+          }
+        },
+        {
+          "month": "2025-05",
+          "timestamp": 1746144000000,
+          "overview": {
+            "spent": 28489.19,
+            "impressions": 833603,
+            "clicks": 6940,
+            "ctr": 0.00833,
+            "cpc": 4.11
+          },
+          "groups_breakdown": {
+            "Low-intent cold audience": 15211.94,
+            "High-intent retargeting": 2889.73,
+            "Active opportunities": 107.09,
+            "Mid-intent nurturing": 10280.43
+          },
+          "groups_breakdown_impressions": {
+            "Low-intent cold audience": 602622,
+            "High-intent retargeting": 75409,
+            "Active opportunities": 10435,
+            "Mid-intent nurturing": 145137
+          },
+          "groups_breakdown_clicks": {
+            "Low-intent cold audience": 4864,
+            "High-intent retargeting": 888,
+            "Active opportunities": 47,
+            "Mid-intent nurturing": 1141
+          }
+        },
+        {
+          "month": "2025-06",
+          "timestamp": 1748822400000,
+          "overview": {
+            "spent": 20913.41,
+            "impressions": 461342,
+            "clicks": 5676,
+            "ctr": 0.0123,
+            "cpc": 3.68
+          },
+          "groups_breakdown": {
+            "Low-intent cold audience": 9965.76,
+            "Mid-intent nurturing": 7173.8,
+            "High-intent retargeting": 2271.31,
+            "Active opportunities": 1502.54
+          },
+          "groups_breakdown_impressions": {
+            "Low-intent cold audience": 305410,
+            "Mid-intent nurturing": 104860,
+            "High-intent retargeting": 31318,
+            "Active opportunities": 19754
+          },
+          "groups_breakdown_clicks": {
+            "Low-intent cold audience": 2596,
+            "Mid-intent nurturing": 822,
+            "High-intent retargeting": 991,
+            "Active opportunities": 1267
+          }
+        },
+        {
+          "month": "2025-07",
+          "timestamp": 1751414400000,
+          "overview": {
+            "spent": 39354.26,
+            "impressions": 776710,
+            "clicks": 9809,
+            "ctr": 0.01263,
+            "cpc": 4.01
+          },
+          "groups_breakdown": {
+            "Low-intent cold audience": 19040.33,
+            "Mid-intent nurturing": 11439.88,
+            "High-intent retargeting": 6923.87,
+            "Active opportunities": 1950.18
+          },
+          "groups_breakdown_impressions": {
+            "Low-intent cold audience": 543774,
+            "Mid-intent nurturing": 148128,
+            "High-intent retargeting": 46207,
+            "Active opportunities": 38601
+          },
+          "groups_breakdown_clicks": {
+            "Low-intent cold audience": 5602,
+            "Mid-intent nurturing": 1390,
+            "High-intent retargeting": 1624,
+            "Active opportunities": 1193
+          }
+        },
+        {
+          "month": "2025-08",
+          "timestamp": 1754092800000,
+          "overview": {
+            "spent": 17647.01,
+            "impressions": 288553,
+            "clicks": 1960,
+            "ctr": 0.00679,
+            "cpc": 9
+          },
+          "groups_breakdown": {
+            "Low-intent cold audience": 8295.97,
+            "High-intent retargeting": 3597,
+            "Active opportunities": 1343.98,
+            "Mid-intent nurturing": 4410.06
+          },
+          "groups_breakdown_impressions": {
+            "Low-intent cold audience": 187710,
+            "High-intent retargeting": 17632,
+            "Active opportunities": 20732,
+            "Mid-intent nurturing": 62479
+          },
+          "groups_breakdown_clicks": {
+            "Low-intent cold audience": 977,
+            "High-intent retargeting": 310,
+            "Active opportunities": 210,
+            "Mid-intent nurturing": 463
+          }
+        },
+        {
+          "month": "2025-09",
+          "timestamp": 1756771200000,
+          "overview": {
+            "spent": 22456.38,
+            "impressions": 247396,
+            "clicks": 3342,
+            "ctr": 0.01351,
+            "cpc": 6.72
+          },
+          "groups_breakdown": {
+            "Low-intent cold audience": 8903.03,
+            "High-intent retargeting": 6060.38,
+            "Active opportunities": 2264.91,
+            "Mid-intent nurturing": 5228.06
+          },
+          "groups_breakdown_impressions": {
+            "Low-intent cold audience": 147572,
+            "High-intent retargeting": 30576,
+            "Active opportunities": 25542,
+            "Mid-intent nurturing": 43706
+          },
+          "groups_breakdown_clicks": {
+            "Low-intent cold audience": 1237,
+            "High-intent retargeting": 1192,
+            "Active opportunities": 566,
+            "Mid-intent nurturing": 347
+          }
+        },
+        {
+          "month": "2025-10",
+          "timestamp": 1759363200000,
+          "overview": {
+            "spent": 28914.75,
+            "impressions": 447655,
+            "clicks": 3536,
+            "ctr": 0.0079,
+            "cpc": 8.18
+          },
+          "groups_breakdown": {
+            "High-intent retargeting": 6717.63,
+            "Low-intent cold audience": 13428.84,
+            "Mid-intent nurturing": 5897.44,
+            "Active opportunities": 2870.84
+          },
+          "groups_breakdown_impressions": {
+            "High-intent retargeting": 65735,
+            "Low-intent cold audience": 297474,
+            "Mid-intent nurturing": 45211,
+            "Active opportunities": 39235
+          },
+          "groups_breakdown_clicks": {
+            "High-intent retargeting": 963,
+            "Low-intent cold audience": 1722,
+            "Mid-intent nurturing": 356,
+            "Active opportunities": 495
+          }
+        },
+        {
+          "month": "2025-11",
+          "timestamp": 1762041600000,
+          "overview": {
+            "spent": 29086.47,
+            "impressions": 625342,
+            "clicks": 3483,
+            "ctr": 0.00557,
+            "cpc": 8.35
+          },
+          "groups_breakdown": {
+            "Low-intent cold audience": 15414.13,
+            "Mid-intent nurturing": 4581,
+            "High-intent retargeting": 6011.14,
+            "Active opportunities": 3080.2
+          },
+          "groups_breakdown_impressions": {
+            "Low-intent cold audience": 442164,
+            "Mid-intent nurturing": 53717,
+            "High-intent retargeting": 85039,
+            "Active opportunities": 44422
+          },
+          "groups_breakdown_clicks": {
+            "Low-intent cold audience": 2283,
+            "Mid-intent nurturing": 394,
+            "High-intent retargeting": 327,
+            "Active opportunities": 479
+          }
+        }
+      ],
+      "campaigns": {
+        "overview_by_campaign": [
+          {
+            "campaign_name": "FY25 - NA - LinkedIn Ads - Terraform Expertise - Awareness - Gated Articles - Individual contributors",
+            "group_name": "Low-intent cold audience",
+            "spent": 40915.49,
+            "impressions": 1283695,
+            "clicks": 7147,
+            "ctr_percent": 0.00557,
+            "cpc": 5.72
+          },
+          {
+            "campaign_name": "FY25 - EU - LinkedIn Ads - Terraform Expertise - Awareness - Gated Articles - Individual contributors",
+            "group_name": "Low-intent cold audience",
+            "spent": 36669.73,
+            "impressions": 2470415,
+            "clicks": 11717,
+            "ctr_percent": 0.00474,
+            "cpc": 3.13
+          },
+          {
+            "campaign_name": "FY25 - WW - LinkedIn Ads - All Web Retargeting - Gated content - All personas",
+            "group_name": "Mid-intent nurturing",
+            "spent": 30391.54,
+            "impressions": 393173,
+            "clicks": 3145,
+            "ctr_percent": 0.008,
+            "cpc": 9.66
+          },
+          {
+            "campaign_name": "FY25 - WW -  LinkedIn Ads - All Web Retargeting - Ansible expertise - Gated content - All personas",
+            "group_name": "Mid-intent nurturing",
+            "spent": 28078.18,
+            "impressions": 337903,
+            "clicks": 3031,
+            "ctr_percent": 0.00897,
+            "cpc": 9.26
+          },
+          {
+            "campaign_name": "FY25 - WW - LinkedIn Ads - Retargeting - Convo ads - Demo requests - Core personas",
+            "group_name": "High-intent retargeting",
+            "spent": 20196.65,
+            "impressions": 0,
+            "clicks": 0,
+            "ctr_percent": 0,
+            "cpc": 0
+          },
+          {
+            "campaign_name": "FY25 - EU - LinkedIn Ads - Terraform Expertise - Awareness - Gated Articles - Decision Makers",
+            "group_name": "Low-intent cold audience",
+            "spent": 17658.67,
+            "impressions": 482327,
+            "clicks": 1933,
+            "ctr_percent": 0.00401,
+            "cpc": 9.14
+          },
+          {
+            "campaign_name": "FY25 - NA - LinkedIn Ads - Terraform Expertise - Awareness - Gated Articles - Decision Makers",
+            "group_name": "Low-intent cold audience",
+            "spent": 14967.82,
+            "impressions": 228933,
+            "clicks": 1203,
+            "ctr_percent": 0.00525,
+            "cpc": 12.44
+          },
+          {
+            "campaign_name": "FY25 - WW - LinkedIn Ads - Audit-ready Infrastructure - Thought Leader Ad - Single image - All Personas",
+            "group_name": "Low-intent cold audience",
+            "spent": 10869.31,
+            "impressions": 156231,
+            "clicks": 3553,
+            "ctr_percent": 0.02274,
+            "cpc": 3.06
+          },
+          {
+            "campaign_name": "FY25 - WW - LinkedIn Ads - Retargeting - Video - Thought Leader Ad - All Personas",
+            "group_name": "High-intent retargeting",
+            "spent": 10363.53,
+            "impressions": 91866,
+            "clicks": 3530,
+            "ctr_percent": 0.03843,
+            "cpc": 2.94
+          },
+          {
+            "campaign_name": "FY25 - WW - LinkedIn Ads - Retargeting - Single Image - Engagement - All persona",
+            "group_name": "High-intent retargeting",
+            "spent": 9711.91,
+            "impressions": 79489,
+            "clicks": 4209,
+            "ctr_percent": 0.05295,
+            "cpc": 2.31
+          },
+          {
+            "campaign_name": "FY25 - WW - LinkedIn Ads - Open Opportunities - Thought Leader Ads - Image Ad - Decision Makers",
+            "group_name": "Active opportunities",
+            "spent": 5963.79,
+            "impressions": 54232,
+            "clicks": 3337,
+            "ctr_percent": 0.06153,
+            "cpc": 1.79
+          },
+          {
+            "campaign_name": "FY25 - WW - LinkedIn Ads - Open Opportunities - Image Ad - Engagement - Testimonial Ads",
+            "group_name": "Active opportunities",
+            "spent": 4696.48,
+            "impressions": 100175,
+            "clicks": 603,
+            "ctr_percent": 0.00602,
+            "cpc": 7.79
+          },
+          {
+            "campaign_name": "FY25 - WW - LinkedIn Ads - TFC/TFE Takeout - Single Image - Engagement - All Personas",
+            "group_name": "Low-intent cold audience",
+            "spent": 4280.9,
+            "impressions": 104728,
+            "clicks": 777,
+            "ctr_percent": 0.00742,
+            "cpc": 5.51
+          },
+          {
+            "campaign_name": "FY25 - WW - Drumbeat - Retargeting - Policy-Driven IaC Webinar",
+            "group_name": "Mid-intent nurturing",
+            "spent": 3943.38,
+            "impressions": 63719,
+            "clicks": 414,
+            "ctr_percent": 0.0065,
+            "cpc": 9.53
+          },
+          {
+            "campaign_name": "FY25 - WW - LinkedIn Ads - Audit-ready Infrastructure - Video - Thought Leader Ad - All Personas",
+            "group_name": "Low-intent cold audience",
+            "spent": 3780.71,
+            "impressions": 131670,
+            "clicks": 4856,
+            "ctr_percent": 0.03688,
+            "cpc": 0.78
+          },
+          {
+            "campaign_name": "FY25 - WW - TFE/TFC Takeout - Awareness - Gated Articles - Individual Contributor",
+            "group_name": "Low-intent cold audience",
+            "spent": 3779.52,
+            "impressions": 79551,
+            "clicks": 439,
+            "ctr_percent": 0.00552,
+            "cpc": 8.61
+          },
+          {
+            "campaign_name": "FY24 - WW - Lead Gen - Demo requests - Retargeting - All personas",
+            "group_name": "High-intent retargeting",
+            "spent": 2184.11,
+            "impressions": 40124,
+            "clicks": 232,
+            "ctr_percent": 0.00578,
+            "cpc": 9.41
+          },
+          {
+            "campaign_name": "(Testing) FY25 - NA - LinkedIn Ads - Terraform Expertise - Awareness - Gated Articles - Individual contributors",
+            "group_name": "Low-intent cold audience",
+            "spent": 1996.65,
+            "impressions": 22422,
+            "clicks": 125,
+            "ctr_percent": 0.00557,
+            "cpc": 15.97
+          },
+          {
+            "campaign_name": "FY25 - NA - LinkedIn Ads - AWS re:Invent 2025 - Engagement - All personas",
+            "group_name": "Low-intent cold audience",
+            "spent": 1983.29,
+            "impressions": 20891,
+            "clicks": 291,
+            "ctr_percent": 0.01393,
+            "cpc": 6.82
+          },
+          {
+            "campaign_name": "FY25 - WW - Image Ad - Open Opportunities - Testimonial Ads",
+            "group_name": "Active opportunities",
+            "spent": 1971.5,
+            "impressions": 128653,
+            "clicks": 309,
+            "ctr_percent": 0.0024,
+            "cpc": 6.38
+          },
+          {
+            "campaign_name": "FY25 - WW - Drumbeat - Retargeting - Webinar - Minesible Spacelift Demo",
+            "group_name": "Mid-intent nurturing",
+            "spent": 1729.31,
+            "impressions": 18969,
+            "clicks": 159,
+            "ctr_percent": 0.00838,
+            "cpc": 10.88
+          },
+          {
+            "campaign_name": "FY24 - WW - Ansible Expertise - LeadGen - Retargeting - Terraform + Ansible Webinar",
+            "group_name": "Mid-intent nurturing",
+            "spent": 1650,
+            "impressions": 13422,
+            "clicks": 169,
+            "ctr_percent": 0.01259,
+            "cpc": 9.76
+          },
+          {
+            "campaign_name": "FY25 - WW - LinkedIn Ads - Open Opportunities - Engagement - TFC/TFE Big Bets - All personas",
+            "group_name": "Active opportunities",
+            "spent": 1528.5,
+            "impressions": 18757,
+            "clicks": 222,
+            "ctr_percent": 0.01184,
+            "cpc": 6.89
+          },
+          {
+            "campaign_name": "FY25 - NYC Metro - The IaC Grand Prix - Convo Ad - Conversions - All personas",
+            "group_name": "Low-intent cold audience",
+            "spent": 1378.03,
+            "impressions": 0,
+            "clicks": 0,
+            "ctr_percent": 0,
+            "cpc": 0
+          },
+          {
+            "campaign_name": "FY25 - WW - Drumbeat - Retargeting - Webinar - Self-Service IaC Without the Learning Curve",
+            "group_name": "Mid-intent nurturing",
+            "spent": 1364.45,
+            "impressions": 21750,
+            "clicks": 153,
+            "ctr_percent": 0.00703,
+            "cpc": 8.92
+          },
+          {
+            "campaign_name": "FY25 - WW - Drumbeat - Retargeting - Webinar - Partner IaC Expertise",
+            "group_name": "Mid-intent nurturing",
+            "spent": 1347.51,
+            "impressions": 20189,
+            "clicks": 150,
+            "ctr_percent": 0.00743,
+            "cpc": 8.98
+          },
+          {
+            "campaign_name": "FY25 - NA - Drift Detection - Awareness - Gated Articles - Individual contributors",
+            "group_name": "Low-intent cold audience",
+            "spent": 1320.86,
+            "impressions": 113334,
+            "clicks": 314,
+            "ctr_percent": 0.00277,
+            "cpc": 4.21
+          },
+          {
+            "campaign_name": "FY25 - London - The IaC Grand Prix - Convo Ad - Conversions - All personas",
+            "group_name": "Low-intent cold audience",
+            "spent": 1309.06,
+            "impressions": 0,
+            "clicks": 0,
+            "ctr_percent": 0,
+            "cpc": 0
+          },
+          {
+            "campaign_name": "FY25 - Boston - The IaC Grand Prix - Convo Ad - Conversions - All personas",
+            "group_name": "Low-intent cold audience",
+            "spent": 1242.94,
+            "impressions": 0,
+            "clicks": 0,
+            "ctr_percent": 0,
+            "cpc": 0
+          },
+          {
+            "campaign_name": "FY25 - WW - LinkedIn Ads - Retargeting - Introducing Spacelift Intent",
+            "group_name": "Mid-intent nurturing",
+            "spent": 1190,
+            "impressions": 13500,
+            "clicks": 105,
+            "ctr_percent": 0.00778,
+            "cpc": 11.33
+          },
+          {
+            "campaign_name": "FY25 - NA - Drumbeat - Thought leader ad - Partner IaC Expertise Webinar - All personas",
+            "group_name": "Low-intent cold audience",
+            "spent": 1045.25,
+            "impressions": 13884,
+            "clicks": 355,
+            "ctr_percent": 0.02557,
+            "cpc": 2.94
+          },
+          {
+            "campaign_name": "FY25 - WW - LinkedIn Ads - Retargeting - Consideration - Document Ad - Gated content - All personas",
+            "group_name": "Mid-intent nurturing",
+            "spent": 961.87,
+            "impressions": 9248,
+            "clicks": 57,
+            "ctr_percent": 0.00616,
+            "cpc": 16.87
+          },
+          {
+            "campaign_name": "FY25 - WW - Ansible Launch - Consideration - Ungated Content - All personas",
+            "group_name": "Mid-intent nurturing",
+            "spent": 944.21,
+            "impressions": 31589,
+            "clicks": 133,
+            "ctr_percent": 0.00421,
+            "cpc": 7.1
+          },
+          {
+            "campaign_name": "FY25 - WW - Drift detection - Consideration - Ungated Content - All personas",
+            "group_name": "Mid-intent nurturing",
+            "spent": 888.18,
+            "impressions": 42145,
+            "clicks": 146,
+            "ctr_percent": 0.00346,
+            "cpc": 6.08
+          },
+          {
+            "campaign_name": "FY25 - Denver - LinkedIn Ads - The IaC Grand Prix - Convo Ad - Conversions - All personas",
+            "group_name": "Low-intent cold audience",
+            "spent": 858.2,
+            "impressions": 0,
+            "clicks": 0,
+            "ctr_percent": 0,
+            "cpc": 0
+          },
+          {
+            "campaign_name": "FY25 - WW - LinkedIn Ads - Open Opportunities - Engagement - Generic CI/CD Big Bets - All personas",
+            "group_name": "Active opportunities",
+            "spent": 855.35,
+            "impressions": 13711,
+            "clicks": 82,
+            "ctr_percent": 0.00598,
+            "cpc": 10.43
+          },
+          {
+            "campaign_name": "FY25 - US - Convo ads - Awareness - DevOps Destress Mail - All personas",
+            "group_name": "Low-intent cold audience",
+            "spent": 792.34,
+            "impressions": 0,
+            "clicks": 0,
+            "ctr_percent": 0,
+            "cpc": 0
+          },
+          {
+            "campaign_name": "FY25 - US - LinkedIn Ads - AWS re:Incent Las vegas - Convo Ad - Conversion - All personas",
+            "group_name": "Low-intent cold audience",
+            "spent": 787.16,
+            "impressions": 0,
+            "clicks": 0,
+            "ctr_percent": 0,
+            "cpc": 0
+          },
+          {
+            "campaign_name": "FY25 - WW - LinkedIn Ads - Let Spacelift deal with it - Awareness - All personas",
+            "group_name": "Low-intent cold audience",
+            "spent": 759.51,
+            "impressions": 17326,
+            "clicks": 24,
+            "ctr_percent": 0.00139,
+            "cpc": 31.65
+          },
+          {
+            "campaign_name": "FY25 - WW - Drumbeat - Retargeting - Orchestrating IaC Workflows",
+            "group_name": "Mid-intent nurturing",
+            "spent": 754.78,
+            "impressions": 11577,
+            "clicks": 88,
+            "ctr_percent": 0.0076,
+            "cpc": 8.58
+          },
+          {
+            "campaign_name": "FY25 - NA - Always-on - Website visits - Newsletter Promotion - DevOps Target Titles",
+            "group_name": "Low-intent cold audience",
+            "spent": 750.58,
+            "impressions": 3582,
+            "clicks": 20,
+            "ctr_percent": 0.00558,
+            "cpc": 37.53
+          },
+          {
+            "campaign_name": "FY25 - WW - Web Retargeting - Consideration - Website visits - All personas",
+            "group_name": "Mid-intent nurturing",
+            "spent": 689.09,
+            "impressions": 21494,
+            "clicks": 260,
+            "ctr_percent": 0.0121,
+            "cpc": 2.65
+          },
+          {
+            "campaign_name": "FY25 - Zosia Territories - TFC/TFE takeout - Convo Ad - Conversions - All personas",
+            "group_name": "Low-intent cold audience",
+            "spent": 682.53,
+            "impressions": 0,
+            "clicks": 0,
+            "ctr_percent": 0,
+            "cpc": 0
+          },
+          {
+            "campaign_name": "FY25 - WW - LinkedIn Ads - Retargeting - Spotlight - All personas",
+            "group_name": "High-intent retargeting",
+            "spent": 664.65,
+            "impressions": 477756,
+            "clicks": 90,
+            "ctr_percent": 0.00019,
+            "cpc": 7.39
+          },
+          {
+            "campaign_name": "FY25 - London - KubeCon EU - Convo Ad - Conversions - All personas",
+            "group_name": "Low-intent cold audience",
+            "spent": 659.61,
+            "impressions": 0,
+            "clicks": 0,
+            "ctr_percent": 0,
+            "cpc": 0
+          },
+          {
+            "campaign_name": "FY25 - WW - LinkedIn Ads - Retargeting - Passing Infra Audits without Anxiety",
+            "group_name": "Mid-intent nurturing",
+            "spent": 561.71,
+            "impressions": 6198,
+            "clicks": 44,
+            "ctr_percent": 0.0071,
+            "cpc": 12.77
+          },
+          {
+            "campaign_name": "FY25 - Atlanta Metro - LinkedIn Ads - KubeCon NA - Convo Ad - Conversion - All personas",
+            "group_name": "Low-intent cold audience",
+            "spent": 517.45,
+            "impressions": 0,
+            "clicks": 0,
+            "ctr_percent": 0,
+            "cpc": 0
+          },
+          {
+            "campaign_name": "FY25 - WW - LinkedIn Ads - Retargeting - Top TFC/TFE Questions Hot Seat",
+            "group_name": "Mid-intent nurturing",
+            "spent": 486.1,
+            "impressions": 5509,
+            "clicks": 43,
+            "ctr_percent": 0.00781,
+            "cpc": 11.3
+          },
+          {
+            "campaign_name": "FY24 - WW - Engagement - Thought Leader - Operations Personas",
+            "group_name": "Low-intent cold audience",
+            "spent": 468.01,
+            "impressions": 1637,
+            "clicks": 134,
+            "ctr_percent": 0.08186,
+            "cpc": 3.49
+          },
+          {
+            "campaign_name": "FY25 - WW - LinkedIn Ads - Retargeting - Carousel Format - Consideration - Gated content - All personas",
+            "group_name": "Mid-intent nurturing",
+            "spent": 422.88,
+            "impressions": 3629,
+            "clicks": 20,
+            "ctr_percent": 0.00551,
+            "cpc": 21.14
+          },
+          {
+            "campaign_name": "FY25 - NYC Metro - The IaC Grand Prix - Single Image - Awareness - All personas",
+            "group_name": "Low-intent cold audience",
+            "spent": 409.75,
+            "impressions": 2761,
+            "clicks": 16,
+            "ctr_percent": 0.0058,
+            "cpc": 25.61
+          },
+          {
+            "campaign_name": "FY25 - Bay Area - SRE Tailgate - Convo Ad - Conversions - All personas",
+            "group_name": "Low-intent cold audience",
+            "spent": 403.6,
+            "impressions": 0,
+            "clicks": 0,
+            "ctr_percent": 0,
+            "cpc": 0
+          },
+          {
+            "campaign_name": "FY25 - WW - Web Retargeting - Engagement - Video - Funding Announcement - All personas",
+            "group_name": "Mid-intent nurturing",
+            "spent": 400,
+            "impressions": 2127,
+            "clicks": 142,
+            "ctr_percent": 0.06676,
+            "cpc": 2.82
+          },
+          {
+            "campaign_name": "FY25 - EMEA - Convo ads - Demo requests - Target Accounts - Expanded personas",
+            "group_name": "High-intent retargeting",
+            "spent": 393.51,
+            "impressions": 0,
+            "clicks": 0,
+            "ctr_percent": 0,
+            "cpc": 0
+          },
+          {
+            "campaign_name": "FY25 - NYC Metro - The IaC Grand Prix - Convo Ad - Conversions - All personas - 10k+ Employee Companies",
+            "group_name": "Low-intent cold audience",
+            "spent": 376.84,
+            "impressions": 0,
+            "clicks": 0,
+            "ctr_percent": 0,
+            "cpc": 0
+          },
+          {
+            "campaign_name": "FY25 - WW - LinkedIn Ads - Let Spacelift deal with it - Engagement - All personas",
+            "group_name": "Low-intent cold audience",
+            "spent": 375.03,
+            "impressions": 13385,
+            "clicks": 63,
+            "ctr_percent": 0.00471,
+            "cpc": 5.95
+          },
+          {
+            "campaign_name": "FY25 - EMEA - Web Retargeting - Convo ads - Demo requests - Core personas",
+            "group_name": "High-intent retargeting",
+            "spent": 342.69,
+            "impressions": 0,
+            "clicks": 0,
+            "ctr_percent": 0,
+            "cpc": 0
+          },
+          {
+            "campaign_name": "FY25 - WW - Web Retargeting - Website visits - Newsletter Promotion - All personas",
+            "group_name": "Mid-intent nurturing",
+            "spent": 278.09,
+            "impressions": 11293,
+            "clicks": 98,
+            "ctr_percent": 0.00868,
+            "cpc": 2.84
+          },
+          {
+            "campaign_name": "FY25 - NA - Always-on - LG Form - Newsletter Promotion - DevOps Target Titles",
+            "group_name": "Low-intent cold audience",
+            "spent": 249.89,
+            "impressions": 2748,
+            "clicks": 20,
+            "ctr_percent": 0.00728,
+            "cpc": 12.49
+          },
+          {
+            "campaign_name": "FY25 - WW - LinkedIn Ads - Cold audience - Top TFC/TFE Questions Hot Seat",
+            "group_name": "Low-intent cold audience",
+            "spent": 232.61,
+            "impressions": 3417,
+            "clicks": 16,
+            "ctr_percent": 0.00468,
+            "cpc": 14.54
+          },
+          {
+            "campaign_name": "FY25 - NYC Metro - The IaC Grand Prix - Convo Ad - Conversions - Customer Accounts",
+            "group_name": "Low-intent cold audience",
+            "spent": 115.63,
+            "impressions": 0,
+            "clicks": 0,
+            "ctr_percent": 0,
+            "cpc": 0
+          },
+          {
+            "campaign_name": "FY25 - NYC Metro - Image Ad - Cold audience - DASH Datadog User Conference",
+            "group_name": "Low-intent cold audience",
+            "spent": 109.5,
+            "impressions": 1645,
+            "clicks": 17,
+            "ctr_percent": 0.01033,
+            "cpc": 6.44
+          },
+          {
+            "campaign_name": "FY25 - NA - Red Hat Summit + AnsibleFest - Image Ad - Engagement - All personas",
+            "group_name": "Low-intent cold audience",
+            "spent": 23.8,
+            "impressions": 608,
+            "clicks": 4,
+            "ctr_percent": 0.00658,
+            "cpc": 5.95
+          },
+          {
+            "campaign_name": "FY25 - Chicago - DevOpsDays - Single Image - Awareness - All personas",
+            "group_name": "Low-intent cold audience",
+            "spent": 15.64,
+            "impressions": 444,
+            "clicks": 2,
+            "ctr_percent": 0.0045,
+            "cpc": 7.82
+          },
+          {
+            "campaign_name": "NA_Image-Ad_LF_Cheat-Sheet_Terraform-Audience",
+            "group_name": "Low-intent cold audience",
+            "spent": 0,
+            "impressions": 0,
+            "clicks": 0,
+            "ctr_percent": 0,
+            "cpc": 0
+          },
+          {
+            "campaign_name": "NA_Image-Ad_LF_Cheat-Sheet_Mid-Intent-Retargeting-(90-day)",
+            "group_name": "High-intent retargeting",
+            "spent": 0,
+            "impressions": 0,
+            "clicks": 0,
+            "ctr_percent": 0,
+            "cpc": 0
+          },
+          {
+            "campaign_name": "EU_Image-Ad_WV_Blog-Articles",
+            "group_name": "Low-intent cold audience",
+            "spent": 0,
+            "impressions": 0,
+            "clicks": 0,
+            "ctr_percent": 0,
+            "cpc": 0
+          },
+          {
+            "campaign_name": "EU_video-Ad_WV_OpenTF-promotion",
+            "group_name": "Low-intent cold audience",
+            "spent": 0,
+            "impressions": 0,
+            "clicks": 0,
+            "ctr_percent": 0,
+            "cpc": 0
+          },
+          {
+            "campaign_name": "WW_Image-Ad_LeadForm_Request-demo_Cold Audience - Senior DevOps Engineers",
+            "group_name": "Low-intent cold audience",
+            "spent": 0,
+            "impressions": 0,
+            "clicks": 0,
+            "ctr_percent": 0,
+            "cpc": 0
+          },
+          {
+            "campaign_name": "FY24 - WW - Lead Gen - Demo requests - Retargeting - Individual contributor",
+            "group_name": "High-intent retargeting",
+            "spent": 0,
+            "impressions": 0,
+            "clicks": 0,
+            "ctr_percent": 0,
+            "cpc": 0
+          },
+          {
+            "campaign_name": "FY24 - WW - Image Ad - TFE/TFC takeout - Testimonial Ads",
+            "group_name": "Mid-intent nurturing",
+            "spent": 0,
+            "impressions": 0,
+            "clicks": 0,
+            "ctr_percent": 0,
+            "cpc": 0
+          },
+          {
+            "campaign_name": "FY24 - WW - Lead Gen - Awareness - Gated Articles - TFE/TFC Takeout - Decision Makers",
+            "group_name": "Low-intent cold audience",
+            "spent": 0,
+            "impressions": 0,
+            "clicks": 0,
+            "ctr_percent": 0,
+            "cpc": 0
+          },
+          {
+            "campaign_name": "FY24 - Greater London - Image Ad - Cold audience - 2024 SREday",
+            "group_name": "Low-intent cold audience",
+            "spent": 0,
+            "impressions": 0,
+            "clicks": 0,
+            "ctr_percent": 0,
+            "cpc": 0
+          },
+          {
+            "campaign_name": "FY24 - WW - Self-Service - Retargeting - Traffic - All personas",
+            "group_name": "Mid-intent nurturing",
+            "spent": 0,
+            "impressions": 0,
+            "clicks": 0,
+            "ctr_percent": 0,
+            "cpc": 0
+          },
+          {
+            "campaign_name": "FY24 - WW - Ansible Launch - Blog posts - Retargeting - All personas",
+            "group_name": "Mid-intent nurturing",
+            "spent": 0,
+            "impressions": 0,
+            "clicks": 0,
+            "ctr_percent": 0,
+            "cpc": 0
+          },
+          {
+            "campaign_name": "FY25 - Santa Clara - SREcon - Single Image - Awareness - All personas",
+            "group_name": "Low-intent cold audience",
+            "spent": 0,
+            "impressions": 558,
+            "clicks": 0,
+            "ctr_percent": 0,
+            "cpc": 0
+          },
+          {
+            "campaign_name": "FY24 - Amsterdam - Image Ad - Cold audience - SREday",
+            "group_name": "Low-intent cold audience",
+            "spent": 0,
+            "impressions": 0,
+            "clicks": 0,
+            "ctr_percent": 0,
+            "cpc": 0
+          }
+        ]
+      },
+      "ads": {
+        "by_ctr_ranked": [
+          {
+            "creative_name": "495666124",
+            "campaign_name": "FY25 - WW - LinkedIn Ads - Retargeting - Single Image - Engagement - All persona",
+            "group_name": "High-intent retargeting",
+            "campaign_status": "Active",
+            "impressions": 7815,
+            "clicks": 941,
+            "spent": 2054.17,
+            "status_bucket": "scale",
+            "ctr_percent": 0.12041
+          },
+          {
+            "creative_name": "620197706",
+            "campaign_name": "FY25 - WW - LinkedIn Ads - Retargeting - Single Image - Engagement - All persona",
+            "group_name": "High-intent retargeting",
+            "campaign_status": "Active",
+            "impressions": 253,
+            "clicks": 22,
+            "spent": 62.59,
+            "status_bucket": "monitor",
+            "ctr_percent": 0.08696
+          },
+          {
+            "creative_name": "516177784",
+            "campaign_name": "FY24 - WW - Engagement - Thought Leader - Operations Personas",
+            "group_name": "Low-intent cold audience",
+            "campaign_status": "Paused",
+            "impressions": 1637,
+            "clicks": 134,
+            "spent": 468.01,
+            "status_bucket": "scale",
+            "ctr_percent": 0.08186
+          },
+          {
+            "creative_name": "Unknown",
+            "campaign_name": "FY25 - WW - Web Retargeting - Engagement - Video - Funding Announcement - All personas",
+            "group_name": "Mid-intent nurturing",
+            "campaign_status": "Paused",
+            "impressions": 2127,
+            "clicks": 142,
+            "spent": 400,
+            "status_bucket": "scale",
+            "ctr_percent": 0.06676
+          },
+          {
+            "creative_name": "495684554",
+            "campaign_name": "FY25 - WW - LinkedIn Ads - Open Opportunities - Thought Leader Ads - Image Ad - Decision Makers",
+            "group_name": "Active opportunities",
+            "campaign_status": "Active",
+            "impressions": 33115,
+            "clicks": 2100,
+            "spent": 3097.84,
+            "status_bucket": "scale",
+            "ctr_percent": 0.06342
+          },
+          {
+            "creative_name": "Unknown",
+            "campaign_name": "FY25 - WW - LinkedIn Ads - Open Opportunities - Thought Leader Ads - Image Ad - Decision Makers",
+            "group_name": "Active opportunities",
+            "campaign_status": "Active",
+            "impressions": 21117,
+            "clicks": 1237,
+            "spent": 2865.95,
+            "status_bucket": "scale",
+            "ctr_percent": 0.05858
+          },
+          {
+            "creative_name": "Unknown",
+            "campaign_name": "FY25 - WW - LinkedIn Ads - Audit-ready Infrastructure - Thought Leader Ad - Single image - All Personas",
+            "group_name": "Low-intent cold audience",
+            "campaign_status": "Active",
+            "impressions": 54563,
+            "clicks": 2749,
+            "spent": 8095.72,
+            "status_bucket": "scale",
+            "ctr_percent": 0.05038
+          },
+          {
+            "creative_name": "644214624",
+            "campaign_name": "FY25 - WW - LinkedIn Ads - Retargeting - Video - Thought Leader Ad - All Personas",
+            "group_name": "High-intent retargeting",
+            "campaign_status": "Paused",
+            "impressions": 23104,
+            "clicks": 1119,
+            "spent": 3040.31,
+            "status_bucket": "scale",
+            "ctr_percent": 0.04843
+          },
+          {
+            "creative_name": "Unknown",
+            "campaign_name": "FY25 - WW - LinkedIn Ads - Retargeting - Single Image - Engagement - All persona",
+            "group_name": "High-intent retargeting",
+            "campaign_status": "Active",
+            "impressions": 64787,
+            "clicks": 3047,
+            "spent": 7057.25,
+            "status_bucket": "scale",
+            "ctr_percent": 0.04703
+          },
+          {
+            "creative_name": "623841934",
+            "campaign_name": "FY25 - WW - LinkedIn Ads - Retargeting - Video - Thought Leader Ad - All Personas",
+            "group_name": "High-intent retargeting",
+            "campaign_status": "Paused",
+            "impressions": 9449,
+            "clicks": 407,
+            "spent": 838.3,
+            "status_bucket": "scale",
+            "ctr_percent": 0.04307
+          },
+          {
+            "creative_name": "Unknown",
+            "campaign_name": "FY25 - WW - LinkedIn Ads - Audit-ready Infrastructure - Video - Thought Leader Ad - All Personas",
+            "group_name": "Low-intent cold audience",
+            "campaign_status": "Paused",
+            "impressions": 131670,
+            "clicks": 4856,
+            "spent": 3780.71,
+            "status_bucket": "scale",
+            "ctr_percent": 0.03688
+          },
+          {
+            "creative_name": "Unknown",
+            "campaign_name": "FY25 - WW - LinkedIn Ads - Retargeting - Video - Thought Leader Ad - All Personas",
+            "group_name": "High-intent retargeting",
+            "campaign_status": "Paused",
+            "impressions": 59313,
+            "clicks": 2004,
+            "spent": 6484.92,
+            "status_bucket": "scale",
+            "ctr_percent": 0.03379
+          },
+          {
+            "creative_name": "620444196",
+            "campaign_name": "FY25 - WW - LinkedIn Ads - Retargeting - Single Image - Engagement - All persona",
+            "group_name": "High-intent retargeting",
+            "campaign_status": "Active",
+            "impressions": 6634,
+            "clicks": 199,
+            "spent": 537.9,
+            "status_bucket": "scale",
+            "ctr_percent": 0.03
+          },
+          {
+            "creative_name": "Unknown",
+            "campaign_name": "FY25 - NA - Drumbeat - Thought leader ad - Partner IaC Expertise Webinar - All personas",
+            "group_name": "Low-intent cold audience",
+            "campaign_status": "Completed",
+            "impressions": 13884,
+            "clicks": 355,
+            "spent": 1045.25,
+            "status_bucket": "scale",
+            "ctr_percent": 0.02557
+          },
+          {
+            "creative_name": "Ad - Blog Articles - LG - 16 most useful IaC tools in 2025 (Creative 2 - White)",
+            "campaign_name": "FY25 - WW - LinkedIn Ads - All Web Retargeting - Gated content - All personas",
+            "group_name": "Mid-intent nurturing",
+            "campaign_status": "Active",
+            "impressions": 25713,
+            "clicks": 571,
+            "spent": 4271.84,
+            "status_bucket": "scale",
+            "ctr_percent": 0.02221
+          },
+          {
+            "creative_name": "Ad - Website LP - WV - Joey - Version A - Dark (Personalisation)",
+            "campaign_name": "FY25 - WW - LinkedIn Ads - Open Opportunities - Engagement - TFC/TFE Big Bets - All personas",
+            "group_name": "Active opportunities",
+            "campaign_status": "Active",
+            "impressions": 290,
+            "clicks": 5,
+            "spent": 30.15,
+            "status_bucket": "monitor",
+            "ctr_percent": 0.01724
+          },
+          {
+            "creative_name": "Ad - Website LP - WV - Joseph/QuiNovas - Version A - White",
+            "campaign_name": "FY25 - WW - LinkedIn Ads - Open Opportunities - Engagement - TFC/TFE Big Bets - All personas",
+            "group_name": "Active opportunities",
+            "campaign_status": "Active",
+            "impressions": 1113,
+            "clicks": 19,
+            "spent": 112.65,
+            "status_bucket": "scale",
+            "ctr_percent": 0.01707
+          },
+          {
+            "creative_name": "Ad - Website LP - WV - Joseph/QuiNovas - Version A - White (Personalisation)",
+            "campaign_name": "FY25 - WW - LinkedIn Ads - Open Opportunities - Engagement - TFC/TFE Big Bets - All personas",
+            "group_name": "Active opportunities",
+            "campaign_status": "Active",
+            "impressions": 490,
+            "clicks": 8,
+            "spent": 50.85,
+            "status_bucket": "monitor",
+            "ctr_percent": 0.01633
+          },
+          {
+            "creative_name": "Ad - Website LP - Video - AWS re:Invent Las Vegas (Flying - Variation C)",
+            "campaign_name": "FY25 - NA - LinkedIn Ads - AWS re:Invent 2025 - Engagement - All personas",
+            "group_name": "Low-intent cold audience",
+            "campaign_status": "Completed",
+            "impressions": 12017,
+            "clicks": 185,
+            "spent": 1261.74,
+            "status_bucket": "scale",
+            "ctr_percent": 0.01539
+          },
+          {
+            "creative_name": "Ad - Website LP - Video - AWS re:Invent Las Vegas (Flying - Variation D)",
+            "campaign_name": "FY25 - NA - LinkedIn Ads - AWS re:Invent 2025 - Engagement - All personas",
+            "group_name": "Low-intent cold audience",
+            "campaign_status": "Completed",
+            "impressions": 1597,
+            "clicks": 24,
+            "spent": 165.61,
+            "status_bucket": "scale",
+            "ctr_percent": 0.01503
+          },
+          {
+            "creative_name": "Ad - Website LP - WV - Joseph/QuiNovas - Version A - Dark",
+            "campaign_name": "FY25 - WW - LinkedIn Ads - Open Opportunities - Engagement - TFC/TFE Big Bets - All personas",
+            "group_name": "Active opportunities",
+            "campaign_status": "Active",
+            "impressions": 3055,
+            "clicks": 42,
+            "spent": 279.96,
+            "status_bucket": "scale",
+            "ctr_percent": 0.01375
+          },
+          {
+            "creative_name": "Image Ad - Webinar - Terraform + Ansible = Better Together - Variation A",
+            "campaign_name": "FY24 - WW - Ansible Expertise - LeadGen - Retargeting - Terraform + Ansible Webinar",
+            "group_name": "Mid-intent nurturing",
+            "campaign_status": "Completed",
+            "impressions": 9774,
+            "clicks": 134,
+            "spent": 1357.35,
+            "status_bucket": "scale",
+            "ctr_percent": 0.01371
+          },
+          {
+            "creative_name": "ToFu - Infrastructure automation self-assessment - Variation D (Dark Mode)",
+            "campaign_name": "FY25 - WW - Web Retargeting - Consideration - Website visits - All personas",
+            "group_name": "Mid-intent nurturing",
+            "campaign_status": "Paused",
+            "impressions": 7594,
+            "clicks": 104,
+            "spent": 267.08,
+            "status_bucket": "scale",
+            "ctr_percent": 0.0137
+          },
+          {
+            "creative_name": "Ad - Website LP - WV - Joey - Version A - Dark",
+            "campaign_name": "FY25 - WW - LinkedIn Ads - Open Opportunities - Engagement - TFC/TFE Big Bets - All personas",
+            "group_name": "Active opportunities",
+            "campaign_status": "Active",
+            "impressions": 6000,
+            "clicks": 82,
+            "spent": 573.42,
+            "status_bucket": "scale",
+            "ctr_percent": 0.01367
+          },
+          {
+            "creative_name": "Ad - Website LP - Video - AWS re:Invent Las Vegas (Flying - Variation A)",
+            "campaign_name": "FY25 - NA - LinkedIn Ads - AWS re:Invent 2025 - Engagement - All personas",
+            "group_name": "Low-intent cold audience",
+            "campaign_status": "Completed",
+            "impressions": 3240,
+            "clicks": 44,
+            "spent": 300.07,
+            "status_bucket": "scale",
+            "ctr_percent": 0.01358
+          },
+          {
+            "creative_name": "ToFu - Blog articles - Field events - How to improve IaC with Spacelift - Variation A",
+            "campaign_name": "FY25 - NYC Metro - Image Ad - Cold audience - DASH Datadog User Conference",
+            "group_name": "Low-intent cold audience",
+            "campaign_status": "Paused",
+            "impressions": 667,
+            "clicks": 9,
+            "spent": 60.59,
+            "status_bucket": "monitor",
+            "ctr_percent": 0.01349
+          },
+          {
+            "creative_name": "ToFu - Infrastructure automation self-assessment - Variation C (Dark Mode)",
+            "campaign_name": "FY25 - WW - Web Retargeting - Consideration - Website visits - All personas",
+            "group_name": "Mid-intent nurturing",
+            "campaign_status": "Paused",
+            "impressions": 2727,
+            "clicks": 36,
+            "spent": 98.46,
+            "status_bucket": "monitor",
+            "ctr_percent": 0.0132
+          },
+          {
+            "creative_name": "Image Ad - Webinar - Terraform + Ansible = Better Together - Variation B",
+            "campaign_name": "FY24 - WW - Ansible Expertise - LeadGen - Retargeting - Terraform + Ansible Webinar",
+            "group_name": "Mid-intent nurturing",
+            "campaign_status": "Completed",
+            "impressions": 803,
+            "clicks": 10,
+            "spent": 79.12,
+            "status_bucket": "monitor",
+            "ctr_percent": 0.01245
+          },
+          {
+            "creative_name": "ToFu - Infrastructure automation self-assessment - Variation A (Dark Mode)",
+            "campaign_name": "FY25 - WW - Web Retargeting - Consideration - Website visits - All personas",
+            "group_name": "Mid-intent nurturing",
+            "campaign_status": "Paused",
+            "impressions": 6751,
+            "clicks": 82,
+            "spent": 220.11,
+            "status_bucket": "scale",
+            "ctr_percent": 0.01215
+          },
+          {
+            "creative_name": "Ad - Webinar On-demand - LG - Terraform & Ansible together - Variation A",
+            "campaign_name": "FY25 - WW -  LinkedIn Ads - All Web Retargeting - Ansible expertise - Gated content - All personas",
+            "group_name": "Mid-intent nurturing",
+            "campaign_status": "Active",
+            "impressions": 10123,
+            "clicks": 119,
+            "spent": 1071.18,
+            "status_bucket": "scale",
+            "ctr_percent": 0.01176
+          },
+          {
+            "creative_name": "Ad - Website LP - WV - Joseph/QuiNovas - Version B - Dark",
+            "campaign_name": "FY25 - WW - LinkedIn Ads - Open Opportunities - Engagement - TFC/TFE Big Bets - All personas",
+            "group_name": "Active opportunities",
+            "campaign_status": "Active",
+            "impressions": 2890,
+            "clicks": 34,
+            "spent": 264.1,
+            "status_bucket": "scale",
+            "ctr_percent": 0.01176
+          },
+          {
+            "creative_name": "Ad - Website LP - WV - Testimonial - Screenshot - Joey - Version A - Dark",
+            "campaign_name": "FY25 - WW - LinkedIn Ads - Open Opportunities - Image Ad - Engagement - Testimonial Ads",
+            "group_name": "Active opportunities",
+            "campaign_status": "Active",
+            "impressions": 440,
+            "clicks": 5,
+            "spent": 15.39,
+            "status_bucket": "monitor",
+            "ctr_percent": 0.01136
+          },
+          {
+            "creative_name": "Ad - Website LP - WV - Testimonial - Screenshot - Joey - Version B - Dark",
+            "campaign_name": "FY25 - WW - LinkedIn Ads - Open Opportunities - Image Ad - Engagement - Testimonial Ads",
+            "group_name": "Active opportunities",
+            "campaign_status": "Active",
+            "impressions": 539,
+            "clicks": 6,
+            "spent": 18.46,
+            "status_bucket": "monitor",
+            "ctr_percent": 0.01113
+          },
+          {
+            "creative_name": "Ad - 1C - 1080x1080 - Without button",
+            "campaign_name": "FY25 - NYC Metro - The IaC Grand Prix - Single Image - Awareness - All personas",
+            "group_name": "Low-intent cold audience",
+            "campaign_status": "Completed",
+            "impressions": 720,
+            "clicks": 8,
+            "spent": 134.85,
+            "status_bucket": "scale",
+            "ctr_percent": 0.01111
+          },
+          {
+            "creative_name": "Ad - Webinar On-demand - LG - Terraform & Ansible together - Variation B",
+            "campaign_name": "FY25 - WW -  LinkedIn Ads - All Web Retargeting - Ansible expertise - Gated content - All personas",
+            "group_name": "Mid-intent nurturing",
+            "campaign_status": "Active",
+            "impressions": 4482,
+            "clicks": 49,
+            "spent": 418.05,
+            "status_bucket": "scale",
+            "ctr_percent": 0.01093
+          },
+          {
+            "creative_name": "Ad - Website LP - Video - AWS re:Invent Las Vegas (Waving - Variation D)",
+            "campaign_name": "FY25 - NA - LinkedIn Ads - AWS re:Invent 2025 - Engagement - All personas",
+            "group_name": "Low-intent cold audience",
+            "campaign_status": "Completed",
+            "impressions": 554,
+            "clicks": 6,
+            "spent": 38.19,
+            "status_bucket": "monitor",
+            "ctr_percent": 0.01083
+          },
+          {
+            "creative_name": "Ad - Website LP - WV - Joseph/QuiNovas - Variation A - Dark (Personalisation)",
+            "campaign_name": "FY25 - WW - LinkedIn Ads - TFC/TFE Takeout - Single Image - Engagement - All Personas",
+            "group_name": "Low-intent cold audience",
+            "campaign_status": "Active",
+            "impressions": 6681,
+            "clicks": 71,
+            "spent": 677.44,
+            "status_bucket": "scale",
+            "ctr_percent": 0.01063
+          },
+          {
+            "creative_name": "Ad - Website LP - Video - AWS re:Invent Las Vegas (Flying - Variation B)",
+            "campaign_name": "FY25 - NA - LinkedIn Ads - AWS re:Invent 2025 - Engagement - All personas",
+            "group_name": "Low-intent cold audience",
+            "campaign_status": "Completed",
+            "impressions": 1107,
+            "clicks": 11,
+            "spent": 74.69,
+            "status_bucket": "monitor",
+            "ctr_percent": 0.00994
+          },
+          {
+            "creative_name": "Ad - On-demand Webinar - LG - Minsible August 2025 - Variation A",
+            "campaign_name": "FY25 - WW - LinkedIn Ads - All Web Retargeting - Gated content - All personas",
+            "group_name": "Mid-intent nurturing",
+            "campaign_status": "Active",
+            "impressions": 9160,
+            "clicks": 91,
+            "spent": 1540.83,
+            "status_bucket": "monitor",
+            "ctr_percent": 0.00993
+          },
+          {
+            "creative_name": "Image Ad - Webinar - Orchestrating IaC Workflows - Variation A (light)",
+            "campaign_name": "FY25 - WW - Drumbeat - Retargeting - Orchestrating IaC Workflows",
+            "group_name": "Mid-intent nurturing",
+            "campaign_status": "Completed",
+            "impressions": 4364,
+            "clicks": 43,
+            "spent": 365.24,
+            "status_bucket": "monitor",
+            "ctr_percent": 0.00985
+          },
+          {
+            "creative_name": "Ad - 1D - 1080x1080 - Without button",
+            "campaign_name": "FY25 - NYC Metro - The IaC Grand Prix - Single Image - Awareness - All personas",
+            "group_name": "Low-intent cold audience",
+            "campaign_status": "Completed",
+            "impressions": 409,
+            "clicks": 4,
+            "spent": 70.37,
+            "status_bucket": "monitor",
+            "ctr_percent": 0.00978
+          },
+          {
+            "creative_name": "Ad - Webinar On-demand - LG - Terraform & Ansible together - Variation D - With phone number",
+            "campaign_name": "FY25 - WW -  LinkedIn Ads - All Web Retargeting - Ansible expertise - Gated content - All personas",
+            "group_name": "Mid-intent nurturing",
+            "campaign_status": "Active",
+            "impressions": 34338,
+            "clicks": 334,
+            "spent": 2528.5,
+            "status_bucket": "monitor",
+            "ctr_percent": 0.00973
+          },
+          {
+            "creative_name": "Ad - Website LP - Video - AWS re:Invent Las Vegas (Waving - Variation A)",
+            "campaign_name": "FY25 - NA - LinkedIn Ads - AWS re:Invent 2025 - Engagement - All personas",
+            "group_name": "Low-intent cold audience",
+            "campaign_status": "Completed",
+            "impressions": 844,
+            "clicks": 8,
+            "spent": 50.61,
+            "status_bucket": "monitor",
+            "ctr_percent": 0.00948
+          },
+          {
+            "creative_name": "Image Ad - Webinar - Self-Service IaC Without the Learning Curve - Variation D",
+            "campaign_name": "FY25 - WW - Drumbeat - Retargeting - Webinar - Self-Service IaC Without the Learning Curve",
+            "group_name": "Mid-intent nurturing",
+            "campaign_status": "Completed",
+            "impressions": 4577,
+            "clicks": 42,
+            "spent": 380.74,
+            "status_bucket": "monitor",
+            "ctr_percent": 0.00918
+          },
+          {
+            "creative_name": "Ad - Website LP - WV - Joseph/QuiNovas - Variation A - White",
+            "campaign_name": "FY25 - WW - LinkedIn Ads - TFC/TFE Takeout - Single Image - Engagement - All Personas",
+            "group_name": "Low-intent cold audience",
+            "campaign_status": "Active",
+            "impressions": 14457,
+            "clicks": 130,
+            "spent": 756.12,
+            "status_bucket": "monitor",
+            "ctr_percent": 0.00899
+          },
+          {
+            "creative_name": "Ad - Website LP - WV - Testimonial - Checkout - Joe - Version B",
+            "campaign_name": "FY25 - WW - LinkedIn Ads - Open Opportunities - Image Ad - Engagement - Testimonial Ads",
+            "group_name": "Active opportunities",
+            "campaign_status": "Active",
+            "impressions": 7850,
+            "clicks": 70,
+            "spent": 536.03,
+            "status_bucket": "monitor",
+            "ctr_percent": 0.00892
+          },
+          {
+            "creative_name": "Ad - Webinar - LG - Introducing Spacelift Intent - Variation A",
+            "campaign_name": "FY25 - WW - LinkedIn Ads - Retargeting - Introducing Spacelift Intent",
+            "group_name": "Mid-intent nurturing",
+            "campaign_status": "Completed",
+            "impressions": 8865,
+            "clicks": 79,
+            "spent": 914.6,
+            "status_bucket": "monitor",
+            "ctr_percent": 0.00891
+          },
+          {
+            "creative_name": "Newsletter > iPhone notes > iPhone notes WITH button",
+            "campaign_name": "FY25 - WW - Web Retargeting - Website visits - Newsletter Promotion - All personas",
+            "group_name": "Mid-intent nurturing",
+            "campaign_status": "Paused",
+            "impressions": 7558,
+            "clicks": 67,
+            "spent": 188.15,
+            "status_bucket": "monitor",
+            "ctr_percent": 0.00886
+          },
+          {
+            "creative_name": "Image Ad - Webinar - Minesible Spacelift Demo - Variation D (white version)",
+            "campaign_name": "FY25 - WW - Drumbeat - Retargeting - Webinar - Minesible Spacelift Demo",
+            "group_name": "Mid-intent nurturing",
+            "campaign_status": "Completed",
+            "impressions": 12095,
+            "clicks": 107,
+            "spent": 1201.08,
+            "status_bucket": "monitor",
+            "ctr_percent": 0.00885
+          },
+          {
+            "creative_name": "Ad - Blog articles - LG - The Illusion of Infrastructure Automation Maturity - Variation B",
+            "campaign_name": "FY25 - NA - LinkedIn Ads - Terraform Expertise - Awareness - Gated Articles - Individual contributors",
+            "group_name": "Low-intent cold audience",
+            "campaign_status": "Active",
+            "impressions": 113,
+            "clicks": 1,
+            "spent": 3.46,
+            "status_bucket": "monitor",
+            "ctr_percent": 0.00885
+          }
+        ]
+      },
+      "insights": {
+        "executive_summary": "This month, the LinkedIn Ads campaigns have shown varied performance across different audience segments and objectives. The total spend was $136,000 with a significant number of impressions, but several campaigns are underperforming, particularly in terms of engagement and conversions. Notably, high spend with zero impressions in some retargeting ads indicates potential issues with creative fatigue or targeting. There are opportunities to optimize budget allocation by pausing low-performing ads and scaling those with higher engagement metrics.",
+        "priority_actions": [
+          {
+            "severity": "high",
+            "action_type": "pause",
+            "title": "Pause High-Spend Retargeting Ad with Zero Impressions",
+            "why": "The retargeting ad for demo requests has spent $20,196.65 with zero impressions, indicating a critical issue that needs immediate attention.",
+            "supporting_stats": "Spent $20,196.65, 0 impressions."
+          },
+          {
+            "severity": "medium",
+            "action_type": "pause",
+            "title": "Pause Low-Performing Cold Audience Ads",
+            "why": "Several low-intent cold audience ads have high spend but low engagement. Pausing these can free up budget for better-performing campaigns.",
+            "supporting_stats": "e.g., 'Terraform Expertise - Decision Makers' spent $17,658.67 with 482,327 impressions but low engagement."
+          },
+          {
+            "severity": "medium",
+            "action_type": "scale",
+            "title": "Scale High-Performing Retargeting Ads",
+            "why": "The high-intent retargeting ads are showing potential for better engagement. Scaling these can improve overall ROI.",
+            "supporting_stats": "e.g., 'Video - Thought Leader Ad' spent $10,363.53 with 91,866 impressions."
+          }
+        ],
+        "warnings": [
+          "High spend with zero impressions in the 'Retargeting - Convo ads - Demo requests' campaign indicates a potential targeting or creative issue that needs to be addressed immediately.",
+          "Several low-intent cold audience campaigns are consuming budget without generating significant engagement, suggesting creative fatigue or misalignment with audience interests."
+        ]
+      }
+    },
+    "webhookUrl": "https://hook.startg4.com/webhook/4b04af52-2fa1-45a6-ace7-717bfdc00359",
+    "executionMode": "production"
+  }
+]

@@ -6,9 +6,15 @@ import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Toolti
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { FileUpload } from '@/components/dashboard/file-upload'
-import { uploadAndGetReport } from '@/actions/report-actions'
+import { uploadAndGetReport, saveReport } from '@/actions/report-actions'
+import { SaveReportModal } from '@/components/save-report-modal'
 import { AdsReportData, PriorityAction, AdPerformance } from "@/lib/report-types"
-import { Monitor, Pause, TrendingUp, AlertTriangle, Loader2, LayoutDashboard } from "lucide-react"
+import { toast } from 'sonner'
+import { Monitor, Pause, TrendingUp, AlertTriangle, Loader2, LayoutDashboard, Settings, Sparkles } from "lucide-react"
+import { TimeEvolutionChart } from './time-evolution-chart'
+import { AiInsightsView } from './ai-insights-view'
+import { AdsInsightItem } from '@/lib/insights-types'
+import { ReportsList } from '@/components/dashboard/reports-list'
 
 // Keeping helper constants
 const COLORS = {
@@ -30,6 +36,7 @@ import {
 } from "@/components/ui/dialog"
 
 // Helper to parse benchmark range string (e.g., "0.35-0.55%" or "$1.20-$2.50")
+// Kept for backward compatibility if needed, but primary logic will shift to numeric
 function parseBenchmark(benchmarkStr: string): { min: number, max: number } | null {
     if (!benchmarkStr || benchmarkStr === '-') return null
     try {
@@ -50,32 +57,202 @@ function parseBenchmark(benchmarkStr: string): { min: number, max: number } | nu
 // Helper to determine status based on value, benchmark, and direction
 function getMetricStatus(
     value: number,
-    benchmarkStr: string,
+    min: number,
+    max: number,
     type: 'higher-better' | 'lower-better'
 ): 'good' | 'neutral' | 'bad' | 'neutral-no-benchmark' {
-    const range = parseBenchmark(benchmarkStr)
-    if (!range) return 'neutral-no-benchmark'
+    if (min === 0 && max === 0) return 'neutral-no-benchmark'
 
     if (type === 'higher-better') {
-        if (value > range.max) return 'good' // Above benchmark is Green
-        if (value < range.min) return 'bad'  // Below benchmark is Red
-        return 'neutral'                     // Within benchmark is Yellow
+        if (value > max) return 'good' // Above benchmark is Green
+        if (value < min) return 'bad'  // Below benchmark is Red
+        return 'neutral'               // Within benchmark is Yellow
     } else {
         // lower-better (CPC, CPM)
-        if (value < range.min) return 'good' // Below benchmark is Green (Cheaper)
-        if (value > range.max) return 'bad'  // Above benchmark is Red (Expensive)
-        return 'neutral'                     // Within benchmark is Yellow
+        if (value < min) return 'good' // Below benchmark is Green (Cheaper)
+        if (value > max) return 'bad'  // Above benchmark is Red (Expensive)
+        return 'neutral'               // Within benchmark is Yellow
     }
 }
 
-export function DashboardClient() {
-    const [reportData, setReportData] = useState<AdsReportData | null>(null)
+
+
+export function DashboardClient({ initialData }: { initialData?: AdsReportData | null }) {
+    const [view, setView] = useState<'current' | 'history'>('current')
+    const [reportData, setReportData] = useState<AdsReportData | null>(initialData || null)
     const [loading, setLoading] = useState(false)
     const [filterStatus, setFilterStatus] = useState<'all' | 'scale' | 'monitor' | 'pause'>('all')
     const [summaryStatus, setSummaryStatus] = useState<'all' | 'scale' | 'monitor' | 'pause' | null>(null)
     const [selectedAd, setSelectedAd] = useState<AdPerformance | null>(null)
     const [statusMessage, setStatusMessage] = useState<string>('')
+
     const [error, setError] = useState<string | null>(null)
+    const [saveModalOpen, setSaveModalOpen] = useState(false)
+    const [configModalOpen, setConfigModalOpen] = useState(false)
+    const [isGeneratingInsights, setIsGeneratingInsights] = useState(false)
+    const [insightResult, setInsightResult] = useState<AdsInsightItem | null>(null)
+
+    // Default Configuration
+    const [efficiencyConfig, setEfficiencyConfig] = useState({
+        ctr: { min: 0.35, max: 0.55 },     // Percentage values (0.35 means 0.35%)
+        cpc: { min: 1.20, max: 2.50 },     // Dollar values
+        cpm: { min: 6.00, max: 10.00 }     // Dollar values
+    })
+
+    // Temporary state for the modal inputs
+    const [tempConfig, setTempConfig] = useState(efficiencyConfig)
+
+    const handleOpenConfig = () => {
+        setTempConfig(efficiencyConfig)
+        setConfigModalOpen(true)
+    }
+
+    const handleSaveConfig = () => {
+        setEfficiencyConfig(tempConfig)
+        setConfigModalOpen(false)
+        toast.success('Benchmarks updated successfully!')
+    }
+
+    const handleSaveReport = async (name: string) => {
+        if (!reportData) return
+
+        const result = await saveReport(reportData, name)
+
+        if (result.error) {
+            toast.error('Error saving: ' + result.error)
+        } else {
+            toast.success('Report saved successfully!')
+            setSaveModalOpen(false)
+        }
+    }
+
+    const handleGenerateInsights = async () => {
+        if (!reportData) return
+        setIsGeneratingInsights(true)
+        toast.info('Generating AI Insights...', { description: 'Sending data to analysis engine.' })
+
+        // Helper to optimize payload size
+        const optimizeReportForAI = (data: AdsReportData) => {
+            const cleanAds = (data.ads?.by_ctr_ranked || [])
+                .filter(ad => ad.status_bucket !== 'pause') // Filter out likely irrelevant paused ads for insights
+                .slice(0, 20) // Only top 20 relevant ads
+                .map(ad => ({
+                    name: ad.creative_name.substring(0, 50),
+                    campaign: ad.campaign_name.substring(0, 50),
+                    ctr: `${((ad.ctr_percent || 0) * 100).toFixed(2)}%`,
+                    spend: Math.round(ad.spent || 0),
+                    status: ad.status_bucket
+                }));
+
+            const cleanCampaigns = (data.campaigns?.overview_by_campaign || [])
+                .slice(0, 15) // Top 15 campaigns
+                .map(c => ({
+                    name: c.campaign_name.substring(0, 50),
+                    group: c.group_name,
+                    spend: Math.round(c.spent || 0),
+                    impressions: c.impressions,
+                    clicks: c.clicks,
+                    ctr: `${((c.ctr_percent || 0) * 100).toFixed(2)}%`,
+                    cpc: (c.cpc || 0).toFixed(2)
+                }));
+
+            // Monthly trends usually small enough, but good to round numbers
+            const cleanTrends = (data.monthly_trends || []).map((t, index) => ({
+                month: t.month || `Month ${index + 1}`, // Fallback if name missing
+                spend: Math.round(t.overview?.spent || 0), // Ensure number
+                impressions: t.overview?.impressions || 0,
+                clicks: t.overview?.clicks || 0,
+                groups: t.groups_breakdown // Keep breakdown as it's key for logic
+            }));
+
+            return {
+                period: { start: data.meta.start_date, end: data.meta.end_date },
+                overview: {
+                    total_spend: Math.round(data.overview.total_spent || 0),
+                    total_impressions: data.overview.total_impressions,
+                    total_clicks: data.overview.total_clicks,
+                    ctr: `${((data.overview.ctr_percent || 0) * 100).toFixed(2)}%`,
+                    cpc: (data.overview.avg_cpc || 0).toFixed(2),
+                    cpm: (data.overview.avg_cpm || 0).toFixed(2)
+                },
+                top_campaigns: cleanCampaigns,
+                top_ads: cleanAds,
+                monthly_trends: cleanTrends
+            };
+        }
+
+        try {
+            const optimizedData = optimizeReportForAI(reportData);
+
+            const response = await fetch('https://hook.startg4.com/webhook/4b04af52-2fa1-45a6-ace7-717bfdc00359', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(optimizedData)
+            })
+
+            if (response.ok) {
+                const data = await response.json()
+
+                // Parsing logic for complex n8n response structure
+                let finalInsights = null
+
+                try {
+                    // Scenario 1: Direct JSON object (Ideal)
+                    if (data.insights) {
+                        finalInsights = data.insights[0]
+                    }
+                    // Scenario 2: New simplified n8n format { output: "stringified_json" }
+                    else if (data.output && typeof data.output === 'string') {
+                        const parsed = JSON.parse(data.output)
+                        finalInsights = parsed.insights ? parsed.insights[0] : parsed
+                    }
+                    // Scenario 2b: Simplified n8n format { output: { insights: ... } } (Already parsed object)
+                    else if (data.output && typeof data.output === 'object' && data.output.insights) {
+                        finalInsights = data.output.insights[0]
+                    }
+                    // Scenario 3: Nested n8n output structure (e.g. [ { output: [ { content: ... } ] } ])
+                    else if (Array.isArray(data) && data[0]?.output && Array.isArray(data[0].output)) {
+                        // Find the message part
+                        const messagePart = data[0].output.find((o: any) => o.type === 'message' || (o.content && o.content[0]?.text))
+                        if (messagePart && messagePart.content && messagePart.content[0]?.text) {
+                            const rawText = messagePart.content[0].text
+                            const parsed = JSON.parse(rawText)
+                            finalInsights = parsed.insights ? parsed.insights[0] : parsed
+                        }
+                    }
+                    // Scenario 3: Fallback array
+                    else if (Array.isArray(data) && data.length > 0) {
+                        // Check if the first item is the insight object itself
+                        if (data[0].analysis) {
+                            finalInsights = data[0]
+                        }
+                    }
+
+                    if (finalInsights) {
+                        setInsightResult(finalInsights)
+                        toast.success('Insights received!', { description: 'Analysis complete.' })
+                    } else {
+                        console.warn('Could not parse insights from:', data)
+                        toast.warning('Structure mismatch.', { description: 'Received data but could not parse insights.' })
+                    }
+
+                } catch (err) {
+                    console.error('Error extracting insights:', err)
+                    toast.error('Parse Error', { description: 'Could not decode the AI response.' })
+                }
+
+            } else {
+                toast.error('Failed to start analysis.', { description: `Status: ${response.status}` })
+            }
+        } catch (error) {
+            console.error('Error sending insights request:', error)
+            toast.error('Network error.', { description: 'Could not reach the insights server.' })
+        } finally {
+            setIsGeneratingInsights(false)
+        }
+    }
 
     const handleFileSelect = useCallback(async (file: File) => {
         setLoading(true)
@@ -98,25 +275,48 @@ export function DashboardClient() {
         }
     }, [])
 
-    if (!reportData) {
+    const handleReportSelect = (data: AdsReportData) => {
+        setReportData(data)
+        setView('current')
+        window.scrollTo({ top: 0, behavior: 'smooth' })
+    }
+
+    if (!reportData && view === 'current') {
         return (
-            <div className="min-h-screen bg-slate-950 text-slate-50 p-6 md:p-8">
-                <div className="max-w-7xl mx-auto space-y-8">
+            <div className="h-full bg-black text-white p-6 md:p-8 flex flex-col">
+                <div className="flex justify-center mb-8">
+                    <div className="flex bg-white/5 p-1 rounded-lg border border-white/10">
+                        <button
+                            onClick={() => setView('current')}
+                            className={`px-6 py-2 rounded-md text-sm font-medium transition-all ${view === 'current' ? 'bg-orange-600 text-white shadow-lg' : 'text-gray-400 hover:text-white'}`}
+                        >
+                            New Analysis
+                        </button>
+                        <button
+                            onClick={() => setView('history')}
+                            className={`px-6 py-2 rounded-md text-sm font-medium transition-all ${view === 'history' ? 'bg-orange-600 text-white shadow-lg' : 'text-gray-400 hover:text-white'}`}
+                        >
+                            My Reports
+                        </button>
+                    </div>
+                </div>
+
+                <div className="max-w-7xl mx-auto space-y-8 w-full flex-1 flex flex-col justify-center">
                     <motion.div
                         initial={{ opacity: 0, y: -20 }}
                         animate={{ opacity: 1, y: 0 }}
                         className="mb-8"
                     >
-                        <h1 className="text-4xl font-bold mb-2 bg-gradient-to-r from-orange-400 to-red-500 bg-clip-text text-transparent">
+                        <h1 className="text-4xl font-bold mb-2 bg-gradient-to-r from-orange-400 to-red-500 bg-clip-text text-transparent text-center">
                             Ads Performance Dashboard
                         </h1>
-                        <p className="text-slate-400 text-lg">Import data to view report</p>
+                        <p className="text-gray-400 text-lg text-center">Import data to view report</p>
                     </motion.div>
 
                     {loading ? (
-                        <div className="flex flex-col items-center justify-center h-64 border-2 border-dashed border-slate-800 rounded-lg bg-slate-900/50">
+                        <div className="flex flex-col items-center justify-center h-64 border-2 border-dashed border-white/10 rounded-lg bg-white/5">
                             <Loader2 className="w-10 h-10 text-orange-500 animate-spin mb-4" />
-                            <p className="text-slate-300">{statusMessage}</p>
+                            <p className="text-gray-300">{statusMessage}</p>
                         </div>
                     ) : (
                         <FileUpload onFileSelect={handleFileSelect} loading={loading} error={error} />
@@ -126,7 +326,38 @@ export function DashboardClient() {
         )
     }
 
-    const { overview, campaigns, ads, insights } = reportData
+    // Handle History View
+    if (view === 'history') {
+        return (
+            <div className="min-h-screen bg-black text-white p-6 md:p-8">
+                <div className="flex justify-center mb-8">
+                    <div className="flex bg-white/5 p-1 rounded-lg border border-white/10">
+                        <button
+                            onClick={() => setView('current')}
+                            className={`px-6 py-2 rounded-md text-sm font-medium transition-all ${view === 'current' ? 'bg-orange-600 text-white shadow-lg' : 'text-gray-400 hover:text-white'}`}
+                        >
+                            {reportData ? 'Current Analysis' : 'New Analysis'}
+                        </button>
+                        <button
+                            onClick={() => setView('history')}
+                            className={`px-6 py-2 rounded-md text-sm font-medium transition-all ${view === 'history' ? 'bg-orange-600 text-white shadow-lg' : 'text-gray-400 hover:text-white'}`}
+                        >
+                            My Reports
+                        </button>
+                    </div>
+                </div>
+
+                <div className="max-w-7xl mx-auto">
+                    <ReportsList onSelectReport={handleReportSelect} />
+                </div>
+            </div>
+        )
+    }
+
+    const { overview, campaigns, ads, insights } = reportData!
+
+    // ... rest of dashboard logic
+
 
     // Safety fallback for arrays
     const campaignOverview = campaigns?.overview_by_campaign || []
@@ -217,20 +448,20 @@ export function DashboardClient() {
         {
             metric: 'CTR',
             value: `${((overview.ctr_percent || 0) * 100).toFixed(2)}%`,
-            benchmark: '0.35-0.55%',
-            status: getMetricStatus((overview.ctr_percent || 0) * 100, '0.35-0.55%', 'higher-better')
+            benchmark: `${efficiencyConfig.ctr.min}-${efficiencyConfig.ctr.max}%`,
+            status: getMetricStatus((overview.ctr_percent || 0) * 100, efficiencyConfig.ctr.min, efficiencyConfig.ctr.max, 'higher-better')
         },
         {
             metric: 'CPC',
             value: `$${(overview.avg_cpc || 0).toFixed(2)}`,
-            benchmark: '$1.20-$2.50',
-            status: getMetricStatus(overview.avg_cpc || 0, '$1.20-$2.50', 'lower-better')
+            benchmark: `$${efficiencyConfig.cpc.min}-$${efficiencyConfig.cpc.max}`,
+            status: getMetricStatus(overview.avg_cpc || 0, efficiencyConfig.cpc.min, efficiencyConfig.cpc.max, 'lower-better')
         },
         {
             metric: 'eCPM',
             value: `$${(overview.avg_cpm || 0).toFixed(2)}`,
-            benchmark: '$6-$10',
-            status: getMetricStatus(overview.avg_cpm || 0, '$6-$10', 'lower-better')
+            benchmark: `$${efficiencyConfig.cpm.min}-$${efficiencyConfig.cpm.max}`,
+            status: getMetricStatus(overview.avg_cpm || 0, efficiencyConfig.cpm.min, efficiencyConfig.cpm.max, 'lower-better')
         }
     ]
 
@@ -240,8 +471,24 @@ export function DashboardClient() {
     ]
 
     return (
-        <div className="min-h-screen bg-slate-950 text-slate-50 p-6 md:p-8">
-            <div className="max-w-7xl mx-auto space-y-8">
+        <div className="w-full text-white pb-8">
+            <div className="flex justify-center mb-8">
+                <div className="flex bg-white/5 p-1 rounded-lg border border-white/10">
+                    <button
+                        onClick={() => setView('current')}
+                        className={`px-6 py-2 rounded-md text-sm font-medium transition-all ${view === 'current' ? 'bg-orange-600 text-white shadow-lg' : 'text-gray-400 hover:text-white'}`}
+                    >
+                        Current Analysis
+                    </button>
+                    <button
+                        onClick={() => setView('history')}
+                        className={`px-6 py-2 rounded-md text-sm font-medium transition-all ${view === 'history' ? 'bg-orange-600 text-white shadow-lg' : 'text-gray-400 hover:text-white'}`}
+                    >
+                        My Reports
+                    </button>
+                </div>
+            </div>
+            <div className="w-full space-y-8">
                 <motion.div
                     initial={{ opacity: 0, y: -20 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -251,11 +498,31 @@ export function DashboardClient() {
                         <h1 className="text-4xl font-bold mb-2 bg-gradient-to-r from-orange-400 to-red-500 bg-clip-text text-transparent">
                             Ads Performance Dashboard
                         </h1>
-                        <p className="text-slate-400 text-lg">
-                            Generated on {reportData.meta.date_generated ? new Date(reportData.meta.date_generated).toLocaleDateString() : 'N/A'}
-                        </p>
+                        <div className="flex flex-col">
+                            {reportData.meta.start_date && reportData.meta.end_date ? (
+                                <p className="text-slate-300 text-lg font-medium">
+                                    Report Period: <span className="text-white">{new Date(reportData.meta.start_date).toLocaleDateString(undefined, { timeZone: 'UTC' })} - {new Date(reportData.meta.end_date).toLocaleDateString(undefined, { timeZone: 'UTC' })}</span>
+                                </p>
+                            ) : null}
+                            <p className="text-gray-500 text-sm">
+                                Generated on {reportData.meta.date_generated ? new Date(reportData.meta.date_generated).toLocaleDateString() : 'N/A'}
+                            </p>
+                        </div>
                     </div>
                     <div className="flex gap-2">
+                        <button
+                            onClick={handleOpenConfig}
+                            className="p-2 text-slate-400 hover:text-white border border-slate-700 rounded-md hover:bg-slate-800 transition-colors"
+                            title="Configure Efficiency Benchmarks"
+                        >
+                            <Settings size={20} />
+                        </button>
+                        <button
+                            onClick={() => setSaveModalOpen(true)}
+                            className="px-4 py-2 text-sm font-bold text-white bg-green-600 hover:bg-green-700 border border-green-500 rounded-md transition-colors shadow-sm"
+                        >
+                            Save Analysis
+                        </button>
                         <button
                             onClick={() => setReportData(null)}
                             className="px-4 py-2 text-sm text-slate-400 hover:text-white border border-slate-700 rounded-md hover:bg-slate-800 transition-colors"
@@ -266,9 +533,10 @@ export function DashboardClient() {
                 </motion.div>
 
                 <Tabs defaultValue="overview" className="space-y-4">
-                    <TabsList className="bg-slate-900 border-slate-800">
+                    <TabsList className="bg-white/5 border border-white/10">
                         <TabsTrigger value="overview">Overview</TabsTrigger>
                         <TabsTrigger value="campaigns">Campaigns</TabsTrigger>
+                        <TabsTrigger value="evolution">Evolution</TabsTrigger>
                         <TabsTrigger value="ads">Ads Performance</TabsTrigger>
                         <TabsTrigger value="actions">Priority Actions</TabsTrigger>
                     </TabsList>
@@ -283,7 +551,7 @@ export function DashboardClient() {
                                     animate={{ opacity: 1, y: 0 }}
                                     transition={{ delay: index * 0.1 }}
                                 >
-                                    <Card className="bg-slate-900 border-slate-800 relative overflow-hidden">
+                                    <Card className="bg-white/5 border border-white/10 relative overflow-hidden">
                                         <CardHeader className="pb-2">
                                             <div className="flex justify-between items-start">
                                                 <CardTitle className="text-sm font-medium text-slate-400">{item.metric}</CardTitle>
@@ -298,8 +566,8 @@ export function DashboardClient() {
                                             </div>
                                         </CardHeader>
                                         <CardContent>
-                                            <div className="text-2xl font-bold text-slate-50">{item.value}</div>
-                                            <div className="text-xs text-slate-500 mt-1 flex items-center gap-1">
+                                            <div className="text-2xl font-bold text-white">{item.value}</div>
+                                            <div className="text-xs text-gray-500 mt-1 flex items-center gap-1">
                                                 <span>Benchmark: {item.benchmark}</span>
                                             </div>
                                         </CardContent>
@@ -321,7 +589,7 @@ export function DashboardClient() {
 
                     <TabsContent value="campaigns" className="space-y-4">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <Card className="bg-slate-900 border-slate-800">
+                            <Card className="bg-white/5 border border-white/10">
                                 <CardHeader>
                                     <CardTitle>Spend by Campaign Group</CardTitle>
                                     <CardDescription>Where your budget is going (Grouped)</CardDescription>
@@ -339,7 +607,7 @@ export function DashboardClient() {
                                                         <span className="text-sm text-slate-200 font-medium line-clamp-2 mr-2" title={group.group_name}>
                                                             {group.group_name}
                                                         </span>
-                                                        <span className="text-sm font-bold text-slate-50 whitespace-nowrap">
+                                                        <span className="text-sm font-bold text-white whitespace-nowrap">
                                                             ${(group.spent || 0).toLocaleString()}
                                                         </span>
                                                     </div>
@@ -361,7 +629,7 @@ export function DashboardClient() {
                                 </CardContent>
                             </Card>
 
-                            <Card className="bg-slate-900 border-slate-800">
+                            <Card className="bg-white/5 border border-white/10">
                                 <CardHeader>
                                     <CardTitle>Impressions by Campaign Group</CardTitle>
                                     <CardDescription>Reach by Group (Grouped)</CardDescription>
@@ -383,7 +651,7 @@ export function DashboardClient() {
                                                         <span className="text-sm text-slate-200 font-medium line-clamp-2 mr-2" title={groupName}>
                                                             {groupName}
                                                         </span>
-                                                        <span className="text-sm font-bold text-slate-50 whitespace-nowrap">
+                                                        <span className="text-sm font-bold text-white whitespace-nowrap">
                                                             {impressions.toLocaleString()}
                                                         </span>
                                                     </div>
@@ -407,7 +675,7 @@ export function DashboardClient() {
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <Card className="bg-slate-900 border-slate-800">
+                            <Card className="bg-white/5 border border-white/10">
                                 <CardHeader>
                                     <CardTitle>Clicks by Campaign Group</CardTitle>
                                     <CardDescription>Engagement by Group (Grouped)</CardDescription>
@@ -427,7 +695,7 @@ export function DashboardClient() {
                                                         <span className="text-sm text-slate-200 font-medium line-clamp-2 mr-2" title={groupName}>
                                                             {groupName}
                                                         </span>
-                                                        <span className="text-sm font-bold text-slate-50 whitespace-nowrap">
+                                                        <span className="text-sm font-bold text-white whitespace-nowrap">
                                                             {clicks.toLocaleString()}
                                                         </span>
                                                     </div>
@@ -449,7 +717,7 @@ export function DashboardClient() {
                                 </CardContent>
                             </Card>
 
-                            <Card className="bg-slate-900 border-slate-800">
+                            <Card className="bg-white/5 border border-white/10">
                                 <CardHeader>
                                     <CardTitle>CTR by Campaign Group</CardTitle>
                                     <CardDescription>Click-Through Rate by Group (Grouped)</CardDescription>
@@ -469,7 +737,7 @@ export function DashboardClient() {
                                                         <span className="text-sm text-slate-200 font-medium line-clamp-2 mr-2" title={groupName}>
                                                             {groupName}
                                                         </span>
-                                                        <span className="text-sm font-bold text-slate-50 whitespace-nowrap">
+                                                        <span className="text-sm font-bold text-white whitespace-nowrap">
                                                             {ctr.toFixed(2)}%
                                                         </span>
                                                     </div>
@@ -494,7 +762,7 @@ export function DashboardClient() {
                     </TabsContent>
 
                     <TabsContent value="ads" className="space-y-4">
-                        <Card className="bg-slate-900 border-slate-800">
+                        <Card className="bg-white/5 border border-white/10">
                             <CardHeader>
                                 <div className="flex items-center justify-between">
                                     <div>
@@ -536,7 +804,7 @@ export function DashboardClient() {
                                             <div
                                                 key={idx}
                                                 onClick={() => setSelectedAd(ad)}
-                                                className="flex items-center justify-between p-4 bg-slate-950/50 rounded-lg border border-slate-800 hover:border-slate-700 transition-colors cursor-pointer group"
+                                                className="flex items-center justify-between p-4 bg-black/50 border border-white/10 hover:border-slate-700 transition-colors cursor-pointer group"
                                             >
                                                 <div className="flex items-center gap-4">
                                                     <div className={`w-2 h-2 rounded-full ${ad.status_bucket === 'scale' ? 'bg-emerald-500' :
@@ -545,25 +813,25 @@ export function DashboardClient() {
                                                         }`} />
                                                     <div>
                                                         <p className="font-medium text-slate-200">{ad.creative_name.substring(0, 50)}</p>
-                                                        <p className="text-xs text-slate-500 mt-1">{ad.campaign_name.substring(0, 60)}...</p>
+                                                        <p className="text-xs text-gray-500 mt-1">{ad.campaign_name.substring(0, 60)}...</p>
                                                     </div>
                                                 </div>
                                                 <div className="flex items-center gap-8 text-right">
                                                     <div>
-                                                        <p className="text-xs text-slate-500">CTR</p>
+                                                        <p className="text-xs text-gray-500">CTR</p>
                                                         <p className={`font-mono font-medium ${(ad.ctr_percent || 0) * 100 > 1 ? 'text-emerald-400' : 'text-slate-300'
                                                             }`}>
                                                             {((ad.ctr_percent || 0) * 100).toFixed(2)}%
                                                         </p>
                                                     </div>
                                                     <div>
-                                                        <p className="text-xs text-slate-500">Spend</p>
+                                                        <p className="text-xs text-gray-500">Spend</p>
                                                         <p className="font-mono text-slate-300">
                                                             ${(ad.spent || 0).toLocaleString()}
                                                         </p>
                                                     </div>
                                                     <div>
-                                                        <p className="text-xs text-slate-500">Action</p>
+                                                        <p className="text-xs text-gray-500">Action</p>
                                                         <span className={`text-xs px-2 py-1 rounded-full uppercase font-bold tracking-wider ${ad.status_bucket === 'scale' ? 'bg-emerald-500/20 text-emerald-400' :
                                                             ad.status_bucket === 'pause' ? 'bg-red-500/20 text-red-400' :
                                                                 'bg-amber-500/20 text-amber-400'
@@ -575,7 +843,7 @@ export function DashboardClient() {
                                             </div>
                                         ))}
                                     {ads?.by_ctr_ranked?.filter(ad => filterStatus === 'all' || ad.status_bucket === filterStatus).length === 0 && (
-                                        <div className="text-center py-10 text-slate-500">
+                                        <div className="text-center py-10 text-gray-500">
                                             No ads found with status "{filterStatus}"
                                         </div>
                                     )}
@@ -587,7 +855,7 @@ export function DashboardClient() {
                     <TabsContent value="actions" className="space-y-4">
                         <div className="grid gap-4">
                             {priorityActions.map((action, idx) => (
-                                <Card key={idx} className="bg-slate-900 border-slate-800 hover:border-slate-700 transition-colors">
+                                <Card key={idx} className="bg-white/5 border border-white/10 hover:border-slate-700 transition-colors">
                                     <div className={`h-1 w-full rounded-t-lg ${action.severity === 'high' ? 'bg-red-500' :
                                         action.severity === 'medium' ? 'bg-orange-500' :
                                             'bg-blue-500'
@@ -619,8 +887,182 @@ export function DashboardClient() {
                             ))}
                         </div>
                     </TabsContent>
+
+
+
+                    <TabsContent value="evolution" className="space-y-4">
+                        {reportData.monthly_trends && reportData.monthly_trends.length > 0 ? (
+                            <>
+                                <TimeEvolutionChart data={reportData.monthly_trends} />
+                                <div className="flex justify-end mt-4">
+                                    <button
+                                        onClick={handleGenerateInsights}
+                                        disabled={isGeneratingInsights}
+                                        className="flex items-center gap-2 px-4 py-2 text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-md transition-colors shadow-sm border border-indigo-500/50"
+                                    >
+                                        {isGeneratingInsights ? (
+                                            <Loader2 className="w-4 h-4 animate-spin" />
+                                        ) : (
+                                            <Sparkles className="w-4 h-4" />
+                                        )}
+                                        {isGeneratingInsights ? 'Generating...' : 'AI Insights'}
+                                    </button>
+                                </div>
+                            </>
+                        ) : (
+                            <Card className="bg-white/5 border border-white/10">
+                                <CardContent className="flex flex-col items-center justify-center h-64 text-slate-400">
+                                    <p>No monthly trend data available.</p>
+                                    <p className="text-sm">Please ensure your data upload covers multiple months.</p>
+                                </CardContent>
+                            </Card>
+                        )}
+
+                        {/* AI Insights Result Section */}
+                        {insightResult && (
+                            <div className="mt-8 pt-8 border-t border-slate-800">
+                                <AiInsightsView data={insightResult} />
+                            </div>
+                        )}
+                    </TabsContent>
+
                 </Tabs>
             </div>
+
+            <SaveReportModal
+                open={saveModalOpen}
+                onOpenChange={setSaveModalOpen}
+                onConfirm={handleSaveReport}
+            />
+
+            {/* Configuration Modal */}
+            <Dialog open={configModalOpen} onOpenChange={setConfigModalOpen}>
+                <DialogContent className="sm:max-w-[500px] bg-slate-900 border-slate-700 text-slate-100">
+                    <DialogHeader>
+                        <DialogTitle>Efficiency Benchmarks</DialogTitle>
+                        <DialogDescription className="text-slate-400">
+                            Configure the ranges to define "Great" vs "Poor" performance.
+                            Values falling between Min and Max will be considered "Average".
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    <div className="grid gap-6 py-4">
+                        {/* CTR Config */}
+                        <div className="space-y-3">
+                            <h4 className="font-medium text-sm text-slate-300 border-b border-slate-800 pb-1">CTR (Click-Through Rate) % - Higher is better</h4>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-1">
+                                    <label className="text-xs text-gray-500">Min (Below this is Poor)</label>
+                                    <div className="relative">
+                                        <input
+                                            type="number"
+                                            step="0.01"
+                                            className="w-full bg-slate-950 border border-slate-700 rounded p-2 text-sm text-white"
+                                            value={tempConfig.ctr.min}
+                                            onChange={(e) => setTempConfig({ ...tempConfig, ctr: { ...tempConfig.ctr, min: parseFloat(e.target.value) } })}
+                                        />
+                                        <span className="absolute right-3 top-2 text-slate-600 text-xs">%</span>
+                                    </div>
+                                </div>
+                                <div className="space-y-1">
+                                    <label className="text-xs text-gray-500">Max (Above this is Great)</label>
+                                    <div className="relative">
+                                        <input
+                                            type="number"
+                                            step="0.01"
+                                            className="w-full bg-slate-950 border border-slate-700 rounded p-2 text-sm text-white"
+                                            value={tempConfig.ctr.max}
+                                            onChange={(e) => setTempConfig({ ...tempConfig, ctr: { ...tempConfig.ctr, max: parseFloat(e.target.value) } })}
+                                        />
+                                        <span className="absolute right-3 top-2 text-slate-600 text-xs">%</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* CPC Config */}
+                        <div className="space-y-3">
+                            <h4 className="font-medium text-sm text-slate-300 border-b border-slate-800 pb-1">CPC (Cost Per Click) $ - Lower is better</h4>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-1">
+                                    <label className="text-xs text-gray-500">Min (Below this is Great)</label>
+                                    <div className="relative">
+                                        <span className="absolute left-3 top-2 text-slate-600 text-xs">$</span>
+                                        <input
+                                            type="number"
+                                            step="0.01"
+                                            className="w-full bg-slate-950 border border-slate-700 rounded p-2 pl-6 text-sm text-white"
+                                            value={tempConfig.cpc.min}
+                                            onChange={(e) => setTempConfig({ ...tempConfig, cpc: { ...tempConfig.cpc, min: parseFloat(e.target.value) } })}
+                                        />
+                                    </div>
+                                </div>
+                                <div className="space-y-1">
+                                    <label className="text-xs text-gray-500">Max (Above this is Poor)</label>
+                                    <div className="relative">
+                                        <span className="absolute left-3 top-2 text-slate-600 text-xs">$</span>
+                                        <input
+                                            type="number"
+                                            step="0.01"
+                                            className="w-full bg-slate-950 border border-slate-700 rounded p-2 pl-6 text-sm text-white"
+                                            value={tempConfig.cpc.max}
+                                            onChange={(e) => setTempConfig({ ...tempConfig, cpc: { ...tempConfig.cpc, max: parseFloat(e.target.value) } })}
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* eCPM Config */}
+                        <div className="space-y-3">
+                            <h4 className="font-medium text-sm text-slate-300 border-b border-slate-800 pb-1">eCPM (Cost Per Mille) $ - Lower is better</h4>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-1">
+                                    <label className="text-xs text-gray-500">Min (Below this is Great)</label>
+                                    <div className="relative">
+                                        <span className="absolute left-3 top-2 text-slate-600 text-xs">$</span>
+                                        <input
+                                            type="number"
+                                            step="0.01"
+                                            className="w-full bg-slate-950 border border-slate-700 rounded p-2 pl-6 text-sm text-white"
+                                            value={tempConfig.cpm.min}
+                                            onChange={(e) => setTempConfig({ ...tempConfig, cpm: { ...tempConfig.cpm, min: parseFloat(e.target.value) } })}
+                                        />
+                                    </div>
+                                </div>
+                                <div className="space-y-1">
+                                    <label className="text-xs text-gray-500">Max (Above this is Poor)</label>
+                                    <div className="relative">
+                                        <span className="absolute left-3 top-2 text-slate-600 text-xs">$</span>
+                                        <input
+                                            type="number"
+                                            step="0.01"
+                                            className="w-full bg-slate-950 border border-slate-700 rounded p-2 pl-6 text-sm text-white"
+                                            value={tempConfig.cpm.max}
+                                            onChange={(e) => setTempConfig({ ...tempConfig, cpm: { ...tempConfig.cpm, max: parseFloat(e.target.value) } })}
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="flex justify-end gap-2">
+                        <button
+                            onClick={() => setConfigModalOpen(false)}
+                            className="px-4 py-2 text-sm text-slate-400 hover:text-white hover:bg-slate-800 rounded-md transition-colors"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            onClick={handleSaveConfig}
+                            className="px-4 py-2 text-sm font-bold text-white bg-orange-600 hover:bg-orange-700 rounded-md transition-colors shadow-sm"
+                        >
+                            Apply Changes
+                        </button>
+                    </div>
+                </DialogContent>
+            </Dialog>
 
             {/* Detail Modal */}
             <Dialog open={!!selectedAd} onOpenChange={(open) => !open && setSelectedAd(null)}>
@@ -635,31 +1077,31 @@ export function DashboardClient() {
                     {selectedAd && (
                         <div className="space-y-6 mt-4">
                             <div className="p-4 rounded-lg bg-slate-900/50 border border-slate-800">
-                                <p className="text-xs text-slate-500 mb-1">Campaign</p>
+                                <p className="text-xs text-gray-500 mb-1">Campaign</p>
                                 <p className="text-sm font-medium text-slate-200">{selectedAd.campaign_name}</p>
                             </div>
 
                             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                                 <div className="p-4 rounded-lg bg-slate-900/50 border border-slate-800">
-                                    <p className="text-xs text-slate-500">Impressions</p>
+                                    <p className="text-xs text-gray-500">Impressions</p>
                                     <p className="text-lg font-mono font-bold text-slate-200 truncate" title={((selectedAd.impressions || 0).toLocaleString())}>
                                         {(selectedAd.impressions || 0).toLocaleString()}
                                     </p>
                                 </div>
                                 <div className="p-4 rounded-lg bg-slate-900/50 border border-slate-800">
-                                    <p className="text-xs text-slate-500">Clicks</p>
+                                    <p className="text-xs text-gray-500">Clicks</p>
                                     <p className="text-lg font-mono font-bold text-slate-200 truncate" title={((selectedAd.clicks || 0).toLocaleString())}>
                                         {(selectedAd.clicks || 0).toLocaleString()}
                                     </p>
                                 </div>
                                 <div className="p-4 rounded-lg bg-slate-900/50 border border-slate-800">
-                                    <p className="text-xs text-slate-500">Spend</p>
+                                    <p className="text-xs text-gray-500">Spend</p>
                                     <p className="text-lg font-mono font-bold text-slate-200 truncate" title={`$${(selectedAd.spent || 0).toLocaleString()}`}>
                                         ${(selectedAd.spent || 0).toLocaleString()}
                                     </p>
                                 </div>
                                 <div className="p-4 rounded-lg bg-slate-900/50 border border-slate-800">
-                                    <p className="text-xs text-slate-500">CTR</p>
+                                    <p className="text-xs text-gray-500">CTR</p>
                                     <p className={`text-lg font-mono font-bold truncate ${(selectedAd.ctr_percent || 0) * 100 > 1 ? 'text-emerald-400' : 'text-slate-200'
                                         }`}>
                                         {((selectedAd.ctr_percent || 0) * 100).toFixed(2)}%
@@ -669,13 +1111,13 @@ export function DashboardClient() {
 
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="p-4 rounded-lg bg-slate-900/50 border border-slate-800">
-                                    <p className="text-xs text-slate-500">CPC (Cost Per Click)</p>
+                                    <p className="text-xs text-gray-500">CPC (Cost Per Click)</p>
                                     <p className="text-lg font-mono font-bold text-slate-200">
                                         ${((selectedAd.spent || 0) / (selectedAd.clicks || 1)).toFixed(2)}
                                     </p>
                                 </div>
                                 <div className="p-4 rounded-lg bg-slate-900/50 border border-slate-800">
-                                    <p className="text-xs text-slate-500">CPM (Cost Per Mille)</p>
+                                    <p className="text-xs text-gray-500">CPM (Cost Per Mille)</p>
                                     <p className="text-lg font-mono font-bold text-slate-200">
                                         ${((selectedAd.spent || 0) / ((selectedAd.impressions || 1) / 1000)).toFixed(2)}
                                     </p>
@@ -683,7 +1125,7 @@ export function DashboardClient() {
                             </div>
 
                             <div className="flex items-center justify-between pt-4 border-t border-slate-800">
-                                <span className="text-sm text-slate-500">Status Recommendation</span>
+                                <span className="text-sm text-gray-500">Status Recommendation</span>
                                 <span className={`px-4 py-1.5 rounded-full text-sm font-bold uppercase tracking-wider ${selectedAd.status_bucket === 'scale' ? 'bg-emerald-500/20 text-emerald-400' :
                                     selectedAd.status_bucket === 'pause' ? 'bg-red-500/20 text-red-400' :
                                         'bg-amber-500/20 text-amber-400'
@@ -734,35 +1176,35 @@ export function DashboardClient() {
                                     {/* Summary Cards */}
                                     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
                                         <div className="p-3 rounded-lg bg-slate-900/50 border border-slate-800">
-                                            <p className="text-[10px] text-slate-500 uppercase tracking-widest">Ads Count</p>
+                                            <p className="text-[10px] text-gray-500 uppercase tracking-widest">Ads Count</p>
                                             <p className="text-xl font-mono font-bold text-slate-200">{filteredAds.length}</p>
                                         </div>
                                         <div className="p-3 rounded-lg bg-slate-900/50 border border-slate-800">
-                                            <p className="text-[10px] text-slate-500 uppercase tracking-widest">Spend</p>
+                                            <p className="text-[10px] text-gray-500 uppercase tracking-widest">Spend</p>
                                             <p className="text-xl font-mono font-bold text-slate-200 truncate" title={`$${totalSpent.toLocaleString()}`}>
                                                 ${totalSpent.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                                             </p>
                                         </div>
                                         <div className="p-3 rounded-lg bg-slate-900/50 border border-slate-800">
-                                            <p className="text-[10px] text-slate-500 uppercase tracking-widest">Impr.</p>
+                                            <p className="text-[10px] text-gray-500 uppercase tracking-widest">Impr.</p>
                                             <p className="text-xl font-mono font-bold text-slate-200 truncate" title={totalImpressions.toLocaleString()}>
                                                 {totalImpressions.toLocaleString(undefined, { notation: "compact" })}
                                             </p>
                                         </div>
                                         <div className="p-3 rounded-lg bg-slate-900/50 border border-slate-800">
-                                            <p className="text-[10px] text-slate-500 uppercase tracking-widest">Clicks</p>
+                                            <p className="text-[10px] text-gray-500 uppercase tracking-widest">Clicks</p>
                                             <p className="text-xl font-mono font-bold text-slate-200">
                                                 {totalClicks.toLocaleString()}
                                             </p>
                                         </div>
                                         <div className="p-3 rounded-lg bg-slate-900/50 border border-slate-800">
-                                            <p className="text-[10px] text-slate-500 uppercase tracking-widest">Avg CPC</p>
+                                            <p className="text-[10px] text-gray-500 uppercase tracking-widest">Avg CPC</p>
                                             <p className="text-xl font-mono font-bold text-slate-200">
                                                 ${avgCPC.toFixed(2)}
                                             </p>
                                         </div>
                                         <div className="p-3 rounded-lg bg-slate-900/50 border border-slate-800">
-                                            <p className="text-[10px] text-slate-500 uppercase tracking-widest">Avg CTR</p>
+                                            <p className="text-[10px] text-gray-500 uppercase tracking-widest">Avg CTR</p>
                                             <p className={`text-xl font-mono font-bold ${avgCTR * 100 > 1 ? 'text-emerald-400' : 'text-slate-200'}`}>
                                                 {(avgCTR * 100).toFixed(2)}%
                                             </p>
@@ -776,7 +1218,7 @@ export function DashboardClient() {
                                         </div>
                                         <div className="max-h-[300px] overflow-y-auto custom-scrollbar">
                                             <table className="w-full text-sm text-left">
-                                                <thead className="text-xs text-slate-500 uppercase bg-slate-950 sticky top-0">
+                                                <thead className="text-xs text-gray-500 uppercase bg-slate-950 sticky top-0">
                                                     <tr>
                                                         <th className="px-4 py-3">Creative Name</th>
                                                         <th className="px-4 py-3 text-right">Spend</th>
@@ -811,6 +1253,6 @@ export function DashboardClient() {
                     )}
                 </DialogContent>
             </Dialog>
-        </div>
+        </div >
     )
 }

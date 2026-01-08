@@ -28,7 +28,7 @@ export async function POST(req: Request) {
         )
 
         const { error } = await supabase
-            .from('ad_reports')
+            .from('ads_reports')
             .update({
                 status: 'completed',
                 payload: body,

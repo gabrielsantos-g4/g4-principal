@@ -35,13 +35,33 @@ export interface PriorityAction {
     supporting_stats: string | null; // Changed to string
 }
 
+export interface MonthlyOverview {
+    spent: number;
+    impressions: number;
+    clicks: number;
+    ctr: number;
+    cpc: number;
+}
+
+export interface MonthlyTrendData {
+    month: string;
+    timestamp: number;
+    overview: MonthlyOverview;
+    groups_breakdown: Record<string, number>;
+    groups_breakdown_impressions?: Record<string, number>;
+    groups_breakdown_clicks?: Record<string, number>;
+}
+
 export interface AdsReportData {
     meta: {
         row_count: number;
         currency: string | null;
         date_generated: string | null;
+        start_date?: string | null;
+        end_date?: string | null;
     };
     overview: AdsReportKPI;
+    monthly_trends?: MonthlyTrendData[];
     campaigns: {
         overview_by_campaign: CampaignData[];
     };

@@ -23,7 +23,7 @@ export async function login(formData: FormData) {
     const { data: { user } } = await supabase.auth.getUser()
     if (user) {
         const { data: profile, error: profileError } = await supabase
-            .from('ads_profiles')
+            .from('main_profiles')
             .select('*')
             .eq('id', user.id)
             .single()
@@ -33,4 +33,12 @@ export async function login(formData: FormData) {
 
     revalidatePath('/', 'layout')
     redirect('/dashboard')
+}
+
+export async function signout() {
+    const supabase = await createClient()
+    await supabase.auth.signOut()
+
+    revalidatePath('/', 'layout')
+    redirect('/login')
 }

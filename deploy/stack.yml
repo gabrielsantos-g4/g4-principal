@@ -2,7 +2,7 @@ version: "3.7"
 
 services:
   ads-metrics-front:
-    image: fmguardia/g4-ads-metrics:v0.03
+    image: fmguardia/g4-ads-metrics:v0.07
     networks:
       - network_public
     environment:
@@ -11,6 +11,7 @@ services:
       # Supabase Configuration
       - SUPABASE_URL=https://eookwjdxufyrokrajdfu.supabase.co
       - SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVvb2t3amR4dWZ5cm9rcmFqZGZ1Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NTE5NjgzMiwiZXhwIjoyMDcwNzcyODMyfQ.NAm-SZuucaZ78x-VOl3vdvdGT0qt7MqDjp9pwZo7l7U
+      - SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVvb2t3amR4dWZ5cm9rcmFqZGZ1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxOTY4MzIsImV4cCI6MjA3MDc3MjgzMn0.AZ6LxbERq7UsV7-DMyPxewEn6UBs3fkv6bGY7iM87qA
       
       # Frontend URL
       - NEXT_PUBLIC_APP_URL=https://ads.startg4.com
