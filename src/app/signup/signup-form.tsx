@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { login } from './actions'
+import { signup } from './actions'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Loader2 } from 'lucide-react'
 import Link from 'next/link'
 
-export function LoginForm() {
+export function SignupForm() {
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
 
@@ -19,13 +19,13 @@ export function LoginForm() {
         setError(null)
 
         const formData = new FormData(event.currentTarget)
-        const result = await login(formData)
+        const result = await signup(formData)
 
         if (result?.error) {
             setError(result.error)
             setLoading(false)
         }
-        // Sucesso redireciona no server
+        // Success redirects on server
     }
 
     return (
@@ -40,34 +40,44 @@ export function LoginForm() {
                 </div>
 
                 <div className="space-y-1">
-                    <CardTitle className="text-xl text-center font-bold text-white">Welcome back</CardTitle>
+                    <CardTitle className="text-xl text-center font-bold text-white">Create Account</CardTitle>
                     <CardDescription className="text-center text-gray-500">
-                        Enter your credentials to access the dashboard
+                        Enter your details to get started
                     </CardDescription>
                 </div>
             </CardHeader>
             <form onSubmit={handleSubmit}>
                 <CardContent className="space-y-4">
                     <div className="space-y-2">
-                        <Label htmlFor="email" className="text-xs font-semibold text-gray-300 uppercase tracking-wide">Email</Label>
+                        <Label htmlFor="name" className="text-xs font-semibold text-gray-300 uppercase tracking-wide">Name</Label>
                         <Input
-                            id="email"
-                            name="email"
-                            type="email"
-                            placeholder="name@example.com"
+                            id="name"
+                            name="name"
+                            type="text"
+                            placeholder="John Doe"
                             required
                             className="bg-white/5 border-white/10 text-white placeholder:text-gray-600 focus:border-[#1C73E8] transition-colors h-11"
                         />
                     </div>
                     <div className="space-y-2">
-                        <div className="flex items-center justify-between">
-                            <Label htmlFor="password" className="text-xs font-semibold text-gray-300 uppercase tracking-wide">Password</Label>
-                        </div>
+                        <Label htmlFor="email" className="text-xs font-semibold text-gray-300 uppercase tracking-wide">Email</Label>
+                        <Input
+                            id="email"
+                            name="email"
+                            type="email"
+                            placeholder="you@example.com"
+                            required
+                            className="bg-white/5 border-white/10 text-white placeholder:text-gray-600 focus:border-[#1C73E8] transition-colors h-11"
+                        />
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="password" className="text-xs font-semibold text-gray-300 uppercase tracking-wide">Password</Label>
                         <Input
                             id="password"
                             name="password"
                             type="password"
                             required
+                            minLength={6}
                             className="bg-white/5 border-white/10 text-white focus:border-[#1C73E8] transition-colors h-11"
                         />
                     </div>
@@ -80,12 +90,12 @@ export function LoginForm() {
                 <CardFooter className="flex flex-col space-y-4 pt-2 pb-8">
                     <Button className="w-full bg-[#1C73E8] hover:bg-[#1C73E8]/90 text-white h-11 font-bold" type="submit" disabled={loading}>
                         {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                        Sign In
+                        Sign Up
                     </Button>
                     <div className="text-sm text-center text-gray-500">
-                        Don't have an account?{' '}
-                        <Link href="/signup" className="text-[#1C73E8] hover:text-white transition-colors font-semibold">
-                            Sign up
+                        Already have an account?{' '}
+                        <Link href="/login" className="text-[#1C73E8] hover:text-white transition-colors font-semibold">
+                            Log in
                         </Link>
                     </div>
                 </CardFooter>

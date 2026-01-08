@@ -130,9 +130,34 @@ export function RightSidebar({ agent }: RightSidebarProps) {
 
             {/* Chat Input Mock */}
             <div className="p-8 pt-4 border-t border-white/10 shrink-0">
-                <div className="bg-white/5 border border-white/10 rounded flex gap-2 p-1">
-                    <input type="text" placeholder={`Ask ${agent?.name || 'an agent'} a question...`} className="bg-transparent text-sm w-full outline-none text-white placeholder-gray-500 px-3 py-2" />
-                    <button className="bg-white text-black text-xs font-bold px-6 py-2 rounded uppercase hover:bg-gray-200 transition-colors">Send</button>
+                <div className="bg-white/5 border border-white/10 rounded-xl flex gap-2 p-2 items-end">
+                    <textarea
+                        ref={(el) => {
+                            if (el) {
+                                el.style.height = 'auto';
+                                el.style.height = el.scrollHeight + 'px';
+                            }
+                        }}
+                        rows={1}
+                        placeholder={`Ask ${agent?.name || 'an agent'} a question...`}
+                        className="bg-transparent text-sm w-full outline-none text-white placeholder-gray-500 px-3 py-2 resize-none max-h-[200px] overflow-y-auto"
+                        style={{ minHeight: '40px' }}
+                        onInput={(e) => {
+                            const target = e.target as HTMLTextAreaElement;
+                            target.style.height = 'auto';
+                            target.style.height = target.scrollHeight + 'px';
+                        }}
+                        onKeyDown={(e) => {
+                            if (e.key === 'Enter' && !e.shiftKey) {
+                                e.preventDefault();
+                                // Handle send logic here if there was any real logic
+                                const target = e.target as HTMLTextAreaElement;
+                                target.value = '';
+                                target.style.height = 'auto';
+                            }
+                        }}
+                    />
+                    <button className="bg-white text-black text-xs font-bold px-4 py-2 rounded-lg uppercase hover:bg-gray-200 transition-colors h-9 mb-0.5">Send</button>
                 </div>
             </div>
         </div>

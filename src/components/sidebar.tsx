@@ -16,27 +16,6 @@ export async function Sidebar() {
         redirect('/login')
     }
 
-    // 2. Get Profile Data (Name, Company, Role)
-    // Server-side fetch, secure, uses RLS policy we set up
-    const { data: profile } = await supabase
-        .from('main_profiles')
-        .select(`
-            name,
-            role,
-            main_empresas (
-                name
-            )
-        `)
-        .eq('id', user.id)
-        .single()
-
-    const companies = profile?.main_empresas
-    const company = Array.isArray(companies) ? companies[0] : companies
-    const companyName = company?.name || 'My Company'
-    const userName = profile?.name || user.email || 'User'
-    // Get initials for avatar
-    const initials = userName.substring(0, 2).toUpperCase()
-
     return (
         <aside className="w-64 bg-[#0A0A0A] border-r border-[#1F1F1F] flex flex-col h-screen fixed left-0 top-0 text-white font-sans">
             {/* Header / Platform Title */}
@@ -46,23 +25,6 @@ export async function Sidebar() {
                     <span className="text-[10px] leading-tight text-gray-400 font-medium uppercase tracking-wider">
                         MULTI-B2B <br /> AI AGENT PLATFORM
                     </span>
-                </div>
-            </div>
-
-            {/* User Info */}
-            <div className="px-6 py-4 border-b border-[#1F1F1F]">
-                <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-orange-600 flex items-center justify-center text-white font-bold text-xs">
-                        {initials}
-                    </div>
-                    <div className="overflow-hidden">
-                        <h3 className="text-white text-sm font-medium truncate" title={userName}>
-                            {userName}
-                        </h3>
-                        <p className="text-gray-500 text-[10px] truncate" title={companyName}>
-                            {companyName}
-                        </p>
-                    </div>
                 </div>
             </div>
 
