@@ -288,13 +288,13 @@ export function DashboardClient({ initialData }: { initialData?: AdsReportData |
                     <div className="flex bg-white/5 p-1 rounded-lg border border-white/10">
                         <button
                             onClick={() => setView('current')}
-                            className={`px-6 py-2 rounded-md text-sm font-medium transition-all ${view === 'current' ? 'bg-orange-600 text-white shadow-lg' : 'text-gray-400 hover:text-white'}`}
+                            className="px-6 py-2 rounded-md text-sm font-medium transition-all bg-orange-600 text-white shadow-lg"
                         >
                             New Analysis
                         </button>
                         <button
                             onClick={() => setView('history')}
-                            className={`px-6 py-2 rounded-md text-sm font-medium transition-all ${view === 'history' ? 'bg-orange-600 text-white shadow-lg' : 'text-gray-400 hover:text-white'}`}
+                            className="px-6 py-2 rounded-md text-sm font-medium transition-all text-gray-400 hover:text-white"
                         >
                             My Reports
                         </button>
@@ -334,13 +334,13 @@ export function DashboardClient({ initialData }: { initialData?: AdsReportData |
                     <div className="flex bg-white/5 p-1 rounded-lg border border-white/10">
                         <button
                             onClick={() => setView('current')}
-                            className={`px-6 py-2 rounded-md text-sm font-medium transition-all ${view === 'current' ? 'bg-orange-600 text-white shadow-lg' : 'text-gray-400 hover:text-white'}`}
+                            className="px-6 py-2 rounded-md text-sm font-medium transition-all text-gray-400 hover:text-white"
                         >
                             {reportData ? 'Current Analysis' : 'New Analysis'}
                         </button>
                         <button
                             onClick={() => setView('history')}
-                            className={`px-6 py-2 rounded-md text-sm font-medium transition-all ${view === 'history' ? 'bg-orange-600 text-white shadow-lg' : 'text-gray-400 hover:text-white'}`}
+                            className="px-6 py-2 rounded-md text-sm font-medium transition-all bg-orange-600 text-white shadow-lg"
                         >
                             My Reports
                         </button>
@@ -476,13 +476,13 @@ export function DashboardClient({ initialData }: { initialData?: AdsReportData |
                 <div className="flex bg-white/5 p-1 rounded-lg border border-white/10">
                     <button
                         onClick={() => setView('current')}
-                        className={`px-6 py-2 rounded-md text-sm font-medium transition-all ${view === 'current' ? 'bg-orange-600 text-white shadow-lg' : 'text-gray-400 hover:text-white'}`}
+                        className="px-6 py-2 rounded-md text-sm font-medium transition-all bg-orange-600 text-white shadow-lg"
                     >
                         Current Analysis
                     </button>
                     <button
                         onClick={() => setView('history')}
-                        className={`px-6 py-2 rounded-md text-sm font-medium transition-all ${view === 'history' ? 'bg-orange-600 text-white shadow-lg' : 'text-gray-400 hover:text-white'}`}
+                        className="px-6 py-2 rounded-md text-sm font-medium transition-all text-gray-400 hover:text-white"
                     >
                         My Reports
                     </button>
@@ -499,13 +499,13 @@ export function DashboardClient({ initialData }: { initialData?: AdsReportData |
                             Ads Performance Dashboard
                         </h1>
                         <div className="flex flex-col">
-                            {reportData.meta.start_date && reportData.meta.end_date ? (
+                            {reportData?.meta?.start_date && reportData?.meta?.end_date ? (
                                 <p className="text-slate-300 text-lg font-medium">
                                     Report Period: <span className="text-white">{new Date(reportData.meta.start_date).toLocaleDateString(undefined, { timeZone: 'UTC' })} - {new Date(reportData.meta.end_date).toLocaleDateString(undefined, { timeZone: 'UTC' })}</span>
                                 </p>
                             ) : null}
                             <p className="text-gray-500 text-sm">
-                                Generated on {reportData.meta.date_generated ? new Date(reportData.meta.date_generated).toLocaleDateString() : 'N/A'}
+                                Generated on {reportData?.meta?.date_generated ? new Date(reportData.meta.date_generated).toLocaleDateString() : 'N/A'}
                             </p>
                         </div>
                     </div>
@@ -891,7 +891,7 @@ export function DashboardClient({ initialData }: { initialData?: AdsReportData |
 
 
                     <TabsContent value="evolution" className="space-y-4">
-                        {reportData.monthly_trends && reportData.monthly_trends.length > 0 ? (
+                        {reportData?.monthly_trends && reportData.monthly_trends.length > 0 ? (
                             <>
                                 <TimeEvolutionChart data={reportData.monthly_trends} />
                                 <div className="flex justify-end mt-4">
