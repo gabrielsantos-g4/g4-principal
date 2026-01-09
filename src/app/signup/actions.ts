@@ -11,8 +11,9 @@ export async function signup(formData: FormData) {
     const password = formData.get('password') as string
 
     if (!name || !email || !password) {
-        return { error: 'Please fill in all fields' }
+        return { error: 'Por favor, preencha todos os campos' }
     }
+
 
     const supabase = await createClient()
 
@@ -37,11 +38,15 @@ export async function signup(formData: FormData) {
 
     if (createError) {
         console.error('Admin Create User failed:', createError)
+        // Check if error is due to existing user
+        if (createError.message.includes('already has been registered') || createError.status === 400 || createError.status === 422) {
+            return { error: 'Este e-mail já está cadastrado. Por favor, faça login.' }
+        }
         return { error: createError.message }
     }
 
     if (!adminData.user) {
-        return { error: 'Failed to create user account (No data returned)' }
+        return { error: 'Falha ao criar conta (Dados não retornados)' }
     }
 
     // 2. Create Profile (Admin Role)
@@ -57,7 +62,7 @@ export async function signup(formData: FormData) {
         // Rollback user if profile fails? For now, report error.
         // Ideally we should delete the user here to keep state clean.
         await adminAuthClient.auth.admin.deleteUser(adminData.user.id)
-        return { error: `Profile setup failed: ${profileError.message}` }
+        return { error: `Falha na configuração do perfil: ${profileError.message}` }
     }
 
     // 3. Log the user in (Get Session Cookies)
@@ -67,7 +72,7 @@ export async function signup(formData: FormData) {
     })
 
     if (signInError) {
-        return { error: 'Account created, but auto-login failed. Please try logging in manually.' }
+        return { error: 'Conta criada, mas o login automático falhou. Tente entrar manualmente.' }
     }
 
     revalidatePath('/', 'layout')

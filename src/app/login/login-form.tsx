@@ -40,9 +40,9 @@ export function LoginForm() {
                 </div>
 
                 <div className="space-y-1">
-                    <CardTitle className="text-xl text-center font-bold text-white">Welcome back</CardTitle>
+                    <CardTitle className="text-xl text-center font-bold text-white">Bem-vindo de volta</CardTitle>
                     <CardDescription className="text-center text-gray-500">
-                        Enter your credentials to access the dashboard
+                        Entre com suas credenciais para acessar
                     </CardDescription>
                 </div>
             </CardHeader>
@@ -54,14 +54,17 @@ export function LoginForm() {
                             id="email"
                             name="email"
                             type="email"
-                            placeholder="name@example.com"
+                            placeholder="seu@email.com"
                             required
                             className="bg-white/5 border-white/10 text-white placeholder:text-gray-600 focus:border-[#1C73E8] transition-colors h-11"
                         />
                     </div>
                     <div className="space-y-2">
                         <div className="flex items-center justify-between">
-                            <Label htmlFor="password" className="text-xs font-semibold text-gray-300 uppercase tracking-wide">Password</Label>
+                            <Label htmlFor="password" className="text-xs font-semibold text-gray-300 uppercase tracking-wide">Senha</Label>
+                            <Link href="/forgot-password" className="text-xs text-[#1C73E8] hover:text-white transition-colors">
+                                Esqueci minha senha
+                            </Link>
                         </div>
                         <Input
                             id="password"
@@ -80,12 +83,12 @@ export function LoginForm() {
                 <CardFooter className="flex flex-col space-y-4 pt-2 pb-8">
                     <Button className="w-full bg-[#1C73E8] hover:bg-[#1C73E8]/90 text-white h-11 font-bold" type="submit" disabled={loading}>
                         {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                        Sign In
+                        Entrar
                     </Button>
                     <div className="text-sm text-center text-gray-500">
-                        Don't have an account?{' '}
+                        Não tem uma conta?{' '}
                         <Link href="/signup" className="text-[#1C73E8] hover:text-white transition-colors font-semibold">
-                            Sign up
+                            Criar conta
                         </Link>
                     </div>
                 </CardFooter>
