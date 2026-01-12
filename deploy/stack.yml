@@ -2,22 +2,20 @@ version: "3.7"
 
 services:
   ads-metrics-front:
-    image: fmguardia/g4-ads-metrics:v0.07
+    image: fmguardia/g4-principal:v0.08
     networks:
       - network_public
     environment:
       - NODE_ENV=production
       - NEXT_TELEMETRY_DISABLED=1
       # Supabase Configuration
-      - SUPABASE_URL=https://eookwjdxufyrokrajdfu.supabase.co
+      - NEXT_PUBLIC_SUPABASE_URL=https://eookwjdxufyrokrajdfu.supabase.co
+      - NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVvb2t3amR4dWZ5cm9rcmFqZGZ1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxOTY4MzIsImV4cCI6MjA3MDc3MjgzMn0.AZ6LxbERq7UsV7-DMyPxewEn6UBs3fkv6bGY7iM87qA
       - SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVvb2t3amR4dWZ5cm9rcmFqZGZ1Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NTE5NjgzMiwiZXhwIjoyMDcwNzcyODMyfQ.NAm-SZuucaZ78x-VOl3vdvdGT0qt7MqDjp9pwZo7l7U
       - SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVvb2t3amR4dWZ5cm9rcmFqZGZ1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxOTY4MzIsImV4cCI6MjA3MDc3MjgzMn0.AZ6LxbERq7UsV7-DMyPxewEn6UBs3fkv6bGY7iM87qA
       
       # Frontend URL
-      - NEXT_PUBLIC_APP_URL=https://ads.startg4.com
-      
-      # Note: This stack assumes 'network_public' and Traefik are already compliant with the swarm environment
-      # described in the user's template.
+      - NEXT_PUBLIC_APP_URL=https://app.startg4.com
 
     deploy:
       mode: replicated
@@ -35,14 +33,14 @@ services:
         max_attempts: 3
         window: 120s
       labels:
-        # Traefik configuration
+        # Traefik configurações básicas
         - "traefik.enable=true"
-        - "traefik.http.routers.ads-metrics.rule=Host(`ads.startg4.com`)"
+        - "traefik.http.routers.ads-metrics.rule=Host(`app.startg4.com`)"
         - "traefik.http.routers.ads-metrics.entrypoints=websecure"
         - "traefik.http.routers.ads-metrics.tls.certresolver=letsencryptresolver"
         - "traefik.http.services.ads-metrics.loadbalancer.server.port=3000"
 
-        # Security Headers
+        # Headers de segurança
         - "traefik.http.middlewares.ads-headers.headers.customResponseHeaders.X-Robots-Tag=noindex,nofollow,nosnippet,noarchive,notranslate,noimageindex"
         - "traefik.http.middlewares.ads-headers.headers.sslRedirect=true"
         - "traefik.http.middlewares.ads-headers.headers.stsSeconds=31536000"
@@ -50,11 +48,15 @@ services:
         - "traefik.http.middlewares.ads-headers.headers.stsPreload=true"
         - "traefik.http.middlewares.ads-headers.headers.forceSTSHeader=true"
         - "traefik.http.middlewares.ads-headers.headers.customFrameOptionsValue=SAMEORIGIN"
-        
-        # Apply middlewares
+
+        # Headers para Server Actions (CRITICAL FIX from working stack)
+        - "traefik.http.middlewares.ads-headers.headers.customRequestHeaders.Origin=https://app.startg4.com"
+        - "traefik.http.middlewares.ads-headers.headers.customRequestHeaders.Host=app.startg4.com"
+
+        # Aplicar middlewares
         - "traefik.http.routers.ads-metrics.middlewares=ads-headers"
 
-        # Compression
+        # Compressão
         - "traefik.http.middlewares.ads-compress.compress=true"
         - "traefik.http.routers.ads-metrics.middlewares=ads-compress,ads-headers"
       resources:

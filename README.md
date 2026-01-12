@@ -34,3 +34,15 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+## Deployment with Docker
+
+To build and deploy the Docker image with the correct environment variables, use the provided PowerShell script:
+
+```powershell
+.\scripts\build_deploy.ps1
+```
+
+This script will:
+1. Build the Docker image `fmguardia/g4-principal:v0.07` with the necessary `NEXT_PUBLIC_` build arguments.
+2. Push the image to Docker Hub.

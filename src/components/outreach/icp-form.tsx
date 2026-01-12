@@ -7,11 +7,11 @@ import { MultiSelect } from "@/components/ui/multi-select"
 
 const HEADCOUNT_OPTIONS = [
     "Self-employed", "1–10", "11-50", "51-200", "201–500", "501–1000", "1001–5000", "5001–10,000", "10,000+"
-]
+].map(opt => ({ value: opt, label: opt }))
 
 const COMPANY_TYPE_OPTIONS = [
     "Privately Held", "Non Profit", "Public Company", "Partnership", "Self Owned", "Self Employed", "Educational Institution"
-]
+].map(opt => ({ value: opt, label: opt }))
 
 const FUNCTION_AREA_OPTIONS = [
     "Business Development", "Marketing", "Entrepreneurship", "Program and Project Management", "Sales", "Engineering",
@@ -19,12 +19,12 @@ const FUNCTION_AREA_OPTIONS = [
     "Education", "Healthcare Services", "Human Resources", "Information Technology", "Legal", "Media and Communication",
     "Military and Protective Services", "Operations", "Product Management", "Purchasing", "Quality Assurance",
     "Real Estate", "Research", "Customer Success and Support"
-]
+].map(opt => ({ value: opt, label: opt }))
 
 const SENIORITY_LEVEL_OPTIONS = [
     "Owner / Partner", "Vice President", "Director", "CXO", "Senior", "Entry Level", "In Training",
     "Experienced Manager", "Entry Level Manager", "Strategic"
-]
+].map(opt => ({ value: opt, label: opt }))
 
 interface ICPData {
     company_headcount?: string[] | null
@@ -118,7 +118,7 @@ export function ICPForm({ initialData }: ICPFormProps) {
                     <p className="text-[10px] text-gray-500 mb-1">e.g., 50-200 employees</p>
                     <MultiSelect
                         options={HEADCOUNT_OPTIONS}
-                        selected={headcount}
+                        value={headcount}
                         onChange={setHeadcount}
                         placeholder="Select headcount"
                     />
@@ -143,7 +143,7 @@ export function ICPForm({ initialData }: ICPFormProps) {
                     <p className="text-[10px] text-gray-500 mb-1">Lorem Ipsum</p>
                     <MultiSelect
                         options={COMPANY_TYPE_OPTIONS}
-                        selected={companyType}
+                        value={companyType}
                         onChange={setCompanyType}
                         placeholder="Select type"
                     />
@@ -168,7 +168,7 @@ export function ICPForm({ initialData }: ICPFormProps) {
                     <p className="text-[10px] text-gray-500 mb-1">e.g., Marketing, Sales, Engineering</p>
                     <MultiSelect
                         options={FUNCTION_AREA_OPTIONS}
-                        selected={functionArea}
+                        value={functionArea}
                         onChange={setFunctionArea}
                         placeholder="Select area"
                     />
@@ -193,7 +193,7 @@ export function ICPForm({ initialData }: ICPFormProps) {
                     <p className="text-[10px] text-gray-500 mb-1">e.g., Manager, Director, VP, C-Level</p>
                     <MultiSelect
                         options={SENIORITY_LEVEL_OPTIONS}
-                        selected={seniority}
+                        value={seniority}
                         onChange={setSeniority}
                         placeholder="Select level"
                     />

@@ -1,0 +1,22 @@
+version: "3.7"
+
+services:
+  whoami:
+    image: traefik/whoami
+    networks:
+      - network_public
+    deploy:
+      mode: replicated
+      replicas: 1
+      labels:
+        - "traefik.enable=true"
+        # Usando um subdomínio de teste ou o mesmo domínio (temporariamente)
+        - "traefik.http.routers.debug-whoami.rule=Host(`app.startg4.com`) && PathPrefix(`/whoami`)"
+        - "traefik.http.routers.debug-whoami.entrypoints=websecure"
+        - "traefik.http.routers.debug-whoami.tls.certresolver=letsencryptresolver"
+        - "traefik.http.services.debug-whoami.loadbalancer.server.port=80"
+
+networks:
+  network_public:
+    external: true
+    name: network_public
