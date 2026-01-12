@@ -9,19 +9,26 @@ import { createClient } from '@/lib/supabase'
 import { getICP } from '@/actions/outreach-icp-actions'
 import { ICPForm } from '@/components/outreach/icp-form'
 
+import { getChats } from '@/actions/audience-actions'
+import { ChatList } from '@/components/audience/chat-list'
+
+import { CrmDashboard } from '@/components/crm/crm-dashboard'
+import { SupportDashboard } from '@/components/support/support-dashboard'
+import { DesignRequestForm } from '@/components/design/design-request-form'
+import { BrianDashboard } from '@/components/strategy/brian-dashboard'
+import { CompetitorList } from '@/components/competitors/competitor-list'
+import { CompetitorForm } from '@/components/competitors/competitor-form'
+import { getCompetitors, getCompetitor } from '@/actions/competitor-actions'
+
 interface AgentPageProps {
     params: Promise<{
         slug: string
     }>
 }
 
-// ... imports
-import { getChats } from '@/actions/audience-actions'
-import { ChatList } from '@/components/audience/chat-list'
-
-export default async function AgentPage({ params, searchParams }: AgentPageProps & { searchParams: Promise<{ chatId?: string }> }) {
+export default async function AgentPage({ params, searchParams }: AgentPageProps & { searchParams: Promise<{ chatId?: string, competitorId?: string }> }) {
     const { slug } = await params
-    const { chatId } = await searchParams
+    const { chatId, competitorId } = await searchParams
     const agent = AGENTS.find(a => a.slug === slug)
 
     if (!agent) {
@@ -34,10 +41,16 @@ export default async function AgentPage({ params, searchParams }: AgentPageProps
     // Agent-specific data fetching
     const isOutreach = slug === 'outreach'
     const isAudience = slug === 'audience-channels'
+    const isCrm = slug === 'crm'
+    const isSupport = slug === 'customer-support'
+    const isDesign = slug === 'design-video'
+    const isCompetitors = slug === 'competitors-analysis'
 
     let outreachData = null
     let hasICP = false
-    let audienceChats = []
+    let audienceChats: any[] = []
+    let competitors: any[] = []
+    let selectedCompetitor: any = null
 
     if (isOutreach) {
         // Parallel fetching for performance
@@ -53,6 +66,183 @@ export default async function AgentPage({ params, searchParams }: AgentPageProps
         audienceChats = await getChats()
     }
 
+    if (isCompetitors) {
+        competitors = await getCompetitors()
+        if (competitorId) {
+            selectedCompetitor = await getCompetitor(competitorId)
+
+            // Mock data for testing without database
+            if (!selectedCompetitor && competitorId.startsWith('mock-')) {
+                const mockCompetitors = [
+                    {
+                        id: 'mock-1',
+                        user_id: 'mock-user',
+                        name: 'Acme Corporation',
+                        website: 'https://acme.com',
+                        other_link: null,
+                        instagram_profile: '@acmecorp',
+                        linkedin_profile: '/company/acme',
+                        youtube_channel: '/@acmechannel',
+                        created_at: new Date().toISOString(),
+                        updated_at: new Date().toISOString()
+                    },
+                    {
+                        id: 'mock-2',
+                        user_id: 'mock-user',
+                        name: 'TechCo Inc',
+                        website: 'https://techco.io',
+                        other_link: null,
+                        instagram_profile: null,
+                        linkedin_profile: '/company/techco',
+                        youtube_channel: null,
+                        created_at: new Date().toISOString(),
+                        updated_at: new Date().toISOString()
+                    }
+                ]
+                selectedCompetitor = mockCompetitors.find(c => c.id === competitorId) || null
+            }
+        }
+    }
+
+    if (isCrm) {
+        return (
+            <div className="h-screen bg-black text-white font-sans flex flex-col overflow-hidden">
+                <DashboardHeader />
+                <div className="flex flex-1 min-h-0">
+                    <CrmDashboard agent={agent} />
+                    {/* Right Sidebar with Agent Context */}
+                    <RightSidebar
+                        key={slug + (chatId || '')}
+                        userId={user?.id}
+                        userName={(user?.user_metadata?.full_name || user?.user_metadata?.name || 'there').split(' ')[0]}
+                        agent={{
+                            name: agent.name,
+                            avatarUrl: agent.avatar,
+                            role: agent.role,
+                            externalUrl: agent.externalUrl,
+                            slug: agent.slug,
+                            description: agent.description
+                        }}
+                    />
+                </div>
+            </div>
+        )
+    }
+
+    if (isSupport) {
+        return (
+            <div className="h-screen bg-black text-white font-sans flex flex-col overflow-hidden">
+                <DashboardHeader />
+                <div className="flex flex-1 min-h-0">
+                    <SupportDashboard agent={agent} />
+                    <RightSidebar
+                        key={slug + (chatId || '')}
+                        userId={user?.id}
+                        userName={(user?.user_metadata?.full_name || user?.user_metadata?.name || 'there').split(' ')[0]}
+                        agent={{
+                            name: agent.name,
+                            avatarUrl: agent.avatar,
+                            role: agent.role,
+                            externalUrl: agent.externalUrl,
+                            slug: agent.slug,
+                            description: agent.description
+                        }}
+                    />
+                </div>
+            </div>
+        )
+    }
+
+    if (isDesign) {
+        return (
+            <div className="h-screen bg-black text-white font-sans flex flex-col overflow-hidden">
+                <DashboardHeader />
+                <div className="flex flex-1 min-h-0">
+                    <div className="flex-1 min-w-0 overflow-y-auto bg-black p-6">
+                        <DesignRequestForm />
+                    </div>
+                    <RightSidebar
+                        key={slug + (chatId || '')}
+                        userId={user?.id}
+                        userName={(user?.user_metadata?.full_name || user?.user_metadata?.name || 'there').split(' ')[0]}
+                        agent={{
+                            name: agent.name,
+                            avatarUrl: agent.avatar,
+                            role: agent.role,
+                            externalUrl: agent.externalUrl,
+                            slug: agent.slug,
+                            description: agent.description
+                        }}
+                    />
+                </div>
+            </div>
+        )
+    }
+
+    if (slug === 'ceo-positioning') {
+        return (
+            <div className="h-screen bg-black text-white font-sans flex flex-col overflow-hidden">
+                <DashboardHeader />
+                <div className="flex flex-1 min-h-0">
+                    <BrianDashboard agent={agent} />
+                    <RightSidebar
+                        key={slug + (chatId || '')}
+                        userId={user?.id}
+                        userName={(user?.user_metadata?.full_name || user?.user_metadata?.name || 'there').split(' ')[0]}
+                        agent={{
+                            name: agent.name,
+                            avatarUrl: agent.avatar,
+                            role: agent.role,
+                            externalUrl: agent.externalUrl,
+                            slug: agent.slug,
+                            description: agent.description
+                        }}
+                    />
+                </div>
+            </div>
+        )
+    }
+
+    if (isCompetitors) {
+        return (
+            <div className="h-screen bg-black text-white font-sans flex flex-col overflow-hidden">
+                <DashboardHeader />
+                <div className="flex flex-1 min-h-0">
+                    {/* Competitor List (Left Sidebar) */}
+                    <CompetitorList competitors={competitors} />
+
+                    {/* Main Area - Form or Empty State */}
+                    {selectedCompetitor ? (
+                        <CompetitorForm competitor={selectedCompetitor} />
+                    ) : (
+                        <div className="flex-1 bg-black p-8 flex flex-col items-center justify-center text-center opacity-40">
+                            <div className="w-16 h-16 rounded-full border-2 border-white/20 overflow-hidden mb-4">
+                                <img src={agent.avatar} alt={agent.name} className="w-full h-full object-cover grayscale" />
+                            </div>
+                            <h3 className="text-xl font-bold mb-2">Select a competitor</h3>
+                            <p className="max-w-xs text-sm">Choose a competitor from the list to start analyzing their presence.</p>
+                        </div>
+                    )}
+
+                    {/* Right Sidebar with Agent Context */}
+                    <RightSidebar
+                        key={slug + (competitorId || '')}
+                        userId={user?.id}
+                        userName={(user?.user_metadata?.full_name || user?.user_metadata?.name || 'there').split(' ')[0]}
+                        agent={{
+                            name: agent.name,
+                            avatarUrl: agent.avatar,
+                            role: agent.role,
+                            externalUrl: agent.externalUrl,
+                            slug: agent.slug,
+                            description: agent.description
+                        }}
+                    />
+                </div>
+            </div>
+        )
+    }
+
     return (
         <div className="h-screen bg-black text-white font-sans flex flex-col overflow-hidden">
             <DashboardHeader />
@@ -64,25 +254,7 @@ export default async function AgentPage({ params, searchParams }: AgentPageProps
                         {/* Left List */}
                         <ChatList chats={audienceChats || []} />
 
-                        {/* Center/Main Area acting as Empty State if no chat, or hidden on mobile if chat active? 
-                            Actually, user said "Right side is the sidebar chat". 
-                            So if a chat is selected, the RightSidebar handles the conversation.
-                            What should be in the middle? 
-                            User: "Do lado esquerdo, que é o centro da tela, vamos colocar os CHATS criados."
-                            Wait. User said "Left side, which is the center of the screen".
-                            And "Conversations ... we keep in the sidebar you created".
-                            
-                            If I put ChatList in the "center", what is on the "right"? RightSidebar.
-                            So:
-                            [ SidebarNav (Fixed) ] [ ChatList (Main Content) ] [ RightSidebar (Chat/Conversation) ]
-                            
-                            If that's the case:
-                            DashboardLayout has SidebarNav.
-                            Page has Main Content.
-                            Inside Page:
-                            If Audience -> Render ChatList as the main content.
-                            RightSidebar -> Is already fixed on the right.
-                        */}
+                        {/* Center/Main Area acting as Empty State if no chat */}
                         <div className="flex-1 bg-black p-8 flex flex-col items-center justify-center text-center opacity-40">
                             <div className="w-16 h-16 rounded-full border-2 border-white/20 overflow-hidden mb-4">
                                 <img src={agent.avatar} alt={agent.name} className="w-full h-full object-cover grayscale" />
@@ -94,7 +266,7 @@ export default async function AgentPage({ params, searchParams }: AgentPageProps
                 ) : (
                     // Default View (Outreach, etc)
                     <div className="flex-1 min-w-0 overflow-y-auto bg-black p-6 flex flex-col">
-                        <h1 className="text-2xl font-bold mb-4 text-center"> {agent.role} Dashboard</h1>
+
 
                         {/* Conditional Content based on Agent */}
                         {isOutreach ? (
@@ -144,7 +316,8 @@ export default async function AgentPage({ params, searchParams }: AgentPageProps
                         avatarUrl: agent.avatar,
                         role: agent.role,
                         externalUrl: agent.externalUrl,
-                        slug: agent.slug
+                        slug: agent.slug,
+                        description: agent.description
                     }}
                     initialChatId={isAudience ? chatId : undefined}
                 />

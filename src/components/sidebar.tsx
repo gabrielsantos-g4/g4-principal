@@ -17,13 +17,13 @@ export async function Sidebar() {
     }
 
     return (
-        <aside className="w-64 bg-[#0A0A0A] border-r border-[#1F1F1F] flex flex-col h-screen fixed left-0 top-0 text-white font-sans">
+        <aside className="w-64 bg-[#0c0c0c] border-r border-[#1F1F1F] flex flex-col h-screen fixed left-0 top-0 text-white font-sans">
             {/* Header / Platform Title */}
             <div className="p-6 pb-2">
                 <div className="flex items-center gap-2">
                     <span className="font-bold text-lg tracking-tight">g4</span>
                     <span className="text-[10px] leading-tight text-gray-400 font-medium uppercase tracking-wider">
-                        MULTI-B2B <br /> AI AGENT PLATFORM
+                        MULTI-B2B AI AGENT PLATFORM
                     </span>
                 </div>
             </div>

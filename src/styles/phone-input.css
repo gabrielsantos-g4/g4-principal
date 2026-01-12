@@ -1,0 +1,23 @@
+.PhoneInputInput {
+    border: none;
+    outline: none;
+    background: transparent;
+    height: 100%;
+    width: 100%;
+    font-size: 0.875rem;
+    color: #fff;
+}
+
+.PhoneInputInput::placeholder {
+    color: #4b5563;
+}
+
+.PhoneInputCountryIcon {
+    width: 24px;
+    height: 16px;
+    border-radius: 2px;
+}
+
+.PhoneInputCountrySelect {
+    display: none;
+}

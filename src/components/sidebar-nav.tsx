@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { LayoutDashboard } from 'lucide-react'
 import { Agent } from '@/lib/agents'
+import { GabrielExpertiseDialog } from '@/components/gabriel-expertise-dialog'
 
 interface SidebarNavProps {
     agents: Agent[]
@@ -15,7 +16,8 @@ export function SidebarNav({ agents }: SidebarNavProps) {
     return (
         <nav className="flex-1 p-4 space-y-6 overflow-y-auto custom-scrollbar">
             {/* Dashboard Link */}
-            <Link
+            {/* Dashboard Link Removed */
+            /* <Link
                 href="/dashboard"
                 className={`flex items-center gap-3 px-4 py-2 rounded-lg transition-all duration-200 ${pathname === '/dashboard'
                     ? 'bg-white/10 text-white shadow-[0_0_15px_rgba(28,115,232,0.1)] border border-white/5'
@@ -24,7 +26,7 @@ export function SidebarNav({ agents }: SidebarNavProps) {
             >
                 <LayoutDashboard size={20} className={pathname === '/dashboard' ? 'text-[#1C73E8]' : ''} />
                 <span>Dashboard</span>
-            </Link>
+            </Link> */}
 
             {/* STRATEGY */}
             <div className="space-y-2">
@@ -82,14 +84,31 @@ export function SidebarNav({ agents }: SidebarNavProps) {
                 ))}
             </div>
 
-            {/* MANAGEMENT */}
-            <div className="space-y-2">
-                <div className="px-4 text-[10px] font-medium text-slate-500 uppercase tracking-wider">
-                    Management
+            {/* HUMAN EXPERT */}
+            <div className="pt-4 mt-4 border-t border-white/5">
+                <div className="px-4 mb-2 text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                    Fractional Full-Stack Marketer
                 </div>
-                {agents.filter(a => a.category === 'management').map(agent => (
-                    <AgentLink key={agent.id} agent={agent} pathname={pathname} />
-                ))}
+
+                <GabrielExpertiseDialog>
+                    <button className="w-full flex items-center gap-3 px-4 py-3 mx-2 rounded-lg transition-all duration-200 text-slate-300 hover:text-white hover:bg-white/5 group">
+                        <div className="relative">
+                            <div className="w-10 h-10 rounded-full overflow-hidden border border-white/10 group-hover:border-[#1C73E8] transition-colors">
+                                <img
+                                    src="/gabriel-santos.png"
+                                    alt="Gabriel Santos"
+                                    className="w-full h-full object-cover"
+                                />
+                            </div>
+                            <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 border-2 border-[#0c0c0c] rounded-full"></div>
+                        </div>
+
+                        <div className="flex flex-col">
+                            <span className="text-sm font-bold text-white group-hover:text-[#1C73E8] transition-colors">Gabriel Santos</span>
+                            <span className="text-[10px] text-slate-500 font-medium uppercase tracking-wider leading-tight">Fractional Full Stack Marketer</span>
+                        </div>
+                    </button>
+                </GabrielExpertiseDialog>
             </div>
         </nav>
     )

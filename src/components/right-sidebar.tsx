@@ -10,6 +10,7 @@ interface AgentContext {
     role?: string
     slug?: string
     externalUrl?: string
+    description?: string
 }
 
 // Cleaned imports
@@ -57,6 +58,26 @@ export function RightSidebar({ agent, userId, userName = 'there', initialChatId,
             // Reset for non-chat agents or no chat selected
             setMessages([])
             setIsTyping(false)
+
+            // Special message for Audience agent when no chat is selected
+            if (agent?.slug === 'audience-channels' && !initialChatId) {
+                setIsTyping(true)
+                const timer = setTimeout(() => {
+                    setIsTyping(false)
+                    setMessages([{
+                        id: 'welcome-icp',
+                        role: 'assistant',
+                        content: (
+                            <div className="space-y-2">
+                                <p>Hello! To get started with audience analysis, please <strong>register your ICP</strong> (Ideal Customer Profile) first.</p>
+                                <p>Once you've set up your ICP on the left panel, we can discuss and develop it together.</p>
+                            </div>
+                        )
+                    }])
+                }, 1000)
+                return () => clearTimeout(timer)
+            }
+
             // ... existing welcome logic for others ...
             if (agent && agent.slug !== 'audience-channels' && agent.externalUrl && agent.slug !== 'outreach') {
                 setIsTyping(true)
@@ -266,20 +287,32 @@ export function RightSidebar({ agent, userId, userName = 'there', initialChatId,
     }
 
     return (
-        <div className="w-[400px] border-l border-white/10 flex flex-col bg-black shrink-0">
+        <div className="w-[400px] border-l border-white/10 flex flex-col bg-[#0c0c0c] shrink-0">
             <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">
                 {agent ? (
                     <>
-                        <div className="text-center mb-8">
-                            <div className="w-16 h-16 rounded-full border-2 border-[#1C73E8] overflow-hidden mx-auto mb-4">
+                        <div className="bg-[#1A1A1A] p-3 rounded-xl border border-white/5 flex items-center gap-3 mb-6">
+                            <div className="w-10 h-10 rounded-full border-2 border-[#1C73E8] overflow-hidden flex-shrink-0">
                                 <img src={agent.avatarUrl} alt={agent.name} className="w-full h-full object-cover" />
                             </div>
-                            <h3 className="text-lg font-bold text-white">{agent.name}</h3>
-                            <p className="text-xs text-[#1C73E8] font-medium uppercase tracking-wider mt-1">{agent.role || 'AI Agent'}</p>
-                            <p className="text-sm text-gray-500 mt-4 px-4">
-                                I can analyze your {agent.role?.toLowerCase() || 'performance'}, suggest optimizations, and generate executive reports.
-                            </p>
+                            <div className="flex-1 overflow-hidden">
+                                <h3 className="text-sm font-bold text-white truncate leading-tight" title={agent.role}>
+                                    {agent.role || 'AI Agent'}
+                                </h3>
+                                <p className="text-xs text-[#1C73E8] font-medium truncate leading-tight">
+                                    {agent.name}
+                                </p>
+                            </div>
                         </div>
+
+                        {/* Agent Description */}
+                        {agent?.description && (
+                            <div className="mb-6">
+                                <p className="text-xs text-gray-400 leading-relaxed">
+                                    {agent.description}
+                                </p>
+                            </div>
+                        )}
 
                         {/* Chat Messages */}
                         <div className="space-y-4">

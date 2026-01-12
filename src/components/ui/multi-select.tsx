@@ -1,71 +1,120 @@
 'use client'
 
-import * as React from "react"
-import { Check, ChevronsUpDown } from "lucide-react"
-import { cn } from "@/lib/utils"
+import { useState, useEffect, useRef } from 'react'
+import { createPortal } from 'react-dom'
 
-interface MultiSelectProps {
-    options: string[]
-    selected: string[]
-    onChange: (selected: string[]) => void
-    placeholder?: string
-    className?: string
+interface Option {
+    value: string
+    label: string
 }
 
-export function MultiSelect({ options, selected, onChange, placeholder = "Select...", className }: MultiSelectProps) {
-    const [open, setOpen] = React.useState(false)
-    // Close dropdown on click outside logic could be added, but relying on simple toggle for now.
-    // Ideally use a Popover from a library, but building a simple one here to avoid dependencies if not configured.
-    // Adding a simple backdrop for closing which is a common quick fix.
+interface MultiSelectProps {
+    options: Option[]
+    value: string[]
+    onChange: (value: string[]) => void
+    placeholder?: string
+}
 
-    const toggleSelection = (option: string) => {
-        if (selected.includes(option)) {
-            onChange(selected.filter((item) => item !== option))
-        } else {
-            onChange([...selected, option])
+export function MultiSelect({ options, value, onChange, placeholder = 'Select...' }: MultiSelectProps) {
+    const [isOpen, setIsOpen] = useState(false)
+    const [position, setPosition] = useState({ top: 0, left: 0, width: 0 })
+    const containerRef = useRef<HTMLDivElement>(null)
+
+    // Ensure value is always an array
+    const safeValue = value || []
+
+    // Calculate position for the dropdown
+    useEffect(() => {
+        if (isOpen && containerRef.current) {
+            const rect = containerRef.current.getBoundingClientRect()
+            setPosition({
+                top: rect.bottom + window.scrollY + 4, // 4px gap
+                left: rect.left + window.scrollX,
+                width: rect.width
+            })
         }
+    }, [isOpen])
+
+    // Close on click outside
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+                // Check if click was inside the portal dropdown
+                const dropdown = document.getElementById('multiselect-dropdown')
+                if (dropdown && !dropdown.contains(event.target as Node)) {
+                    setIsOpen(false)
+                }
+            }
+        }
+
+        document.addEventListener('mousedown', handleClickOutside)
+        return () => document.removeEventListener('mousedown', handleClickOutside)
+    }, [])
+
+    const toggleOption = (optionValue: string) => {
+        const newValue = safeValue.includes(optionValue)
+            ? safeValue.filter(v => v !== optionValue)
+            : [...safeValue, optionValue]
+        onChange(newValue)
     }
 
+    const displayValue = safeValue.length > 0
+        ? options.filter(o => safeValue.includes(o.value)).map(o => o.label).join(', ')
+        : placeholder
+
     return (
-        <div className={cn("relative", className)}>
-            {/* Simple Backdrop to close */}
-            {open && <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />}
-
-            <button
-                type="button"
-                onClick={() => setOpen(!open)}
-                className="w-full bg-[#1A1A1A] text-left text-gray-200 text-sm rounded bg-opacity-50 border border-white/10 p-2 outline-none focus:ring-1 focus:ring-blue-500 transition-all flex items-center justify-between"
+        <div className="relative" ref={containerRef}>
+            <div
+                onClick={() => setIsOpen(!isOpen)}
+                className={`w-full bg-white/5 border ${isOpen ? 'border-[#1C73E8]' : 'border-white/10'} rounded-lg px-3 py-2 text-sm text-white cursor-pointer transition-colors flex items-center justify-between group hover:border-white/20`}
             >
-                <span className="truncate">
-                    {selected.length === 0
-                        ? <span className="text-gray-500">{placeholder}</span>
-                        : `${selected.length} selected`
-                    }
+                <span className={`block truncate ${safeValue.length === 0 ? 'text-gray-500' : ''}`}>
+                    {displayValue}
                 </span>
-                <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50" />
-            </button>
+                <svg
+                    className={`w-4 h-4 text-gray-500 transition-transform ${isOpen ? 'rotate-180' : ''}`}
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+            </div>
 
-            {open && (
-                <div className="absolute w-full z-20 mt-1 bg-[#222] border border-white/10 rounded shadow-xl max-h-60 overflow-auto">
+            {isOpen && createPortal(
+                <div
+                    id="multiselect-dropdown"
+                    style={{
+                        position: 'absolute',
+                        top: position.top,
+                        left: position.left,
+                        width: position.width,
+                        zIndex: 9999
+                    }}
+                    className="bg-[#1A1A1A] border border-white/10 rounded-lg shadow-xl max-h-60 overflow-y-auto"
+                >
                     {options.map((option) => (
                         <div
-                            key={option}
-                            onClick={() => toggleSelection(option)}
-                            className={cn(
-                                "flex items-center px-3 py-2 text-sm cursor-pointer hover:bg-white/10 text-gray-200",
-                                selected.includes(option) && "bg-blue-500/20 text-blue-400"
-                            )}
+                            key={option.value}
+                            onClick={() => toggleOption(option.value)}
+                            className={`px-3 py-2 text-sm cursor-pointer flex items-center gap-2 hover:bg-white/5 transition-colors ${safeValue.includes(option.value) ? 'text-white bg-white/5' : 'text-gray-300'
+                                }`}
                         >
-                            <div className={cn(
-                                "mr-2 h-4 w-4 border rounded border-white/30 flex items-center justify-center",
-                                selected.includes(option) && "bg-blue-500 border-blue-500"
-                            )}>
-                                {selected.includes(option) && <Check className="h-3 w-3 text-white" />}
+                            <div className={`w-4 h-4 rounded border flex items-center justify-center transition-colors ${safeValue.includes(option.value)
+                                ? 'bg-[#1C73E8] border-[#1C73E8]'
+                                : 'border-white/20'
+                                }`}>
+                                {safeValue.includes(option.value) && (
+                                    <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                    </svg>
+                                )}
                             </div>
-                            {option}
+                            {option.label}
                         </div>
                     ))}
-                </div>
+                </div>,
+                document.body
             )}
         </div>
     )
