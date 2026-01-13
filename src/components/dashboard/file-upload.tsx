@@ -51,17 +51,12 @@ export function FileUpload({ onFileSelect, loading = false, error = null }: File
             >
                 <Card className="bg-slate-900 border-slate-800">
                     <CardContent className="p-8">
-                        <div className="text-center mb-8">
-                            <h2 className="text-2xl font-bold bg-gradient-to-r from-orange-400 to-red-500 bg-clip-text text-transparent mb-2">
-                                Upload Report Data
-                            </h2>
-                            <p className="text-slate-400">Import your CSV file to generate the dashboard</p>
-                        </div>
+
 
                         <div
                             className={cn(
                                 "relative flex flex-col items-center justify-center w-full h-64 border-2 border-dashed rounded-lg cursor-pointer transition-colors duration-200 ease-in-out",
-                                dragActive ? "border-orange-500 bg-slate-800/50" : "border-slate-700 bg-slate-900 hover:bg-slate-800/30",
+                                dragActive ? "border-[#1C73E8] bg-slate-800/50" : "border-slate-700 bg-slate-900 hover:bg-slate-800/30",
                                 loading && "opacity-50 cursor-not-allowed"
                             )}
                             onDragEnter={handleDrag}
@@ -81,7 +76,7 @@ export function FileUpload({ onFileSelect, loading = false, error = null }: File
 
                             {loading ? (
                                 <div className="flex flex-col items-center gap-4">
-                                    <Loader2 className="w-10 h-10 text-orange-500 animate-spin" />
+                                    <Loader2 className="w-10 h-10 text-[#1C73E8] animate-spin" />
                                     <p className="text-sm text-slate-400 font-medium">Processing File...</p>
                                 </div>
                             ) : error ? (
@@ -93,14 +88,11 @@ export function FileUpload({ onFileSelect, loading = false, error = null }: File
                             ) : (
                                 <div className="flex flex-col items-center gap-4">
                                     <div className="p-4 rounded-full bg-slate-800 border border-slate-700">
-                                        <FileText className="w-8 h-8 text-orange-500" />
+                                        <FileText className="w-8 h-8 text-[#1C73E8]" />
                                     </div>
                                     <div className="text-center">
                                         <p className="text-slate-200 font-medium text-lg">
-                                            Drag and drop your CSV here
-                                        </p>
-                                        <p className="text-sm text-slate-500 mt-1">
-                                            or click to browse files
+                                            Drop CSV File
                                         </p>
                                     </div>
                                 </div>

@@ -116,18 +116,7 @@ export function DesignRequestForm() {
                 <div className="space-y-12">
                     {/* Request Form Section */}
                     <div>
-                        <div className="mb-6 flex items-center justify-between">
-                            <div>
-                                <h1 className="text-2xl font-bold text-white mb-1">Request / Guardrails</h1>
-                                <p className="text-sm text-gray-400">Submit your request. If any information is not applicable, you can leave it blank.</p>
-                            </div>
-                            <div className="bg-[#1C73E8]/10 border border-[#1C73E8]/30 px-3 py-1.5 rounded-md text-[#1C73E8] text-xs font-medium flex items-center gap-2">
-                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
-                                </svg>
-                                Design
-                            </div>
-                        </div>
+
 
                         <form onSubmit={handleSubmit} className="space-y-6">
                             {/* First Row - 5 Fields */}
@@ -135,12 +124,12 @@ export function DesignRequestForm() {
                                 {/* Material Name */}
                                 <div className="space-y-2">
                                     <label className="flex items-center gap-2 text-sm font-medium text-white">
-                                        <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <svg className="w-4 h-4 text-[#1C73E8]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                                         </svg>
                                         Material Name
                                     </label>
-                                    <p className="text-xs text-gray-500">What should we call this request?</p>
+
                                     <input
                                         type="text"
                                         value={formData.materialName}
@@ -161,7 +150,7 @@ export function DesignRequestForm() {
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                                         </svg>
                                     </label>
-                                    <p className="text-xs text-gray-500">What do you want to achieve?</p>
+
                                     <input
                                         type="text"
                                         value={formData.objective}
@@ -174,7 +163,7 @@ export function DesignRequestForm() {
                                 {/* Aspect Ratio */}
                                 <div className="space-y-2">
                                     <label className="flex items-center gap-2 text-sm font-medium text-white">
-                                        <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <svg className="w-4 h-4 text-[#1C73E8]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5a1 1 0 011-1h4a1 1 0 011 1v7a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM14 5a1 1 0 011-1h4a1 1 0 011 1v7a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 16a1 1 0 011-1h4a1 1 0 011 1v3a1 1 0 01-1 1H5a1 1 0 01-1-1v-3zM14 16a1 1 0 011-1h4a1 1 0 011 1v3a1 1 0 01-1 1h-4a1 1 0 01-1-1v-3z" />
                                         </svg>
                                         Aspect Ratio
@@ -182,7 +171,7 @@ export function DesignRequestForm() {
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                                         </svg>
                                     </label>
-                                    <p className="text-xs text-gray-500">Which formats (aspect ratios)?</p>
+
                                     <MultiSelect
                                         options={aspectRatioOptions}
                                         value={formData.aspectRatio}
@@ -199,7 +188,7 @@ export function DesignRequestForm() {
                                         </svg>
                                         File Format
                                     </label>
-                                    <p className="text-xs text-gray-500">How would you like to receive it?</p>
+
                                     <MultiSelect
                                         options={fileFormatOptions}
                                         value={formData.fileFormat}
@@ -216,7 +205,7 @@ export function DesignRequestForm() {
                                         </svg>
                                         Variations
                                     </label>
-                                    <p className="text-xs text-gray-500">How many different versions?</p>
+
                                     <select
                                         value={formData.variations}
                                         onChange={(e) => setFormData({ ...formData, variations: e.target.value })}
@@ -242,7 +231,7 @@ export function DesignRequestForm() {
                                         </svg>
                                         Headline
                                     </label>
-                                    <p className="text-xs text-gray-500">Max. 50 characters</p>
+
                                     <input
                                         type="text"
                                         maxLength={50}
@@ -256,12 +245,12 @@ export function DesignRequestForm() {
                                 {/* Subheadline */}
                                 <div className="space-y-2">
                                     <label className="flex items-center gap-2 text-sm font-medium text-white">
-                                        <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <svg className="w-4 h-4 text-[#1C73E8]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h7" />
                                         </svg>
                                         Subheadline
                                     </label>
-                                    <p className="text-xs text-gray-500">Max. 150 characters</p>
+
                                     <input
                                         type="text"
                                         maxLength={150}
@@ -280,7 +269,7 @@ export function DesignRequestForm() {
                                         </svg>
                                         Call to Action
                                     </label>
-                                    <p className="text-xs text-gray-500">Max. 20 characters</p>
+
                                     <input
                                         type="text"
                                         maxLength={20}
@@ -299,7 +288,7 @@ export function DesignRequestForm() {
                                         </svg>
                                         Required Info
                                     </label>
-                                    <p className="text-xs text-gray-500">What must be included? Max. 20 characters</p>
+
                                     <input
                                         type="text"
                                         maxLength={20}
@@ -321,7 +310,7 @@ export function DesignRequestForm() {
                                         </svg>
                                         Images
                                     </label>
-                                    <p className="text-xs text-gray-500">Upload photos or visual elements to be used</p>
+
                                     <div className="border-2 border-dashed border-white/20 rounded-lg p-6 text-center hover:border-[#1C73E8]/50 transition-colors cursor-pointer">
                                         <p className="text-sm text-gray-400">Upload or drag</p>
                                     </div>
@@ -334,15 +323,15 @@ export function DesignRequestForm() {
                                     />
                                 </div>
 
-                                {/* References (Inspiration) */}
+                                {/* References */}
                                 <div className="space-y-2">
                                     <label className="flex items-center gap-2 text-sm font-medium text-white">
                                         <svg className="w-4 h-4 text-[#1C73E8]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
                                         </svg>
-                                        References (Inspiration)
+                                        References
                                     </label>
-                                    <p className="text-xs text-gray-500">Inspiration screenshots</p>
+
                                     <div className="border-2 border-dashed border-white/20 rounded-lg p-6 text-center hover:border-[#1C73E8]/50 transition-colors cursor-pointer">
                                         <p className="text-sm text-gray-400">Upload or drag</p>
                                     </div>
@@ -363,7 +352,7 @@ export function DesignRequestForm() {
                                         </svg>
                                         Notes & Comments
                                     </label>
-                                    <p className="text-xs text-gray-500">Extra instructions, visual direction, important observations</p>
+
                                     <textarea
                                         value={formData.notes}
                                         onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
@@ -381,7 +370,7 @@ export function DesignRequestForm() {
                                         </svg>
                                         Deadline
                                     </label>
-                                    <p className="text-xs text-gray-500">When does this need to be ready?</p>
+
                                     <div className="space-y-2">
                                         <input
                                             type="date"
@@ -478,18 +467,7 @@ export function DesignRequestForm() {
                 <div className="space-y-12">
                     {/* Video Request Form Section */}
                     <div>
-                        <div className="mb-6 flex items-center justify-between">
-                            <div>
-                                <h1 className="text-2xl font-bold text-white mb-1">Request / Guardrails</h1>
-                                <p className="text-sm text-gray-400">Submit your request. If any information is not applicable, you can leave it blank.</p>
-                            </div>
-                            <div className="bg-[#1C73E8]/10 border border-[#1C73E8]/30 px-3 py-1.5 rounded-md text-[#1C73E8] text-xs font-medium flex items-center gap-2">
-                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                                </svg>
-                                Video
-                            </div>
-                        </div>
+
 
 
 
@@ -499,12 +477,12 @@ export function DesignRequestForm() {
                                 {/* Material Name */}
                                 <div className="space-y-2">
                                     <label className="flex items-center gap-2 text-sm font-medium text-white">
-                                        <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <svg className="w-4 h-4 text-[#1C73E8]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                                         </svg>
                                         Material Name
                                     </label>
-                                    <p className="text-xs text-gray-500">What should we call this request?</p>
+
                                     <input
                                         type="text"
                                         value={videoFormData.materialName}
@@ -525,7 +503,7 @@ export function DesignRequestForm() {
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                                         </svg>
                                     </label>
-                                    <p className="text-xs text-gray-500">What do you want to achieve?</p>
+
                                     <input
                                         type="text"
                                         value={videoFormData.objective}
@@ -538,7 +516,7 @@ export function DesignRequestForm() {
                                 {/* Aspect Ratio */}
                                 <div className="space-y-2">
                                     <label className="flex items-center gap-2 text-sm font-medium text-white">
-                                        <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <svg className="w-4 h-4 text-[#1C73E8]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5a1 1 0 011-1h4a1 1 0 011 1v7a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM14 5a1 1 0 011-1h4a1 1 0 011 1v7a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 16a1 1 0 011-1h4a1 1 0 011 1v3a1 1 0 01-1 1H5a1 1 0 01-1-1v-3zM14 16a1 1 0 011-1h4a1 1 0 011 1v3a1 1 0 01-1 1h-4a1 1 0 01-1-1v-3z" />
                                         </svg>
                                         Aspect Ratio
@@ -546,7 +524,7 @@ export function DesignRequestForm() {
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                                         </svg>
                                     </label>
-                                    <p className="text-xs text-gray-500">Which formats (aspect ratios)?</p>
+
                                     <MultiSelect
                                         options={aspectRatioOptions}
                                         value={videoFormData.aspectRatio}
@@ -563,7 +541,7 @@ export function DesignRequestForm() {
                                         </svg>
                                         File Format
                                     </label>
-                                    <p className="text-xs text-gray-500">How would you like to receive it?</p>
+
                                     <MultiSelect
                                         options={fileFormatOptions}
                                         value={videoFormData.fileFormat}
@@ -580,7 +558,7 @@ export function DesignRequestForm() {
                                         </svg>
                                         Add captions?
                                     </label>
-                                    <p className="text-xs text-gray-500">If so, what language?</p>
+
                                     <select
                                         value={videoFormData.captions}
                                         onChange={(e) => setVideoFormData({ ...videoFormData, captions: e.target.value })}
@@ -607,7 +585,7 @@ export function DesignRequestForm() {
                                             </svg>
                                             Takes
                                         </label>
-                                        <p className="text-xs text-gray-500">Provide takes to be used</p>
+
                                         <textarea
                                             value={videoFormData.takesLink}
                                             onChange={(e) => setVideoFormData({ ...videoFormData, takesLink: e.target.value })}
@@ -623,9 +601,9 @@ export function DesignRequestForm() {
                                             <svg className="w-4 h-4 text-[#1C73E8]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
                                             </svg>
-                                            References (Inspiration)
+                                            References
                                         </label>
-                                        <p className="text-xs text-gray-500">Inspiration screenshots, takes or videos</p>
+
                                         <textarea
                                             value={videoFormData.referenceLinks}
                                             onChange={(e) => setVideoFormData({ ...videoFormData, referenceLinks: e.target.value })}
@@ -646,7 +624,7 @@ export function DesignRequestForm() {
                                                 </svg>
                                                 Instructions for editing
                                             </label>
-                                            <p className="text-xs text-gray-500">Extra instructions or important observations</p>
+
                                         </div>
                                         <textarea
                                             value={videoFormData.instructions}
@@ -665,7 +643,7 @@ export function DesignRequestForm() {
                                         </svg>
                                         Deadline
                                     </label>
-                                    <p className="text-xs text-gray-500">When does this need to be ready?</p>
+
                                     <div className="space-y-2">
                                         <input
                                             type="date"

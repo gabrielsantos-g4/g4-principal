@@ -37,7 +37,7 @@ export async function DashboardHeader() {
     const initials = userName.substring(0, 2).toUpperCase()
 
     return (
-        <div className="flex justify-between items-center px-8 py-6 border-b border-white/10 shrink-0 bg-[#0c0c0c]">
+        <div className="hidden md:flex justify-between items-center px-8 py-6 border-b border-white/10 shrink-0 bg-[#0c0c0c]">
             <div className="flex items-center gap-4">
                 <div className="bg-yellow-900/20 text-yellow-500 text-xs px-2 py-0.5 rounded flex items-center gap-2">
                     <span>⚠️</span> This platform and all agents are in beta.

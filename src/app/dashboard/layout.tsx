@@ -8,7 +8,7 @@ export default function DashboardLayout({
     return (
         <div className="min-h-screen bg-slate-950">
             <Sidebar />
-            <main className="ml-64 bg-slate-950">
+            <main className="ml-0 md:ml-64 bg-slate-950">
                 {children}
             </main>
         </div>
