@@ -49,20 +49,50 @@ export async function signup(formData: FormData) {
         return { error: 'Falha ao criar conta (Dados não retornados)' }
     }
 
-    // 2. Create Profile (Admin Role)
+    // 2. Create Company (Admin Role)
+    // We use the user's name to generate a default company name
+    const { data: companyData, error: companyError } = await adminAuthClient
+        .from('main_empresas')
+        .insert({
+            name: `${name}'s Company`,
+        })
+        .select()
+        .single()
+
+    if (companyError) {
+        console.error('Company creation failed:', companyError)
+        await adminAuthClient.auth.admin.deleteUser(adminData.user.id)
+        return { error: `Falha na criação da empresa: ${companyError.message}` }
+    }
+
+    // 3. Create Profile linked to Company (Admin Role)
     const { error: profileError } = await adminAuthClient
         .from('main_profiles')
         .insert({
             id: adminData.user.id,
+            empresa_id: companyData.id,
             name: name,
+            role: 'admin' // First user is Admin
         })
 
     if (profileError) {
         console.error('Profile creation failed:', profileError)
-        // Rollback user if profile fails? For now, report error.
-        // Ideally we should delete the user here to keep state clean.
+        // Rollback
+        await adminAuthClient.from('main_empresas').delete().eq('id', companyData.id)
         await adminAuthClient.auth.admin.deleteUser(adminData.user.id)
         return { error: `Falha na configuração do perfil: ${profileError.message}` }
+    }
+
+    // 4. Trigger Webhook (Async, non-blocking for user UX but logged)
+    try {
+        await fetch('https://hook.startg4.com/webhook/6f6a4cea-825a-4da8-b501-104c708bb7b8', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ empresa_id: companyData.id })
+        })
+    } catch (whError) {
+        console.error('Webhook trigger failed:', whError)
+        // We do not fail the signup because of webhook failure, just log it.
     }
 
     // 3. Log the user in (Get Session Cookies)

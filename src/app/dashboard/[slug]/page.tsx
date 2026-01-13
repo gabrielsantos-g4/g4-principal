@@ -19,6 +19,7 @@ import { BrianDashboard } from '@/components/strategy/brian-dashboard'
 import { CompetitorList } from '@/components/competitors/competitor-list'
 import { CompetitorForm } from '@/components/competitors/competitor-form'
 import { getCompetitors, getCompetitor } from '@/actions/competitor-actions'
+import { getTrainings } from '@/actions/training-actions'
 
 interface AgentPageProps {
     params: Promise<{
@@ -45,6 +46,15 @@ export default async function AgentPage({ params, searchParams }: AgentPageProps
     const isSupport = slug === 'customer-support'
     const isDesign = slug === 'design-video'
     const isCompetitors = slug === 'competitors-analysis'
+
+    // Get company_id
+    const { data: profile } = await supabase
+        .from('main_profiles')
+        .select('empresa_id')
+        .eq('id', user?.id)
+        .single()
+
+    const companyId = profile?.empresa_id
 
     let outreachData = null
     let hasICP = false
@@ -130,11 +140,13 @@ export default async function AgentPage({ params, searchParams }: AgentPageProps
     }
 
     if (isSupport) {
+        const trainings = await getTrainings()
+
         return (
             <div className="h-screen bg-black text-white font-sans flex flex-col overflow-hidden">
                 <DashboardHeader />
                 <div className="flex flex-1 min-h-0">
-                    <SupportDashboard agent={agent} />
+                    <SupportDashboard agent={agent} trainings={trainings} companyId={companyId} />
                     <RightSidebar
                         key={slug + (chatId || '')}
                         userId={user?.id}

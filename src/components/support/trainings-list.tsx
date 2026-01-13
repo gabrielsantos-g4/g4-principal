@@ -12,36 +12,29 @@ import {
 } from "@/components/ui/dialog";
 import { useState } from "react";
 import { toast } from "sonner";
+import { Training, deleteTraining } from "@/actions/training-actions";
 
-const TRAININGS = [
-    { id: 1, name: "General", date: "Dec 22, 2025 4:37 pm" },
-    { id: 2, name: "Audience Research", date: "Dec 22, 2025 4:38 pm" },
-    { id: 3, name: "Competitors Analysis", date: "Dec 22, 2025 4:39 pm" },
-    { id: 4, name: "Strategy Overview", date: "Dec 22, 2025 4:40 pm" },
-    { id: 5, name: "CEO Advising", date: "Dec 22, 2025 4:40 pm" },
-    { id: 6, name: "Outreach", date: "Dec 22, 2025 4:41 pm" },
-    { id: 7, name: "Messenger", date: "Dec 22, 2025 4:41 pm" },
-    { id: 8, name: "Customer Support", date: "Dec 22, 2025 4:41 pm" },
-    { id: 9, name: "Design & Video", date: "Dec 22, 2025 4:42 pm" },
-    { id: 10, name: "Copy & Messaging", date: "Dec 22, 2025 4:44 pm" },
-    { id: 11, name: "Organic Social", date: "Dec 22, 2025 4:44 pm" },
-    { id: 12, name: "Paid Social", date: "Dec 22, 2025 4:45 pm" },
-    { id: 13, name: "Organic Search (SEO)", date: "Dec 22, 2025 4:45 pm" },
-    { id: 14, name: "Paid Search", date: "Dec 22, 2025 4:46 pm" },
-    { id: 15, name: "Landing Page", date: "Dec 22, 2025 4:47 pm" },
-    { id: 16, name: "CRM", date: "Dec 22, 2025 4:47 pm" },
-    { id: 17, name: "UTM Builder", date: "Dec 22, 2025 4:47 pm" },
-    { id: 18, name: "BI", date: "Dec 22, 2025 4:48 pm" },
-];
+interface TrainingsListProps {
+    trainings: Training[];
+}
 
-export function TrainingsList() {
-    const [selectedTraining, setSelectedTraining] = useState<{ id: number, name: string } | null>(null);
+export function TrainingsList({ trainings }: TrainingsListProps) {
+    const [selectedTraining, setSelectedTraining] = useState<Training | null>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
 
-    const handleDelete = () => {
+    const handleDelete = async () => {
         if (selectedTraining) {
-            toast.success("Training deleted successfully");
-            setSelectedTraining(null);
-            // Here you would call an API/action to actually delete
+            setIsDeleting(true);
+            try {
+                await deleteTraining(selectedTraining.uid);
+                toast.success("Training deleted successfully");
+                setSelectedTraining(null);
+            } catch (error) {
+                toast.error("Error deleting training");
+                console.error(error);
+            } finally {
+                setIsDeleting(false);
+            }
         }
     };
 
@@ -50,6 +43,16 @@ export function TrainingsList() {
         window.open(`https://example.com/files/${name.toLowerCase().replace(/\s+/g, '-')}.pdf`, '_blank');
         toast.info(`Opening ${name}.pdf...`);
     };
+
+    const formatDate = (dateString: string) => {
+        return new Date(dateString).toLocaleDateString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric',
+            hour: 'numeric',
+            minute: 'numeric',
+        });
+    }
 
     return (
         <div className="bg-[#111] p-6 rounded-lg border border-white/5 h-full">
@@ -63,31 +66,37 @@ export function TrainingsList() {
             </div>
 
             <div className="space-y-1">
-                {TRAININGS.map((item) => (
-                    <div key={item.id} className="flex items-center justify-between py-2 px-2 hover:bg-white/5 rounded-md group transition-colors">
-                        <span className="text-sm font-medium text-gray-200 w-1/3 truncate">{item.name}</span>
-                        <span className="text-xs text-gray-500 font-mono w-1/3 text-center">{item.date}</span>
-
-                        <div className="flex items-center justify-end gap-2 w-1/3">
-                            <Button
-                                size="icon"
-                                variant="ghost"
-                                onClick={() => handleView(item.name)}
-                                className="h-7 w-7 bg-[#1C73E8]/10 text-[#1C73E8] hover:bg-[#1C73E8]/20 hover:text-[#1C73E8]"
-                            >
-                                <Eye size={14} />
-                            </Button>
-                            <Button
-                                size="icon"
-                                variant="ghost"
-                                onClick={() => setSelectedTraining(item)}
-                                className="h-7 w-7 text-red-400 hover:bg-red-400/10 hover:text-red-300"
-                            >
-                                <Trash2 size={14} />
-                            </Button>
-                        </div>
+                {trainings.length === 0 ? (
+                    <div className="text-center py-8 text-gray-500 text-sm">
+                        No trainings found. Upload one to get started.
                     </div>
-                ))}
+                ) : (
+                    trainings.map((item) => (
+                        <div key={item.uid} className="flex items-center justify-between py-2 px-2 hover:bg-white/5 rounded-md group transition-colors">
+                            <span className="text-sm font-medium text-gray-200 w-1/3 truncate">{item.titulo}</span>
+                            <span className="text-xs text-gray-500 font-mono w-1/3 text-center">{formatDate(item.created_at)}</span>
+
+                            <div className="flex items-center justify-end gap-2 w-1/3">
+                                <Button
+                                    size="icon"
+                                    variant="ghost"
+                                    onClick={() => handleView(item.titulo)}
+                                    className="h-7 w-7 bg-[#1C73E8]/10 text-[#1C73E8] hover:bg-[#1C73E8]/20 hover:text-[#1C73E8]"
+                                >
+                                    <Eye size={14} />
+                                </Button>
+                                <Button
+                                    size="icon"
+                                    variant="ghost"
+                                    onClick={() => setSelectedTraining(item)}
+                                    className="h-7 w-7 text-red-400 hover:bg-red-400/10 hover:text-red-300"
+                                >
+                                    <Trash2 size={14} />
+                                </Button>
+                            </div>
+                        </div>
+                    ))
+                )}
             </div>
 
             <Dialog open={!!selectedTraining} onOpenChange={(open) => !open && setSelectedTraining(null)}>
@@ -95,7 +104,7 @@ export function TrainingsList() {
                     <DialogHeader>
                         <DialogTitle>Delete Training</DialogTitle>
                         <DialogDescription className="text-gray-400">
-                            Are you sure you want to delete <span className="text-white font-medium">"{selectedTraining?.name}"</span>?
+                            Are you sure you want to delete <span className="text-white font-medium">"{selectedTraining?.titulo}"</span>?
                             <br />This action cannot be undone.
                         </DialogDescription>
                     </DialogHeader>
@@ -110,9 +119,10 @@ export function TrainingsList() {
                         <Button
                             variant="destructive"
                             onClick={handleDelete}
+                            disabled={isDeleting}
                             className="bg-red-500 hover:bg-red-600 text-white"
                         >
-                            Delete
+                            {isDeleting ? "Deleting..." : "Delete"}
                         </Button>
                     </DialogFooter>
                 </DialogContent>
