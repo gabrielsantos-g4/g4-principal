@@ -18,6 +18,7 @@ import { DesignRequestForm } from '@/components/design/design-request-form'
 import { BrianDashboard } from '@/components/strategy/brian-dashboard'
 import { CompetitorList } from '@/components/competitors/competitor-list'
 import { CompetitorForm } from '@/components/competitors/competitor-form'
+
 import { getCompetitors, getCompetitor } from '@/actions/competitor-actions'
 import { getTrainings } from '@/actions/training-actions'
 
@@ -114,27 +115,83 @@ export default async function AgentPage({ params, searchParams }: AgentPageProps
         }
     }
 
+    if (slug === 'organic-social') {
+        return (
+            <div className="h-screen bg-black text-white font-sans flex flex-col overflow-hidden">
+                <DashboardHeader />
+                <MobileDashboardLayout
+                    rightSidebar={
+                        <RightSidebar
+                            key={slug + (chatId || '')}
+                            userId={user?.id}
+                            userName={(user?.user_metadata?.full_name || user?.user_metadata?.name || 'there').split(' ')[0]}
+                            agent={{
+                                name: agent.name,
+                                avatarUrl: agent.avatar,
+                                role: agent.role,
+                                externalUrl: agent.externalUrl,
+                                slug: agent.slug,
+                                description: agent.description
+                            }}
+                        />
+                    }
+                >
+                    <OrganicSocialDashboard />
+                </MobileDashboardLayout>
+            </div>
+        )
+    }
+
+    if (slug === 'organic-search') {
+        return (
+            <div className="h-screen bg-black text-white font-sans flex flex-col overflow-hidden">
+                <DashboardHeader />
+                <MobileDashboardLayout
+                    rightSidebar={
+                        <RightSidebar
+                            key={slug + (chatId || '')}
+                            userId={user?.id}
+                            userName={(user?.user_metadata?.full_name || user?.user_metadata?.name || 'there').split(' ')[0]}
+                            agent={{
+                                name: agent.name,
+                                avatarUrl: agent.avatar,
+                                role: agent.role,
+                                externalUrl: agent.externalUrl,
+                                slug: agent.slug,
+                                description: agent.description
+                            }}
+                        />
+                    }
+                >
+                    <SeoDashboard />
+                </MobileDashboardLayout>
+            </div>
+        )
+    }
+
     if (isCrm) {
         return (
             <div className="h-screen bg-black text-white font-sans flex flex-col overflow-hidden">
                 <DashboardHeader />
-                <div className="flex flex-1 min-h-0">
+                <MobileDashboardLayout
+                    rightSidebar={
+                        <RightSidebar
+                            key={slug + (chatId || '')}
+                            userId={user?.id}
+                            userName={(user?.user_metadata?.full_name || user?.user_metadata?.name || 'there').split(' ')[0]}
+                            agent={{
+                                name: agent.name,
+                                avatarUrl: agent.avatar,
+                                role: agent.role,
+                                externalUrl: agent.externalUrl,
+                                slug: agent.slug,
+                                description: agent.description
+                            }}
+                        />
+                    }
+                >
                     <CrmDashboard agent={agent} />
-                    {/* Right Sidebar with Agent Context */}
-                    <RightSidebar
-                        key={slug + (chatId || '')}
-                        userId={user?.id}
-                        userName={(user?.user_metadata?.full_name || user?.user_metadata?.name || 'there').split(' ')[0]}
-                        agent={{
-                            name: agent.name,
-                            avatarUrl: agent.avatar,
-                            role: agent.role,
-                            externalUrl: agent.externalUrl,
-                            slug: agent.slug,
-                            description: agent.description
-                        }}
-                    />
-                </div>
+                </MobileDashboardLayout>
             </div>
         )
     }
@@ -169,24 +226,54 @@ export default async function AgentPage({ params, searchParams }: AgentPageProps
         return (
             <div className="h-screen bg-black text-white font-sans flex flex-col overflow-hidden">
                 <DashboardHeader />
-                <div className="flex flex-1 min-h-0">
+                <MobileDashboardLayout
+                    rightSidebar={
+                        <RightSidebar
+                            key={slug + (chatId || '')}
+                            userId={user?.id}
+                            userName={(user?.user_metadata?.full_name || user?.user_metadata?.name || 'there').split(' ')[0]}
+                            agent={{
+                                name: agent.name,
+                                avatarUrl: agent.avatar,
+                                role: agent.role,
+                                externalUrl: agent.externalUrl,
+                                slug: agent.slug,
+                                description: agent.description
+                            }}
+                        />
+                    }
+                >
                     <div className="flex-1 min-w-0 overflow-y-auto bg-black p-6">
                         <DesignRequestForm />
                     </div>
-                    <RightSidebar
-                        key={slug + (chatId || '')}
-                        userId={user?.id}
-                        userName={(user?.user_metadata?.full_name || user?.user_metadata?.name || 'there').split(' ')[0]}
-                        agent={{
-                            name: agent.name,
-                            avatarUrl: agent.avatar,
-                            role: agent.role,
-                            externalUrl: agent.externalUrl,
-                            slug: agent.slug,
-                            description: agent.description
-                        }}
-                    />
-                </div>
+                </MobileDashboardLayout>
+            </div>
+        )
+    }
+
+    if (slug === 'strategy-overview') {
+        return (
+            <div className="h-screen bg-black text-white font-sans flex flex-col overflow-hidden">
+                <DashboardHeader />
+                <MobileDashboardLayout
+                    rightSidebar={
+                        <RightSidebar
+                            key={slug + (chatId || '')}
+                            userId={user?.id}
+                            userName={(user?.user_metadata?.full_name || user?.user_metadata?.name || 'there').split(' ')[0]}
+                            agent={{
+                                name: agent.name,
+                                avatarUrl: agent.avatar,
+                                role: agent.role,
+                                externalUrl: agent.externalUrl,
+                                slug: agent.slug,
+                                description: agent.description
+                            }}
+                        />
+                    }
+                >
+                    <StrategyOverviewDashboard agent={agent} />
+                </MobileDashboardLayout>
             </div>
         )
     }
@@ -195,22 +282,25 @@ export default async function AgentPage({ params, searchParams }: AgentPageProps
         return (
             <div className="h-screen bg-black text-white font-sans flex flex-col overflow-hidden">
                 <DashboardHeader />
-                <div className="flex flex-1 min-h-0">
+                <MobileDashboardLayout
+                    rightSidebar={
+                        <RightSidebar
+                            key={slug + (chatId || '')}
+                            userId={user?.id}
+                            userName={(user?.user_metadata?.full_name || user?.user_metadata?.name || 'there').split(' ')[0]}
+                            agent={{
+                                name: agent.name,
+                                avatarUrl: agent.avatar,
+                                role: agent.role,
+                                externalUrl: agent.externalUrl,
+                                slug: agent.slug,
+                                description: agent.description
+                            }}
+                        />
+                    }
+                >
                     <BrianDashboard agent={agent} />
-                    <RightSidebar
-                        key={slug + (chatId || '')}
-                        userId={user?.id}
-                        userName={(user?.user_metadata?.full_name || user?.user_metadata?.name || 'there').split(' ')[0]}
-                        agent={{
-                            name: agent.name,
-                            avatarUrl: agent.avatar,
-                            role: agent.role,
-                            externalUrl: agent.externalUrl,
-                            slug: agent.slug,
-                            description: agent.description
-                        }}
-                    />
-                </div>
+                </MobileDashboardLayout>
             </div>
         )
     }
@@ -219,26 +309,57 @@ export default async function AgentPage({ params, searchParams }: AgentPageProps
         return (
             <div className="h-screen bg-black text-white font-sans flex flex-col overflow-hidden">
                 <DashboardHeader />
-                <div className="flex flex-1 min-h-0">
-                    {/* Competitor List (Left Sidebar) */}
-                    <CompetitorList competitors={competitors} />
-
-                    {/* Main Area - Form or Empty State */}
-                    {selectedCompetitor ? (
-                        <CompetitorForm competitor={selectedCompetitor} />
-                    ) : (
-                        <div className="flex-1 bg-black p-8 flex flex-col items-center justify-center text-center opacity-40">
-                            <div className="w-16 h-16 rounded-full border-2 border-white/20 overflow-hidden mb-4">
-                                <img src={agent.avatar} alt={agent.name} className="w-full h-full object-cover grayscale" />
-                            </div>
-                            <h3 className="text-xl font-bold mb-2">Select a competitor</h3>
-                            <p className="max-w-xs text-sm">Choose a competitor from the list to start analyzing their presence.</p>
+                <MobileDashboardLayout
+                    rightSidebar={
+                        <RightSidebar
+                            key={slug + (competitorId || '')}
+                            userId={user?.id}
+                            userName={(user?.user_metadata?.full_name || user?.user_metadata?.name || 'there').split(' ')[0]}
+                            agent={{
+                                name: agent.name,
+                                avatarUrl: agent.avatar,
+                                role: agent.role,
+                                externalUrl: agent.externalUrl,
+                                slug: agent.slug,
+                                description: agent.description
+                            }}
+                        />
+                    }
+                >
+                    <div className="flex flex-1 md:flex-row flex-col h-full bg-black">
+                        {/* Competitor List (Left Sidebar) */}
+                        <div className="w-full md:w-80 border-r border-white/10 md:h-full flex-none">
+                            <CompetitorList competitors={competitors} />
                         </div>
-                    )}
 
-                    {/* Right Sidebar with Agent Context */}
+                        {/* Main Area - Form or Empty State */}
+                        <div className="flex-1 md:h-full overflow-y-auto">
+                            {selectedCompetitor ? (
+                                <CompetitorForm competitor={selectedCompetitor} />
+                            ) : (
+                                <div className="h-full flex flex-col items-center justify-center text-center opacity-40 p-8">
+                                    <div className="w-16 h-16 rounded-full border-2 border-white/20 overflow-hidden mb-4">
+                                        <img src={agent.avatar} alt={agent.name} className="w-full h-full object-cover grayscale" />
+                                    </div>
+                                    <h3 className="text-xl font-bold mb-2">Select a competitor</h3>
+                                    <p className="max-w-xs text-sm">Choose a competitor from the list to start analyzing their presence.</p>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </MobileDashboardLayout>
+            </div>
+        )
+    }
+
+    return (
+        <div className="h-screen bg-black text-white font-sans flex flex-col overflow-hidden">
+            <DashboardHeader />
+
+            <MobileDashboardLayout
+                rightSidebar={
                     <RightSidebar
-                        key={slug + (competitorId || '')}
+                        key={slug + (chatId || '')} // Re-mount if chat changes
                         userId={user?.id}
                         userName={(user?.user_metadata?.full_name || user?.user_metadata?.name || 'there').split(' ')[0]}
                         agent={{
@@ -249,35 +370,32 @@ export default async function AgentPage({ params, searchParams }: AgentPageProps
                             slug: agent.slug,
                             description: agent.description
                         }}
+                        initialChatId={isAudience ? chatId : undefined}
                     />
-                </div>
-            </div>
-        )
-    }
-
-    return (
-        <div className="h-screen bg-black text-white font-sans flex flex-col overflow-hidden">
-            <DashboardHeader />
-
-            <div className="flex flex-1 min-h-0">
-                {/* Custom Layout for Audience: Left Sidebar for Chats, Right Sidebar becomes current chat */}
+                }
+            >
+                {/* Custom Layout for Audience: Left Sidebar for Chats, Right Sidebar becomes current chat (handled by logic but chat is RightSidebar essentially) */}
+                {/* For Audience, the 'Content' tab should show the Chat List? The Chat tab shows the RightSidebar (Chat). Yes. */}
                 {isAudience ? (
-                    <div className="flex-1 flex min-w-0">
+                    <div className="flex-1 flex flex-col md:flex-row min-w-0 h-full">
                         {/* Left List */}
-                        <ChatList chats={audienceChats || []} />
+                        <div className="w-full md:w-80 border-r border-white/10 md:h-full flex-none">
+                            <ChatList chats={audienceChats || []} />
+                        </div>
 
                         {/* Center/Main Area acting as Empty State if no chat */}
-                        <div className="flex-1 bg-black p-8 flex flex-col items-center justify-center text-center opacity-40">
+                        <div className="hidden md:flex flex-1 bg-black p-8 flex-col items-center justify-center text-center opacity-40">
                             <div className="w-16 h-16 rounded-full border-2 border-white/20 overflow-hidden mb-4">
                                 <img src={agent.avatar} alt={agent.name} className="w-full h-full object-cover grayscale" />
                             </div>
                             <h3 className="text-xl font-bold mb-2">Select a chat</h3>
                             <p className="max-w-xs text-sm">Choose a conversation from the list to start working with {agent.name}.</p>
                         </div>
+                        {/* On Mobile, Content tab shows List. Chat tab shows RightSidebar (which handles the chat UI) */}
                     </div>
                 ) : (
                     // Default View (Outreach, etc)
-                    <div className="flex-1 min-w-0 overflow-y-auto bg-black p-6 flex flex-col">
+                    <div className="flex-1 min-w-0 overflow-y-auto bg-black p-6 flex flex-col h-full">
 
 
                         {/* Conditional Content based on Agent */}
@@ -317,23 +435,7 @@ export default async function AgentPage({ params, searchParams }: AgentPageProps
                         )}
                     </div>
                 )}
-
-                {/* Right Sidebar with Agent Context */}
-                <RightSidebar
-                    key={slug + (chatId || '')} // Re-mount if chat changes
-                    userId={user?.id}
-                    userName={(user?.user_metadata?.full_name || user?.user_metadata?.name || 'there').split(' ')[0]}
-                    agent={{
-                        name: agent.name,
-                        avatarUrl: agent.avatar,
-                        role: agent.role,
-                        externalUrl: agent.externalUrl,
-                        slug: agent.slug,
-                        description: agent.description
-                    }}
-                    initialChatId={isAudience ? chatId : undefined}
-                />
-            </div>
+            </MobileDashboardLayout>
         </div>
     )
 }

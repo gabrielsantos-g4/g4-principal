@@ -10,7 +10,7 @@ import { uploadAndGetReport, saveReport } from '@/actions/report-actions'
 import { SaveReportModal } from '@/components/save-report-modal'
 import { AdsReportData, PriorityAction, AdPerformance } from "@/lib/report-types"
 import { toast } from 'sonner'
-import { Monitor, Pause, TrendingUp, AlertTriangle, Loader2, LayoutDashboard, Settings, Sparkles } from "lucide-react"
+import { Monitor, Pause, TrendingUp, AlertTriangle, Loader2, LayoutDashboard, Settings, Sparkles, Save, UploadCloud } from "lucide-react"
 import { TimeEvolutionChart } from './time-evolution-chart'
 import { AiInsightsView } from './ai-insights-view'
 import { AdsInsightItem } from '@/lib/insights-types'
@@ -96,7 +96,10 @@ export function DashboardClient({ initialData }: { initialData?: AdsReportData |
     const [efficiencyConfig, setEfficiencyConfig] = useState({
         ctr: { min: 0.35, max: 0.55 },     // Percentage values (0.35 means 0.35%)
         cpc: { min: 1.20, max: 2.50 },     // Dollar values
-        cpm: { min: 6.00, max: 10.00 }     // Dollar values
+        cpm: { min: 6.00, max: 10.00 },    // Dollar values
+        spend: { min: 0, max: 0 },         // Dollar values
+        impressions: { min: 0, max: 0 },   // Count values
+        clicks: { min: 0, max: 0 }         // Count values
     })
 
     // Temporary state for the modal inputs
@@ -288,7 +291,7 @@ export function DashboardClient({ initialData }: { initialData?: AdsReportData |
                     <div className="flex bg-white/5 p-1 rounded-lg border border-white/10">
                         <button
                             onClick={() => setView('current')}
-                            className="px-6 py-2 rounded-md text-sm font-medium transition-all bg-orange-600 text-white shadow-lg"
+                            className="px-6 py-2 rounded-md text-sm font-medium transition-all bg-[#1C73E8] hover:bg-[#1557b0] text-white shadow-lg"
                         >
                             New Analysis
                         </button>
@@ -302,24 +305,17 @@ export function DashboardClient({ initialData }: { initialData?: AdsReportData |
                 </div>
 
                 <div className="max-w-7xl mx-auto space-y-8 w-full flex-1 flex flex-col justify-center">
-                    <motion.div
-                        initial={{ opacity: 0, y: -20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="mb-8"
-                    >
-                        <h1 className="text-4xl font-bold mb-2 bg-gradient-to-r from-orange-400 to-red-500 bg-clip-text text-transparent text-center">
-                            Ads Performance Dashboard
-                        </h1>
-                        <p className="text-gray-400 text-lg text-center">Import data to view report</p>
-                    </motion.div>
+
 
                     {loading ? (
                         <div className="flex flex-col items-center justify-center h-64 border-2 border-dashed border-white/10 rounded-lg bg-white/5">
-                            <Loader2 className="w-10 h-10 text-orange-500 animate-spin mb-4" />
+                            <Loader2 className="w-10 h-10 text-[#1C73E8] animate-spin mb-4" />
                             <p className="text-gray-300">{statusMessage}</p>
                         </div>
                     ) : (
-                        <FileUpload onFileSelect={handleFileSelect} loading={loading} error={error} />
+                        <div className="h-[60vh] flex items-center justify-center">
+                            <FileUpload onFileSelect={handleFileSelect} loading={loading} error={error} />
+                        </div>
                     )}
                 </div>
             </div>
@@ -340,7 +336,7 @@ export function DashboardClient({ initialData }: { initialData?: AdsReportData |
                         </button>
                         <button
                             onClick={() => setView('history')}
-                            className="px-6 py-2 rounded-md text-sm font-medium transition-all bg-orange-600 text-white shadow-lg"
+                            className="px-6 py-2 rounded-md text-sm font-medium transition-all bg-[#1C73E8] hover:bg-[#1557b0] text-white shadow-lg"
                         >
                             My Reports
                         </button>
@@ -430,20 +426,20 @@ export function DashboardClient({ initialData }: { initialData?: AdsReportData |
         {
             metric: 'Total Spend',
             value: `$${(overview.total_spent || 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}`,
-            benchmark: '-',
-            status: 'neutral-no-benchmark' as const
+            benchmark: efficiencyConfig.spend.min === 0 ? '-' : `$${efficiencyConfig.spend.min}-$${efficiencyConfig.spend.max}`,
+            status: getMetricStatus(overview.total_spent || 0, efficiencyConfig.spend.min, efficiencyConfig.spend.max, 'higher-better')
         },
         {
             metric: 'Impressions',
             value: (overview.total_impressions || 0).toLocaleString(undefined, { notation: "compact" }),
-            benchmark: '-',
-            status: 'neutral-no-benchmark' as const
+            benchmark: efficiencyConfig.impressions.min === 0 ? '-' : `${efficiencyConfig.impressions.min}-${efficiencyConfig.impressions.max}`,
+            status: getMetricStatus(overview.total_impressions || 0, efficiencyConfig.impressions.min, efficiencyConfig.impressions.max, 'higher-better')
         },
         {
             metric: 'Clicks',
             value: (overview.total_clicks || 0).toLocaleString(),
-            benchmark: '-',
-            status: 'neutral-no-benchmark' as const
+            benchmark: efficiencyConfig.clicks.min === 0 ? '-' : `${efficiencyConfig.clicks.min}-${efficiencyConfig.clicks.max}`,
+            status: getMetricStatus(overview.total_clicks || 0, efficiencyConfig.clicks.min, efficiencyConfig.clicks.max, 'higher-better')
         },
         {
             metric: 'CTR',
@@ -476,7 +472,7 @@ export function DashboardClient({ initialData }: { initialData?: AdsReportData |
                 <div className="flex bg-white/5 p-1 rounded-lg border border-white/10">
                     <button
                         onClick={() => setView('current')}
-                        className="px-6 py-2 rounded-md text-sm font-medium transition-all bg-orange-600 text-white shadow-lg"
+                        className="px-6 py-2 rounded-md text-sm font-medium transition-all bg-[#1C73E8] hover:bg-[#1557b0] text-white shadow-lg"
                     >
                         Current Analysis
                     </button>
@@ -494,10 +490,7 @@ export function DashboardClient({ initialData }: { initialData?: AdsReportData |
                     animate={{ opacity: 1, y: 0 }}
                     className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4"
                 >
-                    <div>
-                        <h1 className="text-4xl font-bold mb-2 bg-gradient-to-r from-orange-400 to-red-500 bg-clip-text text-transparent">
-                            Ads Performance Dashboard
-                        </h1>
+                    <div className="flex items-center gap-4">
                         <div className="flex flex-col">
                             {reportData?.meta?.start_date && reportData?.meta?.end_date ? (
                                 <p className="text-slate-300 text-lg font-medium">
@@ -519,15 +512,17 @@ export function DashboardClient({ initialData }: { initialData?: AdsReportData |
                         </button>
                         <button
                             onClick={() => setSaveModalOpen(true)}
-                            className="px-4 py-2 text-sm font-bold text-white bg-green-600 hover:bg-green-700 border border-green-500 rounded-md transition-colors shadow-sm"
+                            className="p-2 text-white bg-[#1C73E8] hover:bg-[#1557b0] border border-[#1C73E8] rounded-md transition-colors shadow-sm"
+                            title="Save Analysis"
                         >
-                            Save Analysis
+                            <Save size={20} />
                         </button>
                         <button
                             onClick={() => setReportData(null)}
-                            className="px-4 py-2 text-sm text-slate-400 hover:text-white border border-slate-700 rounded-md hover:bg-slate-800 transition-colors"
+                            className="p-2 text-slate-400 hover:text-white border border-slate-700 rounded-md hover:bg-slate-800 transition-colors"
+                            title="Upload New File"
                         >
-                            Upload New File
+                            <UploadCloud size={20} />
                         </button>
                     </div>
                 </motion.div>
@@ -937,7 +932,7 @@ export function DashboardClient({ initialData }: { initialData?: AdsReportData |
 
             {/* Configuration Modal */}
             <Dialog open={configModalOpen} onOpenChange={setConfigModalOpen}>
-                <DialogContent className="sm:max-w-[500px] bg-slate-900 border-slate-700 text-slate-100">
+                <DialogContent className="sm:max-w-[500px] bg-slate-900 border-slate-700 text-slate-100 max-h-[90vh] overflow-y-auto custom-scrollbar">
                     <DialogHeader>
                         <DialogTitle>Efficiency Benchmarks</DialogTitle>
                         <DialogDescription className="text-slate-400">
@@ -1045,6 +1040,86 @@ export function DashboardClient({ initialData }: { initialData?: AdsReportData |
                                 </div>
                             </div>
                         </div>
+                        {/* Spend Config */}
+                        <div className="space-y-3">
+                            <h4 className="font-medium text-sm text-slate-300 border-b border-slate-800 pb-1">Total Spend $ - Higher is better</h4>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-1">
+                                    <label className="text-xs text-gray-500">Min (Below this is Poor)</label>
+                                    <div className="relative">
+                                        <span className="absolute left-3 top-2 text-slate-600 text-xs">$</span>
+                                        <input
+                                            type="number"
+                                            className="w-full bg-slate-950 border border-slate-700 rounded p-2 pl-6 text-sm text-white"
+                                            value={tempConfig.spend.min}
+                                            onChange={(e) => setTempConfig({ ...tempConfig, spend: { ...tempConfig.spend, min: parseFloat(e.target.value) } })}
+                                        />
+                                    </div>
+                                </div>
+                                <div className="space-y-1">
+                                    <label className="text-xs text-gray-500">Max (Above this is Great)</label>
+                                    <div className="relative">
+                                        <span className="absolute left-3 top-2 text-slate-600 text-xs">$</span>
+                                        <input
+                                            type="number"
+                                            className="w-full bg-slate-950 border border-slate-700 rounded p-2 pl-6 text-sm text-white"
+                                            value={tempConfig.spend.max}
+                                            onChange={(e) => setTempConfig({ ...tempConfig, spend: { ...tempConfig.spend, max: parseFloat(e.target.value) } })}
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Impressions Config */}
+                        <div className="space-y-3">
+                            <h4 className="font-medium text-sm text-slate-300 border-b border-slate-800 pb-1">Impressions - Higher is better</h4>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-1">
+                                    <label className="text-xs text-gray-500">Min (Below this is Poor)</label>
+                                    <input
+                                        type="number"
+                                        className="w-full bg-slate-950 border border-slate-700 rounded p-2 text-sm text-white"
+                                        value={tempConfig.impressions.min}
+                                        onChange={(e) => setTempConfig({ ...tempConfig, impressions: { ...tempConfig.impressions, min: parseFloat(e.target.value) } })}
+                                    />
+                                </div>
+                                <div className="space-y-1">
+                                    <label className="text-xs text-gray-500">Max (Above this is Great)</label>
+                                    <input
+                                        type="number"
+                                        className="w-full bg-slate-950 border border-slate-700 rounded p-2 text-sm text-white"
+                                        value={tempConfig.impressions.max}
+                                        onChange={(e) => setTempConfig({ ...tempConfig, impressions: { ...tempConfig.impressions, max: parseFloat(e.target.value) } })}
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Clicks Config */}
+                        <div className="space-y-3">
+                            <h4 className="font-medium text-sm text-slate-300 border-b border-slate-800 pb-1">Clicks - Higher is better</h4>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-1">
+                                    <label className="text-xs text-gray-500">Min (Below this is Poor)</label>
+                                    <input
+                                        type="number"
+                                        className="w-full bg-slate-950 border border-slate-700 rounded p-2 text-sm text-white"
+                                        value={tempConfig.clicks.min}
+                                        onChange={(e) => setTempConfig({ ...tempConfig, clicks: { ...tempConfig.clicks, min: parseFloat(e.target.value) } })}
+                                    />
+                                </div>
+                                <div className="space-y-1">
+                                    <label className="text-xs text-gray-500">Max (Above this is Great)</label>
+                                    <input
+                                        type="number"
+                                        className="w-full bg-slate-950 border border-slate-700 rounded p-2 text-sm text-white"
+                                        value={tempConfig.clicks.max}
+                                        onChange={(e) => setTempConfig({ ...tempConfig, clicks: { ...tempConfig.clicks, max: parseFloat(e.target.value) } })}
+                                    />
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     <div className="flex justify-end gap-2">
@@ -1056,7 +1131,7 @@ export function DashboardClient({ initialData }: { initialData?: AdsReportData |
                         </button>
                         <button
                             onClick={handleSaveConfig}
-                            className="px-4 py-2 text-sm font-bold text-white bg-orange-600 hover:bg-orange-700 rounded-md transition-colors shadow-sm"
+                            className="px-4 py-2 text-sm font-bold text-white bg-[#1C73E8] hover:bg-[#1557b0] rounded-md transition-colors shadow-sm"
                         >
                             Apply Changes
                         </button>

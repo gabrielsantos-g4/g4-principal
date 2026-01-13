@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase'
+import { SidebarWrapper } from './sidebar-wrapper'
 import { signout } from '@/app/login/actions'
 import { LogOut, LayoutDashboard, FileText, User } from 'lucide-react'
 import Link from 'next/link'
@@ -17,7 +18,7 @@ export async function Sidebar() {
     }
 
     return (
-        <aside className="w-64 bg-[#0c0c0c] border-r border-[#1F1F1F] flex flex-col h-screen fixed left-0 top-0 text-white font-sans">
+        <SidebarWrapper>
             {/* Header / Platform Title */}
             <div className="p-6 pb-2">
                 <div className="flex items-center gap-2">
@@ -43,6 +44,6 @@ export async function Sidebar() {
                     </button>
                 </form>
             </div>
-        </aside>
+        </SidebarWrapper>
     )
 }
