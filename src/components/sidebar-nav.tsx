@@ -84,6 +84,16 @@ export function SidebarNav({ agents }: SidebarNavProps) {
                 ))}
             </div>
 
+            {/* BI & DATA ANALYSIS */}
+            <div className="space-y-2">
+                <div className="px-4 text-[10px] font-medium text-slate-500 uppercase tracking-wider">
+                    BI & Data Analysis
+                </div>
+                {agents.filter(a => a.category === 'bi').map(agent => (
+                    <AgentLink key={agent.id} agent={agent} pathname={pathname} />
+                ))}
+            </div>
+
             {/* HUMAN EXPERT */}
             <div className="pt-4 mt-4 border-t border-white/5">
                 <div className="px-4 mb-2 text-[10px] font-bold text-slate-500 uppercase tracking-wider">

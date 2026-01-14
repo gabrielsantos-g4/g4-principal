@@ -79,28 +79,11 @@ export function RightSidebar({ agent, userId, userName = 'there', initialChatId,
             }
 
             // ... existing welcome logic for others ...
-            if (agent && agent.slug !== 'audience-channels' && agent.externalUrl && agent.slug !== 'outreach') {
-                setIsTyping(true)
-                const timer = setTimeout(() => {
-                    setIsTyping(false)
-                    setMessages([{
-                        id: 'welcome',
-                        role: 'assistant',
-                        content: (
-                            <div className="space-y-2">
-                                <p>Hello! The native integration for <strong>{agent.role}</strong> is currently under construction.</p>
-                                <p>
-                                    You can access the provisional version here: <br />
-                                    <a href={agent.externalUrl} target="_blank" rel="noopener noreferrer" className="text-[#1C73E8] underline hover:text-white transition-colors break-all">
-                                        {agent.externalUrl}
-                                    </a>
-                                </p>
-                            </div>
-                        )
-                    }])
-                }, 1000)
-                return () => clearTimeout(timer)
-            }
+            // ... existing welcome logic for others ...
+            /* 
+               Message removed as requested. 
+               The native integration under construction message is no longer needed.
+            */
         }
     }, [agent?.slug, initialChatId])
 

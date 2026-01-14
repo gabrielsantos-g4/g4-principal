@@ -6,7 +6,7 @@ export interface Agent {
     printUrl?: string
     slug: string
     externalUrl?: string
-    category: 'business' | 'strategy' | 'execution' | 'management'
+    category: 'business' | 'strategy' | 'execution' | 'management' | 'bi'
     description: string
 }
 
@@ -27,7 +27,7 @@ export const AGENTS: Agent[] = [
     {
         id: 'ceo-brian',
         name: 'Brian',
-        role: 'CEO & Strategy',
+        role: 'Head of Growth',
         slug: 'ceo-positioning',
         category: 'strategy',
         avatar: 'https://i.pinimg.com/736x/a7/29/ab/a729ab80956a484767add491b6fb4e2c.jpg',
@@ -189,5 +189,16 @@ export const AGENTS: Agent[] = [
         printUrl: 'https://i.pinimg.com/736x/4a/dd/c8/4addc82fa51ca1f0122bb4078fed6988.jpg',
         externalUrl: 'https://utm.startg4.com',
         description: 'I create and organize UTM links across all campaigns.'
+    },
+    // BI & DATA ANALYSIS
+    {
+        id: 'bi-agatha',
+        name: 'Agatha',
+        role: 'BI',
+        slug: 'bi-data-analysis',
+        category: 'bi',
+        avatar: 'https://i.pinimg.com/736x/00/8c/0b/008c0bc9ebc79b1e2c0f8fffe8f81183.jpg', // Reusing Celine's avatar for now
+        externalUrl: 'https://bi.startg4.com',
+        description: 'I monitor your metrics and provide actionable insights for growth.'
     },
 ]
