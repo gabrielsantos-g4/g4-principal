@@ -77,14 +77,14 @@ export function TrainingsList({ trainings }: TrainingsListProps) {
                             <span className="text-xs text-gray-500 font-mono w-1/3 text-center">{formatDate(item.created_at)}</span>
 
                             <div className="flex items-center justify-end gap-2 w-1/3">
-                                <Button
+                                {/* <Button
                                     size="icon"
                                     variant="ghost"
                                     onClick={() => handleView(item.titulo)}
                                     className="h-7 w-7 bg-[#1C73E8]/10 text-[#1C73E8] hover:bg-[#1C73E8]/20 hover:text-[#1C73E8]"
                                 >
                                     <Eye size={14} />
-                                </Button>
+                                </Button> */}
                                 <Button
                                     size="icon"
                                     variant="ghost"

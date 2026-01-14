@@ -1,9 +1,11 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { Copy, ExternalLink, QrCode, Loader2 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Copy, ExternalLink, QrCode, Loader2, Save } from "lucide-react";
 import { useEffect, useState } from "react";
 import { getWhatsAppInstance, WhatsAppInstance } from "@/actions/whatsapp-actions";
+import { getCompanySettings, updateAgentName } from "@/actions/settings-actions";
 import { createBrowserClient } from "@supabase/ssr";
 import { toast } from "sonner";
 
@@ -15,12 +17,22 @@ export function ChannelsConfig({ companyId }: ChannelsConfigProps) {
     const [instance, setInstance] = useState<WhatsAppInstance | null>(null);
     const [loading, setLoading] = useState(true);
     const [generating, setGenerating] = useState(false);
+    const [agentName, setAgentName] = useState("");
+    const [companyName, setCompanyName] = useState("");
+    const [savingName, setSavingName] = useState(false);
 
     useEffect(() => {
         async function fetchInstance() {
             setLoading(true);
-            const data = await getWhatsAppInstance(companyId);
-            setInstance(data);
+            const [waInstance, settings] = await Promise.all([
+                getWhatsAppInstance(companyId),
+                getCompanySettings(companyId)
+            ]);
+            setInstance(waInstance);
+            if (settings) {
+                setAgentName(settings.wpp_name);
+                setCompanyName(settings.name);
+            }
             setLoading(false);
         }
 
@@ -85,6 +97,29 @@ export function ChannelsConfig({ companyId }: ChannelsConfigProps) {
         }
     };
 
+    const handleSaveName = async () => {
+        setSavingName(true);
+        try {
+            await updateAgentName(companyId, agentName);
+            toast.success("Agent name updated successfully");
+        } catch (error) {
+            toast.error("Failed to update agent name");
+        } finally {
+            setSavingName(false);
+        }
+    };
+
+    const handleCopyWebChatUrl = () => {
+        const url = `https://chat.startg4.com/chat?utm_source=${encodeURIComponent(companyName)}`;
+        navigator.clipboard.writeText(url);
+        toast.success("Web Chat URL copied to clipboard");
+    };
+
+    const handleOpenWebChat = () => {
+        const url = `https://chat.startg4.com/chat?utm_source=${encodeURIComponent(companyName)}`;
+        window.open(url, '_blank');
+    };
+
     const showGenerateButton = !instance || instance.status === 'FAILED';
 
     return (
@@ -92,6 +127,31 @@ export function ChannelsConfig({ companyId }: ChannelsConfigProps) {
             <h2 className="text-lg font-bold text-white mb-6">Channels & Connectors</h2>
 
             <div className="space-y-4">
+                {/* Agent Name */}
+                <div className="border border-white/10 rounded-lg p-4 bg-white/[0.02]">
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-4 flex-1">
+                            <span className="font-bold text-white w-24">Agent Name</span>
+                            <div className="flex items-center gap-2 max-w-md w-full">
+                                <Input
+                                    value={agentName}
+                                    onChange={(e) => setAgentName(e.target.value)}
+                                    placeholder="e.g. My Support Agent"
+                                    className="h-8 bg-white/5 border-white/10 text-white"
+                                />
+                                <Button
+                                    onClick={handleSaveName}
+                                    disabled={savingName}
+                                    size="sm"
+                                    className="h-8 bg-white/10 hover:bg-white/20 text-white"
+                                >
+                                    {savingName ? <Loader2 className="w-3 h-3 animate-spin" /> : <Save size={14} />}
+                                </Button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 {/* WhatsApp */}
                 <div className="border border-white/10 rounded-lg p-4 bg-white/[0.02]">
                     <div className="flex items-center justify-between">
@@ -153,7 +213,7 @@ export function ChannelsConfig({ companyId }: ChannelsConfigProps) {
                                         </div>
                                         <div className="flex flex-col">
                                             <span className="text-sm font-medium text-white">Connected</span>
-                                            <span className="text-[10px] text-green-400">Syncing messages...</span>
+                                            <span className="text-[10px] text-green-400">online</span>
                                         </div>
                                     </div>
                                 )
@@ -194,12 +254,19 @@ export function ChannelsConfig({ companyId }: ChannelsConfigProps) {
                             </div>
 
                             <div className="flex-1 space-y-2">
-                                <div className="text-xs text-gray-500 font-mono truncate max-w-[300px]">https://app.startg4.com/chat?utm_source=g4</div>
-                                <div className="flex gap-2">
-                                    <Button variant="secondary" className="bg-blue-50 text-blue-600 hover:bg-blue-100 h-7 text-xs font-bold">
+                                <div className="flex gap-2 items-center h-full pt-2">
+                                    <Button
+                                        variant="secondary"
+                                        className="bg-blue-50 text-blue-600 hover:bg-blue-100 h-7 text-xs font-bold"
+                                        onClick={handleCopyWebChatUrl}
+                                    >
                                         Copy URL <Copy size={12} className="ml-2" />
                                     </Button>
-                                    <Button variant="secondary" className="bg-blue-50 text-blue-600 hover:bg-blue-100 h-7 text-xs font-bold">
+                                    <Button
+                                        variant="secondary"
+                                        className="bg-blue-50 text-blue-600 hover:bg-blue-100 h-7 text-xs font-bold"
+                                        onClick={handleOpenWebChat}
+                                    >
                                         Open page <ExternalLink size={12} className="ml-2" />
                                     </Button>
                                 </div>

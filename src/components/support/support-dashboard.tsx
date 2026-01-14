@@ -22,7 +22,7 @@ export function SupportDashboard({ agent, trainings, companyId }: SupportDashboa
                 <div className="flex flex-col gap-6">
                     <KnowledgeBaseUpload companyId={companyId} />
                     <TrainingsList trainings={trainings} />
-                    <FineTuneForm />
+                    <FineTuneForm companyId={companyId} />
                     <ChannelsConfig companyId={companyId} />
                 </div>
             </div>

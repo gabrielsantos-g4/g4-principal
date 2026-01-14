@@ -1,0 +1,142 @@
+"use client"
+
+import { useState } from "react"
+import { Button } from "@/components/ui/button"
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+} from "@/components/ui/dialog"
+import { Upload, FileSpreadsheet, Loader2 } from "lucide-react"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { uploadContacts } from "@/actions/messenger/contacts-actions"
+import { toast } from "sonner"
+
+export function UploadContactsDialog({ children }: { children: React.ReactNode }) {
+    const [open, setOpen] = useState(false)
+    const [isLoading, setIsLoading] = useState(false)
+    const [file, setFile] = useState<File | null>(null)
+    const [listName, setListName] = useState("")
+
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files && e.target.files[0]) {
+            setFile(e.target.files[0])
+        }
+    }
+
+    const handleUpload = async () => {
+        if (!file || !listName) return
+
+        setIsLoading(true)
+
+        const formData = new FormData()
+        formData.append('file', file)
+        formData.append('list_name', listName)
+
+        try {
+            const result = await uploadContacts(formData)
+
+            if (result.error) {
+                toast.error(result.error)
+            } else {
+                toast.success("Upload realizado com sucesso! O processamento pode levar alguns minutos.")
+                setOpen(false)
+                setFile(null)
+                setListName("")
+            }
+        } catch (error) {
+            toast.error("Ocorreu um erro inesperado.")
+            console.error(error)
+        }
+
+        setIsLoading(false)
+    }
+
+    return (
+        <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger asChild>{children}</DialogTrigger>
+            <DialogContent className="sm:max-w-[425px] bg-[#1a1a1a] border-white/10 text-white">
+                <DialogHeader>
+                    <DialogTitle>Importar Contatos</DialogTitle>
+                    <DialogDescription className="text-gray-400">
+                        Envie um arquivo .xls ou .xlsx para importar contatos.
+                    </DialogDescription>
+                </DialogHeader>
+
+                <div className="grid gap-4 py-4">
+                    <div className="grid w-full items-center gap-1.5">
+                        <Label htmlFor="listName">Nome da Lista</Label>
+                        <Input
+                            id="listName"
+                            placeholder="Ex: Lista de Setembro"
+                            value={listName}
+                            onChange={(e) => setListName(e.target.value)}
+                            className="bg-[#0f0f0f] border-white/10 text-white placeholder:text-gray-600 focus-visible:ring-[#1C73E8]"
+                        />
+                    </div>
+
+                    <div className="grid w-full items-center gap-1.5">
+                        <Label htmlFor="file">Arquivo de Contatos (Excel)</Label>
+                        <div className="relative">
+                            <Input
+                                id="file"
+                                type="file"
+                                accept=".xls,.xlsx"
+                                onChange={handleFileChange}
+                                className="hidden"
+                            />
+                            <Label
+                                htmlFor="file"
+                                className="flex h-10 w-full cursor-pointer rounded-md border border-white/10 bg-[#0f0f0f] px-3 py-2 text-sm items-center text-gray-400 hover:bg-white/5 hover:text-white transition-colors"
+                            >
+                                <Upload className="mr-2 h-4 w-4" />
+                                {file ? "Trocar Arquivo" : "Escolher Arquivo"}
+                            </Label>
+                        </div>
+                    </div>
+                    {file && (
+                        <div className="flex items-center gap-2 text-sm text-green-400 bg-green-500/10 p-2 rounded-md border border-green-500/20">
+                            <FileSpreadsheet className="h-4 w-4" />
+                            <span className="truncate">{file.name}</span>
+                        </div>
+                    )}
+                </div>
+
+                <DialogFooter>
+                    <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => setOpen(false)}
+                        disabled={isLoading}
+                        className="bg-transparent border-white/10 text-gray-300 hover:bg-white/5"
+                    >
+                        Cancelar
+                    </Button>
+                    <Button
+                        type="button"
+                        onClick={handleUpload}
+                        disabled={!file || !listName || isLoading}
+                        className="bg-[#1C73E8] hover:bg-[#1557b0] text-white"
+                    >
+                        {isLoading ? (
+                            <>
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                Importando...
+                            </>
+                        ) : (
+                            <>
+                                <Upload className="mr-2 h-4 w-4" />
+                                Importar
+                            </>
+                        )}
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    )
+}
