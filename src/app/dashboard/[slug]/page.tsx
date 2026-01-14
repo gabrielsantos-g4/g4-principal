@@ -21,6 +21,12 @@ import { CompetitorForm } from '@/components/competitors/competitor-form'
 
 import { getCompetitors, getCompetitor } from '@/actions/competitor-actions'
 import { getTrainings } from '@/actions/training-actions'
+import { BiDashboard } from '@/components/bi/bi-dashboard'
+
+import { MobileDashboardLayout } from '@/components/mobile-dashboard-layout'
+import { OrganicSocialDashboard } from '@/components/organic-social/organic-social-dashboard'
+import { SeoDashboard } from '@/components/organic-search/seo-dashboard'
+import { StrategyOverviewDashboard } from '@/components/strategy/strategy-overview-dashboard'
 
 interface AgentPageProps {
     params: Promise<{
@@ -47,6 +53,7 @@ export default async function AgentPage({ params, searchParams }: AgentPageProps
     const isSupport = slug === 'customer-support'
     const isDesign = slug === 'design-video'
     const isCompetitors = slug === 'competitors-analysis'
+    const isBi = slug === 'bi-data-analysis'
 
     // Get company_id
     const { data: profile } = await supabase
@@ -75,6 +82,33 @@ export default async function AgentPage({ params, searchParams }: AgentPageProps
 
     if (isAudience) {
         audienceChats = await getChats()
+    }
+
+    if (isBi) {
+        return (
+            <div className="h-screen bg-black text-white font-sans flex flex-col overflow-hidden">
+                <DashboardHeader />
+                <MobileDashboardLayout
+                    rightSidebar={
+                        <RightSidebar
+                            key={slug + (chatId || '')}
+                            userId={user?.id}
+                            userName={(user?.user_metadata?.full_name || user?.user_metadata?.name || 'there').split(' ')[0]}
+                            agent={{
+                                name: agent.name,
+                                avatarUrl: agent.avatar,
+                                role: agent.role,
+                                externalUrl: agent.externalUrl,
+                                slug: agent.slug,
+                                description: agent.description
+                            }}
+                        />
+                    }
+                >
+                    <BiDashboard />
+                </MobileDashboardLayout>
+            </div>
+        )
     }
 
     if (isCompetitors) {

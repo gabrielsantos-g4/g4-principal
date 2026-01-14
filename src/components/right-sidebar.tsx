@@ -274,28 +274,30 @@ export function RightSidebar({ agent, userId, userName = 'there', initialChatId,
             <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">
                 {agent ? (
                     <>
-                        <div className="bg-[#1A1A1A] p-3 rounded-xl border border-white/5 flex items-center gap-3 mb-6">
-                            <div className="w-10 h-10 rounded-full border-2 border-[#1C73E8] overflow-hidden flex-shrink-0">
-                                <img src={agent.avatarUrl} alt={agent.name} className="w-full h-full object-cover" />
+                        <div className="bg-[#1A1A1A] p-4 rounded-xl border border-white/5 flex flex-col gap-3 mb-6">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-full border-2 border-[#1C73E8] overflow-hidden flex-shrink-0">
+                                    <img src={agent.avatarUrl} alt={agent.name} className="w-full h-full object-cover" />
+                                </div>
+                                <div className="flex-1 overflow-hidden">
+                                    <p className="text-xl font-bold text-white leading-none">
+                                        {agent.name}
+                                    </p>
+                                    <h3 className="text-xs font-bold text-[#1C73E8] mt-1 leading-none uppercase tracking-wide">
+                                        {agent.role || 'AI Agent'}
+                                    </h3>
+                                </div>
                             </div>
-                            <div className="flex-1 overflow-hidden">
-                                <h3 className="text-sm font-bold text-white truncate leading-tight" title={agent.role}>
-                                    {agent.role || 'AI Agent'}
-                                </h3>
-                                <p className="text-xs text-[#1C73E8] font-medium truncate leading-tight">
-                                    {agent.name}
-                                </p>
-                            </div>
-                        </div>
 
-                        {/* Agent Description */}
-                        {agent?.description && (
-                            <div className="mb-6">
-                                <p className="text-xs text-gray-400 leading-relaxed">
-                                    {agent.description}
-                                </p>
-                            </div>
-                        )}
+                            {/* Agent Description */}
+                            {agent?.description && (
+                                <div className="pt-2 border-t border-white/5">
+                                    <p className="text-xs text-gray-400 leading-relaxed">
+                                        {agent.description}
+                                    </p>
+                                </div>
+                            )}
+                        </div>
 
                         {/* Chat Messages */}
                         <div className="space-y-4">

@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { AGENTS } from '@/lib/agents'
 import { SidebarNav } from './sidebar-nav'
+import { UserProfileMenu } from './user-profile-menu'
 
 export async function Sidebar() {
     const supabase = await createClient()
@@ -16,6 +17,25 @@ export async function Sidebar() {
     if (!user) {
         redirect('/login')
     }
+
+    // 2. Get Profile Data
+    const { data: profile } = await supabase
+        .from('main_profiles')
+        .select(`
+            name,
+            role,
+            main_empresas (
+                name
+            )
+        `)
+        .eq('id', user?.id)
+        .single()
+
+    const companies = profile?.main_empresas
+    const companyInfo = Array.isArray(companies) ? companies[0] : companies
+    const companyName = companyInfo?.name || 'My Company'
+    const userName = profile?.name || user?.email || 'User'
+    const initials = userName.substring(0, 2).toUpperCase()
 
     return (
         <SidebarWrapper>
@@ -32,17 +52,13 @@ export async function Sidebar() {
             {/* Navigation (Client Component) */}
             <SidebarNav agents={AGENTS} />
 
-            {/* Footer / Logout */}
+            {/* Footer / User Profile */}
             <div className="p-4 border-t border-slate-800">
-                <form action={signout}>
-                    <button
-                        type="submit"
-                        className="w-full flex items-center gap-3 px-4 py-2 text-red-400 hover:text-red-300 hover:bg-red-900/20 rounded-lg transition-colors"
-                    >
-                        <LogOut size={20} />
-                        <span>Logout</span>
-                    </button>
-                </form>
+                <UserProfileMenu
+                    userName={userName}
+                    companyName={companyName}
+                    initials={initials}
+                />
             </div>
         </SidebarWrapper>
     )

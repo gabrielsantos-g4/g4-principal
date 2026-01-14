@@ -2,10 +2,10 @@
 export function CrmStats() {
     return (
         <div className="grid grid-cols-5 gap-3 mb-4">
-            <StatCard label="Contacts in the list" value="63" />
-            <StatCard label="Money at stake" value="$ 13,320" />
-            <StatCard label="Contact today" value="0" />
-            <StatCard label="Contact tomorrow" value="0" />
+            <StatCard label="Contacts" value="63" />
+            <StatCard label="Pipeline" value="$ 13,320" />
+            <StatCard label="Today" value="0" />
+            <StatCard label="Tomorrow" value="0" />
             <StatCard label="Overdue" value="15" />
         </div>
     );

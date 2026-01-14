@@ -29,49 +29,47 @@ export function LoginForm() {
     }
 
     return (
-        <Card className="w-full max-w-sm bg-black border-white/10 text-slate-100 shadow-2xl">
-            <CardHeader className="space-y-6 pt-8">
+        <Card className="w-full max-w-sm bg-black border-white/10 text-slate-100 shadow-2xl p-4">
+            <CardHeader className="space-y-8 pt-6 pb-2">
                 {/* Branding */}
-                <div className="flex flex-col items-center gap-1 mb-2">
-                    <span className="font-bold text-3xl tracking-tight text-white">g4</span>
-                    <span className="text-[10px] leading-tight text-gray-400 font-medium uppercase tracking-wider text-center">
-                        MULTI-B2B <br /> AI AGENT PLATFORM
-                    </span>
+                <div className="flex flex-col items-center justify-center mb-4">
+                    <span className="font-bold text-4xl tracking-tighter text-white">g4</span>
                 </div>
 
-                <div className="space-y-1">
-                    <CardTitle className="text-xl text-center font-bold text-white">Bem-vindo de volta</CardTitle>
-                    <CardDescription className="text-center text-gray-500">
-                        Entre com suas credenciais para acessar
+                <div className="space-y-2">
+                    <CardTitle className="text-2xl text-center font-bold text-white tracking-tight">Welcome back</CardTitle>
+                    <CardDescription className="text-center text-gray-500 text-sm">
+                        Enter your credentials to access your account
                     </CardDescription>
                 </div>
             </CardHeader>
             <form onSubmit={handleSubmit}>
-                <CardContent className="space-y-4">
+                <CardContent className="space-y-5">
                     <div className="space-y-2">
-                        <Label htmlFor="email" className="text-xs font-semibold text-gray-300 uppercase tracking-wide">Email</Label>
+                        <Label htmlFor="email" className="text-xs font-medium text-gray-400 uppercase tracking-wider">Email</Label>
                         <Input
                             id="email"
                             name="email"
                             type="email"
-                            placeholder="seu@email.com"
+                            placeholder="name@example.com"
                             required
-                            className="bg-white/5 border-white/10 text-white placeholder:text-gray-600 focus:border-[#1C73E8] transition-colors h-11"
+                            className="bg-white/5 border-white/10 text-white placeholder:text-gray-600 focus:border-[#1C73E8] focus:ring-0 transition-all h-11 rounded-md"
                         />
                     </div>
                     <div className="space-y-2">
                         <div className="flex items-center justify-between">
-                            <Label htmlFor="password" className="text-xs font-semibold text-gray-300 uppercase tracking-wide">Senha</Label>
-                            <Link href="/forgot-password" className="text-xs text-[#1C73E8] hover:text-white transition-colors">
-                                Esqueci minha senha
+                            <Label htmlFor="password" className="text-xs font-medium text-gray-400 uppercase tracking-wider">Password</Label>
+                            <Link href="/forgot-password" className="text-xs text-[#1C73E8] hover:text-[#1C73E8]/80 transition-colors">
+                                Forgot potential?
                             </Link>
                         </div>
                         <Input
                             id="password"
                             name="password"
                             type="password"
+                            placeholder="••••••"
                             required
-                            className="bg-white/5 border-white/10 text-white focus:border-[#1C73E8] transition-colors h-11"
+                            className="bg-white/5 border-white/10 text-white focus:border-[#1C73E8] focus:ring-0 transition-all h-11 rounded-md"
                         />
                     </div>
                     {error && (
@@ -80,15 +78,15 @@ export function LoginForm() {
                         </div>
                     )}
                 </CardContent>
-                <CardFooter className="flex flex-col space-y-4 pt-2 pb-8">
-                    <Button className="w-full bg-[#1C73E8] hover:bg-[#1C73E8]/90 text-white h-11 font-bold" type="submit" disabled={loading}>
+                <CardFooter className="flex flex-col space-y-6 pt-4 pb-8">
+                    <Button className="w-full bg-[#1C73E8] hover:bg-[#1557B0] text-white h-11 font-semibold text-sm tracking-wide rounded-md transition-all" type="submit" disabled={loading}>
                         {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                        Entrar
+                        Sign in
                     </Button>
                     <div className="text-sm text-center text-gray-500">
-                        Não tem uma conta?{' '}
-                        <Link href="/signup" className="text-[#1C73E8] hover:text-white transition-colors font-semibold">
-                            Criar conta
+                        Don&apos;t have an account?{' '}
+                        <Link href="/signup" className="text-[#1C73E8] hover:text-[#1C73E8]/80 transition-colors font-medium">
+                            Sign up
                         </Link>
                     </div>
                 </CardFooter>

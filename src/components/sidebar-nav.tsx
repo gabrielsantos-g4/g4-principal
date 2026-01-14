@@ -74,10 +74,10 @@ export function SidebarNav({ agents }: SidebarNavProps) {
                         </div>
                         <div className="flex flex-col">
                             <span className="text-sm font-bold text-[#FFD700] group-hover:text-[#FFE55C] transition-colors">
-                                {agent.role}
+                                {agent.name}
                             </span>
                             <span className="text-xs text-slate-400 group-hover:text-slate-300">
-                                {agent.name}
+                                {agent.role}
                             </span>
                         </div>
                     </Link>
@@ -149,11 +149,11 @@ function AgentLink({ agent, pathname }: { agent: Agent, pathname: string }) {
             <div className="flex flex-col overflow-hidden">
                 <span className={`truncate text-sm font-medium transition-colors ${isActive ? 'text-white' : 'text-slate-200'
                     }`}>
-                    {agent.role}
+                    {agent.name}
                 </span>
                 <span className={`truncate text-xs transition-colors ${isActive ? 'text-[#1C73E8]' : 'text-slate-500 group-hover:text-slate-400'
                     }`}>
-                    {agent.name}
+                    {agent.role}
                 </span>
             </div>
         </Link>
