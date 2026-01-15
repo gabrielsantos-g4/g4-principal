@@ -8,13 +8,14 @@ import { createClient } from '@/lib/supabase'
 
 import { getICP } from '@/actions/outreach-icp-actions'
 import { ICPForm } from '@/components/outreach/icp-form'
+import { OutreachTabs } from '@/components/outreach/outreach-tabs'
 
 import { getChats } from '@/actions/audience-actions'
 import { ChatList } from '@/components/audience/chat-list'
 
 import { CrmDashboard } from '@/components/crm/crm-dashboard'
 import { SupportDashboard } from '@/components/support/support-dashboard'
-import { DesignRequestForm } from '@/components/design/design-request-form'
+import { DesignVideoTabs } from '@/components/design/design-video-tabs'
 import { BrianDashboard } from '@/components/strategy/brian-dashboard'
 import { CompetitorList } from '@/components/competitors/competitor-list'
 import { CompetitorForm } from '@/components/competitors/competitor-form'
@@ -27,6 +28,7 @@ import { MobileDashboardLayout } from '@/components/mobile-dashboard-layout'
 import { OrganicSocialDashboard } from '@/components/organic-social/organic-social-dashboard'
 import { SeoDashboard } from '@/components/organic-search/seo-dashboard'
 import { StrategyOverviewDashboard } from '@/components/strategy/strategy-overview-dashboard'
+import { NotesScratchpad } from '@/components/common/notes-scratchpad'
 
 interface AgentPageProps {
     params: Promise<{
@@ -38,13 +40,42 @@ export default async function AgentPage({ params, searchParams }: AgentPageProps
     const { slug } = await params
     const { chatId, competitorId } = await searchParams
     const agent = AGENTS.find(a => a.slug === slug)
+    const isOrchestrator = slug === 'orchestrator'
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (isOrchestrator) {
+        return (
+            <div className="h-screen bg-black text-white font-sans flex flex-col overflow-hidden">
+                <DashboardHeader />
+                <MobileDashboardLayout
+                    rightSidebar={
+                        <RightSidebar
+                            key="orchestrator"
+                            userId={user?.id}
+                            userName={(user?.user_metadata?.full_name || user?.user_metadata?.name || 'there').split(' ')[0]}
+                            agent={{
+                                name: 'Gabriel Santos',
+                                avatarUrl: '/gabriel-santos.png',
+                                role: 'Orchestrator',
+                                externalUrl: '',
+                                slug: 'orchestrator',
+                                description: 'Orchestrator'
+                            }}
+                        />
+                    }
+                >
+                    <div className="hidden md:flex flex-1 bg-black overflow-hidden">
+                        <NotesScratchpad agentName="Orchestrator" />
+                    </div>
+                </MobileDashboardLayout>
+            </div>
+        )
+    }
 
     if (!agent) {
         redirect('/dashboard')
     }
-
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
 
     // Agent-specific data fetching
     const isOutreach = slug === 'outreach'
@@ -148,6 +179,8 @@ export default async function AgentPage({ params, searchParams }: AgentPageProps
             }
         }
     }
+
+
 
     if (slug === 'organic-social') {
         return (
@@ -278,7 +311,7 @@ export default async function AgentPage({ params, searchParams }: AgentPageProps
                     }
                 >
                     <div className="flex-1 min-w-0 overflow-y-auto bg-black p-6">
-                        <DesignRequestForm />
+                        <DesignVideoTabs />
                     </div>
                 </MobileDashboardLayout>
             </div>
@@ -413,17 +446,13 @@ export default async function AgentPage({ params, searchParams }: AgentPageProps
                 {isAudience ? (
                     <div className="flex-1 flex flex-col md:flex-row min-w-0 h-full">
                         {/* Left List */}
-                        <div className="w-full md:w-80 border-r border-white/10 md:h-full flex-none">
+                        <div className="w-full md:w-80 border-r border-white/10 h-full flex-none flex flex-col overflow-hidden">
                             <ChatList chats={audienceChats || []} />
                         </div>
 
-                        {/* Center/Main Area acting as Empty State if no chat */}
-                        <div className="hidden md:flex flex-1 bg-black p-8 flex-col items-center justify-center text-center opacity-40">
-                            <div className="w-16 h-16 rounded-full border-2 border-white/20 overflow-hidden mb-4">
-                                <img src={agent.avatar} alt={agent.name} className="w-full h-full object-cover grayscale" />
-                            </div>
-                            <h3 className="text-xl font-bold mb-2">Select a chat</h3>
-                            <p className="max-w-xs text-sm">Choose a conversation from the list to start working with {agent.name}.</p>
+                        {/* Center/Main Area - Notes */}
+                        <div className="hidden md:flex flex-1 bg-black overflow-hidden relative">
+                            <NotesScratchpad agentName={agent.name} />
                         </div>
                         {/* On Mobile, Content tab shows List. Chat tab shows RightSidebar (which handles the chat UI) */}
                     </div>
@@ -434,23 +463,10 @@ export default async function AgentPage({ params, searchParams }: AgentPageProps
 
                         {/* Conditional Content based on Agent */}
                         {isOutreach ? (
-                            <div className="w-full max-w-[1400px] mx-auto flex flex-col gap-8">
-                                {/* Always show Form. Key forces reset when data loads/changes */}
-                                <ICPForm
-                                    key={hasICP ? 'edit' : 'create'}
-                                    initialData={hasICP ? (await getICP()) : null}
-                                />
-
-                                {hasICP && (
-                                    <>
-                                        <div className="border-t border-white/10 my-4" />
-                                        <div className="mb-4 flex items-center justify-between">
-                                            <p className="text-gray-400 text-sm">Manage your prospecting list and track engagement.</p>
-                                        </div>
-                                        <ProspectsGrid data={outreachData || []} />
-                                    </>
-                                )}
-                            </div>
+                            <OutreachTabs
+                                initialIcp={hasICP ? await getICP() : null}
+                                initialProspects={outreachData || []}
+                            />
                         ) : (
                             // Default Print View for other agents
                             <div className="w-full max-w-5xl mx-auto rounded-lg overflow-hidden border border-white/10 shadow-2xl">

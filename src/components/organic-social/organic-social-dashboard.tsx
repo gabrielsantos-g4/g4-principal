@@ -12,8 +12,8 @@ export function OrganicSocialDashboard() {
                 <div className="flex justify-center">
                     <TabsList className="bg-white/5 border border-white/10">
                         <TabsTrigger value="planning" className="data-[state=active]:bg-[#1C73E8] data-[state=active]:text-white">Planning</TabsTrigger>
-                        <TabsTrigger value="schedule" className="data-[state=active]:bg-[#1C73E8] data-[state=active]:text-white">Schedule</TabsTrigger>
-                        <TabsTrigger value="report" className="data-[state=active]:bg-[#1C73E8] data-[state=active]:text-white">Report</TabsTrigger>
+                        <TabsTrigger value="execution" className="data-[state=active]:bg-[#1C73E8] data-[state=active]:text-white">Execution</TabsTrigger>
+                        <TabsTrigger value="reports" className="data-[state=active]:bg-[#1C73E8] data-[state=active]:text-white">Reports</TabsTrigger>
                     </TabsList>
                 </div>
 
@@ -21,11 +21,11 @@ export function OrganicSocialDashboard() {
                     <PlanningView />
                 </TabsContent>
 
-                <TabsContent value="schedule" className="space-y-4">
+                <TabsContent value="execution" className="space-y-4">
                     <ScheduleView />
                 </TabsContent>
 
-                <TabsContent value="report" className="space-y-4">
+                <TabsContent value="reports" className="space-y-4">
                     <ReportView />
                 </TabsContent>
             </Tabs>

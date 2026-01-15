@@ -55,7 +55,7 @@ export function ChatList({ chats }: ChatListProps) {
     }
 
     return (
-        <div className="w-[300px] flex flex-col h-full border-r border-white/10 bg-black/40">
+        <div className="w-full flex flex-col h-full bg-black/40">
             {/* Header / New Chat */}
             <div className="p-4 border-b border-white/10">
                 <button

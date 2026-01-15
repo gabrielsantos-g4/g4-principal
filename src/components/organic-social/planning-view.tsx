@@ -1,76 +1,92 @@
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { CalendarDays, MessageSquare, Share2, ThumbsUp } from "lucide-react"
+'use client'
 
-const dummyPlans = [
+import { Card, CardContent } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { MessageSquareText, Lightbulb, Copy } from "lucide-react"
+
+const IDEAS_AND_SCRIPTS = [
     {
         id: 1,
-        title: "LinkedIn Brand Awareness",
-        status: "Active",
-        period: "Jan 1 - Jan 31",
-        description: "Focus on establishing thought leadership through daily industry insights and team culture showcasing.",
-        stats: { posts: 12, engagement: "High" }
+        type: "Idea",
+        title: "Behind the Scenes - Office Tour",
+        content: "Show the new studio setup and introduce the video team. Focus on the high-tech equipment to imply quality.",
+        date: "Today"
     },
     {
         id: 2,
-        title: "Instagram Product Launch",
-        status: "Draft",
-        period: "Feb 1 - Feb 14",
-        description: "Visual campaign for the new feature rollout. Mix of Reels and Carousels.",
-        stats: { posts: 8, engagement: "Pending" }
+        type: "Script",
+        title: "Product Launch Teaser Hook",
+        content: "\"Stop scrolling if you want to double your leads in 2026. Here is the exact strategy we used...\"",
+        date: "Yesterday"
     },
     {
         id: 3,
-        title: "Twitter Community Management",
-        status: "Review",
-        period: "Ongoing",
-        description: "Daily engagement with community replies and trending topic participation.",
-        stats: { posts: 45, engagement: "Medium" }
+        type: "Idea",
+        title: "Customer Success Story - TechCorp",
+        content: "Interview John from TechCorp about how they reduced churn by 15%. Key takeaway: personalization at scale.",
+        date: "2 days ago"
+    },
+    {
+        id: 4,
+        type: "Script",
+        title: "Objection Handling - Pricing",
+        content: "\"Expensive? Let's break down the cost of NOT solving this problem. You are losing $5k/month on inefficiencies...\"",
+        date: "Last week"
+    },
+    {
+        id: 5,
+        type: "Idea",
+        title: "Trend Jacking - AI News",
+        content: "React to the latest OpenAI announcement. Position our product as the bridge between raw AI and business utility.",
+        date: "Last week"
     }
 ]
 
 export function PlanningView() {
     return (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {dummyPlans.map((plan) => (
-                <Card key={plan.id} className="bg-white/5 border-white/10 hover:border-white/20 transition-all">
-                    <CardHeader>
-                        <div className="flex justify-between items-start mb-2">
-                            <Badge variant={plan.status === 'Active' ? 'default' : 'secondary'} className={plan.status === 'Active' ? 'bg-[#1C73E8]' : ''}>
-                                {plan.status}
-                            </Badge>
-                            <span className="text-xs text-slate-400 flex items-center gap-1">
-                                <CalendarDays className="w-3 h-3" />
-                                {plan.period}
-                            </span>
-                        </div>
-                        <CardTitle className="text-lg text-white">{plan.title}</CardTitle>
-                        <CardDescription className="text-slate-400 mt-2 line-clamp-3">
-                            {plan.description}
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="flex items-center gap-4 text-sm text-slate-400 mt-2 pt-4 border-t border-white/5">
-                            <div className="flex items-center gap-1">
-                                <MessageSquare className="w-4 h-4" />
-                                <span>{plan.stats.posts} Posts</span>
-                            </div>
-                            <div className="flex items-center gap-1">
-                                <ThumbsUp className="w-4 h-4" />
-                                <span>{plan.stats.engagement} impact</span>
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
-            ))}
+        <div className="space-y-6">
+            <div className="flex justify-between items-center">
+                <h3 className="text-xl font-bold text-white">Ideas & Scripts</h3>
+                <button className="bg-[#1C73E8] px-4 py-2 rounded-lg text-sm font-medium text-white hover:bg-[#1557b0] transition-colors flex items-center gap-2">
+                    <Lightbulb className="w-4 h-4" />
+                    New Idea
+                </button>
+            </div>
 
-            {/* Add New Plan Card */}
-            <button className="h-full min-h-[200px] rounded-xl border-2 border-dashed border-white/10 flex flex-col items-center justify-center gap-2 hover:bg-white/5 transition-all group">
-                <div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center text-slate-400 group-hover:text-white group-hover:bg-[#1C73E8] transition-all">
-                    <span className="text-2xl">+</span>
-                </div>
-                <span className="text-slate-400 font-medium group-hover:text-white">New Strategy Plan</span>
-            </button>
+            <div className="grid gap-4">
+                {IDEAS_AND_SCRIPTS.map((item) => (
+                    <Card key={item.id} className="bg-white/5 border-white/10 hover:border-white/20 transition-all group">
+                        <CardContent className="p-6">
+                            <div className="flex justify-between items-start gap-4">
+                                <div className="space-y-2 flex-1">
+                                    <div className="flex items-center gap-2">
+                                        <Badge
+                                            variant="secondary"
+                                            className={`${item.type === 'Idea'
+                                                    ? 'bg-yellow-500/10 text-yellow-400 hover:bg-yellow-500/20'
+                                                    : 'bg-purple-500/10 text-purple-400 hover:bg-purple-500/20'
+                                                } border-0 rounded-md px-2 py-0.5`}
+                                        >
+                                            <div className="flex items-center gap-1.5">
+                                                {item.type === 'Idea' ? <Lightbulb className="w-3 h-3" /> : <MessageSquareText className="w-3 h-3" />}
+                                                {item.type}
+                                            </div>
+                                        </Badge>
+                                        <span className="text-sm text-slate-500">{item.date}</span>
+                                    </div>
+                                    <h4 className="text-lg font-semibold text-white">{item.title}</h4>
+                                    <p className="text-slate-300 text-sm leading-relaxed">{item.content}</p>
+                                </div>
+                                <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <button className="p-2 hover:bg-white/10 rounded-lg text-slate-400 hover:text-white" title="Copy to clipboard">
+                                        <Copy className="w-4 h-4" />
+                                    </button>
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+                ))}
+            </div>
         </div>
     )
 }

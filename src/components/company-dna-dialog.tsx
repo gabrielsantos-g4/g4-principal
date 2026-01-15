@@ -84,7 +84,7 @@ export function CompanyDNADialog({ company, children }: CompanyDNAProps) {
 
                     {/* ICP */}
                     <div className="space-y-2">
-                        <label className="text-xs font-bold text-gray-500 uppercase tracking-wider block">Ideal Customer Profile (ICP)</label>
+                        <label className="text-xs font-bold text-gray-500 uppercase tracking-wider block">About the Company / Product</label>
                         <textarea
                             name="icp"
                             defaultValue={company?.ideal_customer_profile || ''}
@@ -92,7 +92,7 @@ export function CompanyDNADialog({ company, children }: CompanyDNAProps) {
                             rows={5}
                             className="w-full bg-white/5 border border-white/10 rounded p-3 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-white/30 transition-colors resize-none"
                         />
-                        <p className="text-[10px] text-gray-500">Describe your ideal customer: size, industry, role, pain points, budget</p>
+                        <p className="text-[10px] text-gray-500">Describe what the company does, what the product is, what problem it solves, etc.</p>
                     </div>
 
                     {/* Brand Voice */}

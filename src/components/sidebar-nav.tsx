@@ -1,10 +1,19 @@
 'use client'
 
+import { LogOut, User, CreditCard, Ban, ArrowUpRight, LayoutDashboard, Sparkles } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard } from 'lucide-react'
 import { Agent } from '@/lib/agents'
 import { GabrielExpertiseDialog } from '@/components/gabriel-expertise-dialog'
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { signout } from '@/app/login/actions'
 
 interface SidebarNavProps {
     agents: Agent[]
@@ -14,19 +23,102 @@ export function SidebarNav({ agents }: SidebarNavProps) {
     const pathname = usePathname()
 
     return (
-        <nav className="flex-1 p-4 space-y-6 overflow-y-auto custom-scrollbar">
-            {/* Dashboard Link */}
-            {/* Dashboard Link Removed */
-            /* <Link
-                href="/dashboard"
-                className={`flex items-center gap-3 px-4 py-2 rounded-lg transition-all duration-200 ${pathname === '/dashboard'
-                    ? 'bg-white/10 text-white shadow-[0_0_15px_rgba(28,115,232,0.1)] border border-white/5'
-                    : 'text-slate-300 hover:text-white hover:bg-slate-800'
-                    }`}
-            >
-                <LayoutDashboard size={20} className={pathname === '/dashboard' ? 'text-[#1C73E8]' : ''} />
-                <span>Dashboard</span>
-            </Link> */}
+        <nav className="flex-1 md:h-full p-4 space-y-6 overflow-y-auto custom-scrollbar">
+            {/* ORCHESTRATION */}
+            <div className="space-y-2">
+                <div className="px-4 text-[10px] font-medium text-slate-500 uppercase tracking-wider">
+                    Orchestration
+                </div>
+
+                {/* User Profile (Orchestrator) */}
+                <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <button
+                            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 group text-left outline-none ${pathname === '/dashboard/orchestrator'
+                                ? 'bg-white/10 text-white shadow-[0_0_15px_rgba(28,115,232,0.1)] border border-white/5'
+                                : 'text-slate-300 hover:text-white hover:bg-white/5 border border-transparent'
+                                }`}
+                        >
+                            <div className={`w-10 h-10 rounded-full overflow-hidden border transition-all shrink-0 ${pathname === '/dashboard/orchestrator'
+                                ? 'border-[#1C73E8]'
+                                : 'border-white/10 group-hover:border-[#1C73E8]'
+                                }`}>
+                                <img
+                                    src="/gabriel-santos.png"
+                                    alt="Gabriel Santos"
+                                    className="w-full h-full object-cover"
+                                />
+                            </div>
+
+                            <div className="flex flex-col overflow-hidden">
+                                <span className={`text-sm font-bold truncate transition-colors leading-tight ${pathname === '/dashboard/orchestrator' ? 'text-white' : 'text-slate-300 group-hover:text-white'
+                                    }`}>Gabriel Santos</span>
+                                <span className="text-xs text-slate-400 truncate leading-tight">g4 AI Agents</span>
+
+                            </div>
+                        </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent
+                        className="w-64 bg-[#111] border-white/10 text-white mb-2 ml-4"
+                        align="start"
+                        side="right"
+                        sideOffset={10}
+                        style={{ zIndex: 99999 }}
+                    >
+                        <DropdownMenuLabel className="font-normal p-3">
+                            <div className="flex flex-col space-y-1">
+                                <p className="text-sm font-medium leading-none text-white">Gabriel Santos</p>
+                                <p className="text-xs leading-none text-gray-500">g4 AI Agents</p>
+                            </div>
+                        </DropdownMenuLabel>
+                        <DropdownMenuSeparator className="bg-white/10" />
+
+                        <DropdownMenuItem asChild className="cursor-pointer focus:bg-white/10 focus:text-white group p-2 rounded-md">
+                            <Link href="/dashboard/orchestrator" className="flex items-center w-full">
+                                <User className="mr-2 h-4 w-4 text-gray-400 group-hover:text-white" />
+                                <span>Profile</span>
+                            </Link>
+                        </DropdownMenuItem>
+
+                        <DropdownMenuItem className="cursor-pointer focus:bg-white/10 focus:text-white group p-2 rounded-md">
+                            <Sparkles className="mr-2 h-4 w-4 text-gray-400 group-hover:text-white" />
+                            <span>Pricing</span>
+                        </DropdownMenuItem>
+
+                        <DropdownMenuItem className="cursor-pointer focus:bg-white/10 focus:text-white group p-2 rounded-md">
+                            <CreditCard className="mr-2 h-4 w-4 text-gray-400 group-hover:text-white" />
+                            <span>Billing</span>
+                        </DropdownMenuItem>
+
+                        <DropdownMenuItem asChild className="cursor-pointer focus:bg-white/10 focus:text-white group p-2 rounded-md">
+                            <a href="mailto:gabriel@startg4.com" className="w-full flex items-center">
+                                <ArrowUpRight className="mr-2 h-4 w-4 text-gray-400 group-hover:text-white" />
+                                <span>Support</span>
+                            </a>
+                        </DropdownMenuItem>
+
+                        <DropdownMenuSeparator className="bg-white/10" />
+
+                        <DropdownMenuItem asChild className="cursor-pointer focus:bg-white/10 focus:text-white group text-red-400 focus:text-red-400 p-2 rounded-md">
+                            <form action={signout} className="w-full flex items-center">
+                                <button type="submit" className="flex items-center w-full">
+                                    <LogOut className="mr-2 h-4 w-4" />
+                                    <span>Logout</span>
+                                </button>
+                            </form>
+                        </DropdownMenuItem>
+
+                        <DropdownMenuItem className="cursor-pointer focus:bg-white/10 focus:text-white group text-red-500 focus:text-red-500 p-2 rounded-md">
+                            <Ban className="mr-2 h-4 w-4" />
+                            <span>Deactivate account</span>
+                        </DropdownMenuItem>
+                    </DropdownMenuContent>
+                </DropdownMenu>
+
+                {agents.filter(a => a.category === 'orchestration').map(agent => (
+                    <AgentLink key={agent.id} agent={agent} pathname={pathname} />
+                ))}
+            </div>
 
             {/* STRATEGY */}
             <div className="space-y-2">
@@ -38,88 +130,41 @@ export function SidebarNav({ agents }: SidebarNavProps) {
                 ))}
             </div>
 
-            {/* EXECUTION */}
+            {/* MARKETING */}
             <div className="space-y-2">
                 <div className="px-4 text-[10px] font-medium text-slate-500 uppercase tracking-wider">
-                    Execution
+                    Marketing
                 </div>
-                {agents.filter(a => a.category === 'execution').map(agent => (
+                {agents.filter(a => a.category === 'marketing').map(agent => (
                     <AgentLink key={agent.id} agent={agent} pathname={pathname} />
                 ))}
             </div>
 
-            {/* BUSINESS SECTION (The Gold Mine) */}
-            <div className="space-y-2">
-                <div className="px-4 text-[10px] font-bold text-[#FFD700] uppercase tracking-wider opacity-80 flex items-center gap-2">
-                    <span>✨ The Gold Mine</span>
-                </div>
-                {agents.filter(a => a.category === 'business').map(agent => (
-                    <Link
-                        key={agent.id}
-                        href={`/dashboard/${agent.slug}`}
-                        className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-300 group border ${pathname === `/dashboard/${agent.slug}`
-                            ? 'bg-gradient-to-r from-yellow-500/10 to-transparent border-yellow-500/20 shadow-[0_0_20px_rgba(255,215,0,0.1)]'
-                            : 'border-transparent hover:bg-white/5'
-                            }`}
-                    >
-                        <div className={`w-12 h-12 rounded-full overflow-hidden flex-shrink-0 border-2 transition-all ${pathname === `/dashboard/${agent.slug}`
-                            ? 'border-[#FFD700] shadow-lg scale-105'
-                            : 'border-[#FFD700]/30 group-hover:border-[#FFD700]/70'
-                            }`}>
-                            <img
-                                src={agent.avatar}
-                                alt={agent.name}
-                                className="w-full h-full object-cover"
-                            />
-                        </div>
-                        <div className="flex flex-col">
-                            <span className="text-sm font-bold text-[#FFD700] group-hover:text-[#FFE55C] transition-colors">
-                                {agent.name}
-                            </span>
-                            <span className="text-xs text-slate-400 group-hover:text-slate-300">
-                                {agent.role}
-                            </span>
-                        </div>
-                    </Link>
-                ))}
-            </div>
-
-            {/* BI & DATA ANALYSIS */}
+            {/* SALES */}
             <div className="space-y-2">
                 <div className="px-4 text-[10px] font-medium text-slate-500 uppercase tracking-wider">
-                    BI & Data Analysis
+                    Sales
                 </div>
-                {agents.filter(a => a.category === 'bi').map(agent => (
+                {agents.filter(a => a.category === 'sales').map(agent => (
                     <AgentLink key={agent.id} agent={agent} pathname={pathname} />
                 ))}
             </div>
 
-            {/* HUMAN EXPERT */}
-            <div className="pt-4 mt-4 border-t border-white/5">
-                <div className="px-4 mb-2 text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-                    Fractional Full-Stack Marketer
+            {/* FOOTER */}
+            <div className="pt-6 mt-6 border-t border-white/5 px-2 pb-8">
+                <div className="flex flex-col gap-2 opacity-50 hover:opacity-100 transition-opacity">
+                    <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.4)]" />
+                        <span className="text-[10px] font-medium text-slate-400 uppercase tracking-widest">
+                            System Operational
+                        </span>
+                    </div>
+                    <div className="text-[10px] text-slate-600 font-medium">
+                        G4 AI Agents v1.2.0
+                    </div>
                 </div>
-
-                <GabrielExpertiseDialog>
-                    <button className="w-full flex items-center gap-3 px-4 py-3 mx-2 rounded-lg transition-all duration-200 text-slate-300 hover:text-white hover:bg-white/5 group">
-                        <div className="relative">
-                            <div className="w-10 h-10 rounded-full overflow-hidden border border-white/10 group-hover:border-[#1C73E8] transition-colors">
-                                <img
-                                    src="/gabriel-santos.png"
-                                    alt="Gabriel Santos"
-                                    className="w-full h-full object-cover"
-                                />
-                            </div>
-                            <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 border-2 border-[#0c0c0c] rounded-full"></div>
-                        </div>
-
-                        <div className="flex flex-col">
-                            <span className="text-sm font-bold text-white group-hover:text-[#1C73E8] transition-colors">Gabriel Santos</span>
-                            <span className="text-[10px] text-slate-500 font-medium uppercase tracking-wider leading-tight">Fractional Full Stack Marketer</span>
-                        </div>
-                    </button>
-                </GabrielExpertiseDialog>
             </div>
+
         </nav>
     )
 }

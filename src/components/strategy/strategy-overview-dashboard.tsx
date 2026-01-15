@@ -140,7 +140,7 @@ export function StrategyOverviewDashboard({ agent }: StrategyOverviewDashboardPr
                             <TabsList className="bg-white/5 border border-white/10">
                                 <TabsTrigger value="funnel">Funnel</TabsTrigger>
                                 <TabsTrigger value="channels">Channels</TabsTrigger>
-                                <TabsTrigger value="campaigns">Campaigns</TabsTrigger>
+                                <TabsTrigger value="influencers">Influencers & Media Publishers</TabsTrigger>
                             </TabsList>
 
                             <AddStrategyCardModal onAdd={handleAddCard}>
@@ -221,9 +221,9 @@ export function StrategyOverviewDashboard({ agent }: StrategyOverviewDashboardPr
                             </div>
                         </TabsContent>
 
-                        <TabsContent value="campaigns">
+                        <TabsContent value="influencers">
                             <div className="flex-1 flex items-center justify-center text-slate-500 h-[600px] border border-white/5 rounded-lg border-dashed">
-                                Campaigns View (Work in Progress)
+                                Influencers & Media Publishers View (Work in Progress)
                             </div>
                         </TabsContent>
                     </Tabs>

@@ -3,6 +3,8 @@
 import { useState, useEffect, useRef } from 'react'
 import { createPendingLeads } from '@/actions/outreach-actions'
 import { useRouter } from 'next/navigation'
+import { useSidebar } from '@/components/providers/sidebar-provider'
+import { Sidebar as SidebarIcon } from 'lucide-react'
 
 interface AgentContext {
     name: string
@@ -32,6 +34,7 @@ interface RightSidebarProps {
 
 export function RightSidebar({ agent, userId, userName = 'there', initialChatId, chatTitle }: RightSidebarProps) {
     console.log('RightSidebar mounted/updated. ChatTitle:', chatTitle, 'InitialChatId:', initialChatId)
+    const { isRightSidebarCollapsed, toggleRightSidebar } = useSidebar()
     const [messages, setMessages] = useState<Message[]>([])
     const [isTyping, setIsTyping] = useState(false)
     const [leadsCount, setLeadsCount] = useState<number>(0)
@@ -69,8 +72,7 @@ export function RightSidebar({ agent, userId, userName = 'there', initialChatId,
                         role: 'assistant',
                         content: (
                             <div className="space-y-2">
-                                <p>Hello! To get started with audience analysis, please <strong>register your ICP</strong> (Ideal Customer Profile) first.</p>
-                                <p>Once you've set up your ICP on the left panel, we can discuss and develop it together.</p>
+                                <p>Hey {userName}, please create or select an ICP on the side so we can start.</p>
                             </div>
                         )
                     }])
@@ -269,12 +271,24 @@ export function RightSidebar({ agent, userId, userName = 'there', initialChatId,
         }
     }
 
+
+
     return (
-        <div className="w-[400px] border-l border-white/10 flex flex-col bg-[#0c0c0c] shrink-0">
-            <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">
+        <div className={`border-l border-white/10 flex flex-col bg-[#171717] shrink-0 transition-all duration-300 relative ${isRightSidebarCollapsed ? 'w-[60px]' : 'w-[400px]'}`}>
+
+            {/* Toggle Button - Absolute */}
+            <button
+                onClick={toggleRightSidebar}
+                className={`absolute z-20 top-6 text-gray-400 hover:text-white transition-all ${isRightSidebarCollapsed ? 'left-1/2 -translate-x-1/2' : 'left-4'}`}
+                title={isRightSidebarCollapsed ? "Expand Chat" : "Collapse Chat"}
+            >
+                <SidebarIcon size={20} className="scale-x-[-1]" />
+            </button>
+
+            <div className={`flex-1 overflow-y-auto px-6 pb-8 pt-6 custom-scrollbar transition-opacity duration-200 ${isRightSidebarCollapsed ? 'opacity-0 invisible hidden' : 'opacity-100 visible'}`}>
                 {agent ? (
                     <>
-                        <div className="bg-[#1A1A1A] p-4 rounded-xl border border-white/5 flex flex-col gap-3 mb-6">
+                        <div className="bg-[#1A1A1A] p-4 rounded-xl border border-white/5 flex flex-col gap-3 mb-6 w-[85%] ml-auto">
                             <div className="flex items-center gap-3">
                                 <div className="w-10 h-10 rounded-full border-2 border-[#1C73E8] overflow-hidden flex-shrink-0">
                                     <img src={agent.avatarUrl} alt={agent.name} className="w-full h-full object-cover" />
@@ -283,7 +297,7 @@ export function RightSidebar({ agent, userId, userName = 'there', initialChatId,
                                     <p className="text-xl font-bold text-white leading-none">
                                         {agent.name}
                                     </p>
-                                    <h3 className="text-xs font-bold text-[#1C73E8] mt-1 leading-none uppercase tracking-wide">
+                                    <h3 className="text-xs font-bold text-[#1C73E8] mt-1 leading-none uppercase tracking-wide whitespace-nowrap">
                                         {agent.role || 'AI Agent'}
                                     </h3>
                                 </div>
@@ -364,7 +378,7 @@ export function RightSidebar({ agent, userId, userName = 'there', initialChatId,
             </div>
 
             {/* Chat Input Mock */}
-            <div className="p-8 pt-4 border-t border-white/10 shrink-0">
+            <div className={`p-8 pt-4 border-t border-white/10 shrink-0 transition-opacity duration-200 ${isRightSidebarCollapsed ? 'opacity-0 invisible hidden' : 'opacity-100 visible'}`}>
                 <div className="bg-white/5 border border-white/10 rounded-xl flex gap-2 p-2 items-end">
                     <textarea
                         onKeyDown={(e) => {

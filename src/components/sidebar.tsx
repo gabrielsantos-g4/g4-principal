@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { AGENTS } from '@/lib/agents'
 import { SidebarNav } from './sidebar-nav'
-import { UserProfileMenu } from './user-profile-menu'
+
 
 export async function Sidebar() {
     const supabase = await createClient()
@@ -39,27 +39,12 @@ export async function Sidebar() {
 
     return (
         <SidebarWrapper>
-            {/* Header / Platform Title */}
-            <div className="p-6 pb-2">
-                <div className="flex items-center gap-2">
-                    <span className="font-bold text-lg tracking-tight">g4</span>
-                    <span className="text-[10px] leading-tight text-gray-400 font-medium uppercase tracking-wider">
-                        MULTI-B2B AI AGENT PLATFORM
-                    </span>
-                </div>
-            </div>
+
 
             {/* Navigation (Client Component) */}
             <SidebarNav agents={AGENTS} />
 
-            {/* Footer / User Profile */}
-            <div className="p-4 border-t border-slate-800">
-                <UserProfileMenu
-                    userName={userName}
-                    companyName={companyName}
-                    initials={initials}
-                />
-            </div>
+
         </SidebarWrapper>
     )
 }

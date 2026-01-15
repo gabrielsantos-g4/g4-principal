@@ -20,70 +20,67 @@ export function MessengerTabs() {
     const routes = [
         {
             value: "/dashboard/messenger",
-            label: "Visão Geral",
+            label: "Overview",
             icon: LayoutDashboard,
         },
         {
             value: "/dashboard/messenger/campaigns",
-            label: "Campanhas",
+            label: "Campaigns",
             icon: Megaphone,
         },
         {
             value: "/dashboard/messenger/conversations",
-            label: "Conversas",
+            label: "Conversations",
             icon: MessageSquare,
         },
         {
             value: "/dashboard/messenger/storage",
-            label: "Arquivos",
+            label: "Storage",
             icon: Database,
         },
         {
             value: "/dashboard/messenger/instances",
-            label: "Instâncias",
+            label: "Instances",
             icon: Smartphone,
         },
         {
             value: "/dashboard/messenger/contacts",
-            label: "Contatos",
+            label: "Contacts",
             icon: Users,
         },
         {
             value: "/dashboard/messenger/settings",
-            label: "Configurações",
+            label: "Settings",
             icon: Settings,
         },
     ]
 
     // Determine current tab value based on pathname
-    // If exact match fails, try prefix matching for sub-routes if needed, but here structure is flat-ish.
     const currentTab = routes.find(r => r.value === pathname)?.value || routes[0].value
 
     return (
-        <div className="border-b border-white/10 bg-black/40 backdrop-blur-sm sticky top-0 z-50">
-            <div className="flex h-14 items-center px-4">
-                <Tabs
-                    value={currentTab}
-                    className="w-full"
-                    onValueChange={(value) => router.push(value)}
-                >
-                    <TabsList className="bg-transparent border-none p-0 h-14 w-full justify-start gap-2">
-                        {routes.map((route) => (
-                            <TabsTrigger
-                                key={route.value}
-                                value={route.value}
-                                className={cn(
-                                    "data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-[#1C73E8] data-[state=active]:text-[#1C73E8] rounded-none h-full px-4 text-gray-400 hover:text-gray-200 transaction-colors flex items-center gap-2",
-                                    currentTab === route.value ? "text-[#1C73E8]" : ""
-                                )}
-                            >
-                                <route.icon className="h-4 w-4" />
-                                {route.label}
-                            </TabsTrigger>
-                        ))}
-                    </TabsList>
-                </Tabs>
-            </div>
+        <div className="pb-6">
+            <Tabs
+                value={currentTab}
+                className="w-full"
+                onValueChange={(value) => router.push(value)}
+            >
+                <TabsList className="bg-[#171717] border border-white/10 p-1 rounded-lg h-auto flex-wrap justify-start w-fit">
+                    {routes.map((route) => (
+                        <TabsTrigger
+                            key={route.value}
+                            value={route.value}
+                            className={cn(
+                                "data-[state=active]:bg-[#2a2a2a] data-[state=active]:text-white data-[state=active]:shadow-sm rounded-md px-3 py-2 text-sm font-medium text-gray-400 hover:text-white hover:bg-white/5 transition-all flex items-center gap-2",
+                                currentTab === route.value ? "text-white" : ""
+                            )}
+                        >
+                            <route.icon className="h-4 w-4" />
+                            {route.label}
+                        </TabsTrigger>
+                    ))}
+                </TabsList>
+            </Tabs>
         </div>
     )
 }

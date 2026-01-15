@@ -101,7 +101,7 @@ export function ICPForm({ initialData }: ICPFormProps) {
     return (
         <div className="w-full max-w-[1400px] mx-auto p-4">
             <div className="mb-6">
-                <h2 className="text-2xl font-bold text-white mb-2">Ideal Customer Profile</h2>
+                <h2 className="text-2xl font-bold text-white mb-2">About the Company / Product</h2>
                 <p className="text-gray-400">Define the core characteristics of your target audience to help us generate better prospects.</p>
             </div>
 

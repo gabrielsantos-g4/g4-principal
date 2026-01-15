@@ -1,16 +1,18 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Sidebar, X, ChevronLeft } from 'lucide-react'
+import { Sidebar as SidebarIcon, X, PanelLeftClose, PanelLeftOpen } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { useSidebar } from '@/components/providers/sidebar-provider'
 
 import { usePathname } from 'next/navigation'
 
 export function SidebarWrapper({ children }: { children: React.ReactNode }) {
     const [isOpen, setIsOpen] = useState(false)
+    const { isCollapsed, toggleSidebar } = useSidebar()
     const pathname = usePathname()
 
-    // Auto-close sidebar on navigation
+    // Auto-close sidebar on navigation (mobile)
     useEffect(() => {
         setIsOpen(false)
     }, [pathname])
@@ -24,22 +26,47 @@ export function SidebarWrapper({ children }: { children: React.ReactNode }) {
                 onClick={() => setIsOpen(!isOpen)}
                 className={`md:hidden fixed top-3 z-[110] text-white hover:bg-white/10 ${isOpen ? 'right-4' : 'left-3'}`}
             >
-                {isOpen ? <X className="w-6 h-6" /> : <Sidebar className="w-6 h-6" />}
+                {isOpen ? <X className="w-6 h-6" /> : <SidebarIcon className="w-6 h-6" />}
             </Button>
 
             {/* Sidebar Container */}
             <aside className={`
-                w-full md:w-64 bg-[#0c0c0c] border-r border-[#1F1F1F] flex flex-col h-screen fixed left-0 top-0 text-white font-sans z-[100] transition-transform duration-300
+                bg-[#171717] border-r border-[#1F1F1F] flex flex-col h-screen fixed left-0 top-0 text-white font-sans z-[100] transition-all duration-300
                 ${isOpen ? 'translate-x-0' : '-translate-x-full'}
                 md:translate-x-0
+                ${isCollapsed ? 'w-[60px]' : 'w-64'}
             `}>
-                {children}
+                {/* Desktop Collapse Toggle */}
+                <div className={`hidden md:flex items-center h-16 px-4 border-b border-[#1F1F1F] ${isCollapsed ? 'justify-center' : 'justify-between'}`}>
+                    {!isCollapsed && (
+                        <div className="flex items-center gap-2 overflow-hidden whitespace-nowrap">
+                            <span className="font-bold text-lg tracking-tight">g4</span>
+                            <span className="text-[9px] leading-tight text-gray-400 font-medium uppercase tracking-wider">
+                                MULTI-B2B AI AGENT PLATFORM
+                            </span>
+                        </div>
+                    )}
 
-                {/* Mobile: Collapse Button (User asked for a collapse button) */}
-                {/* On desktop it's always open. On mobile this allows closing besides the toggle. */}
-                <div className="md:hidden absolute top-4 right-4">
-                    {/* The X button in the toggle handles this actually. */}
+                    <button
+                        onClick={toggleSidebar}
+                        className={`text-gray-400 hover:text-white transition-colors ${isCollapsed ? '' : ''}`}
+                        title={isCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
+                    >
+                        <SidebarIcon size={20} />
+                    </button>
                 </div>
+
+                {/* Content - Hidden when collapsed */}
+                <div className={`flex-1 overflow-hidden flex flex-col transition-opacity duration-200 ${isCollapsed ? 'opacity-0 invisible' : 'opacity-100 visible'}`}>
+                    {children}
+                </div>
+
+                {/* Collapsed State Placeholder (if needed, but user said "no content") */}
+                {isCollapsed && (
+                    <div className="flex-1 flex flex-col items-center py-4 gap-4">
+                        {/* Icons could go here if we wanted a mini-sidebar, but user said "sem conteúdo nenhum" (no content at all) */}
+                    </div>
+                )}
             </aside>
 
             {/* Overlay for mobile */}
@@ -52,3 +79,4 @@ export function SidebarWrapper({ children }: { children: React.ReactNode }) {
         </>
     )
 }
+
