@@ -26,7 +26,7 @@ export const AGENTS: Agent[] = [
     {
         id: 'ceo-brian',
         name: 'Brian',
-        role: 'Head of Growth',
+        role: 'Growth, Brainstorm',
         slug: 'ceo-positioning',
         category: 'strategy',
         avatar: 'https://i.pinimg.com/736x/a7/29/ab/a729ab80956a484767add491b6fb4e2c.jpg',
@@ -37,7 +37,7 @@ export const AGENTS: Agent[] = [
     {
         id: 'audience-luke',
         name: 'Luke',
-        role: 'Audience, ICP & Insights',
+        role: 'Audience, ICP, Insights',
         slug: 'audience-channels',
         category: 'strategy',
         avatar: 'https://i.pinimg.com/736x/e0/af/9e/e0af9e4a18ae1113820e9dbcf030220b.jpg',
@@ -48,7 +48,7 @@ export const AGENTS: Agent[] = [
     {
         id: 'competitors-celine',
         name: 'Celine',
-        role: 'Competitors Analysis',
+        role: 'Competitors, Differentiation',
         slug: 'competitors-analysis',
         category: 'strategy',
         avatar: 'https://i.pinimg.com/736x/00/8c/0b/008c0bc9ebc79b1e2c0f8fffe8f81183.jpg',
@@ -59,7 +59,7 @@ export const AGENTS: Agent[] = [
     {
         id: 'strategy-liz',
         name: 'Liz',
-        role: 'Channels & Media Planning',
+        role: 'Channels, Media Plan',
         slug: 'strategy-overview',
         category: 'strategy',
         avatar: 'https://i.pinimg.com/736x/8b/e6/dd/8be6dd253701af4f23770a4e8035f575.jpg',

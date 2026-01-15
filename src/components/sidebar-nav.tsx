@@ -1,10 +1,12 @@
 'use client'
 
-import { LogOut, User, CreditCard, Ban, ArrowUpRight, LayoutDashboard, Sparkles } from 'lucide-react'
+import { LogOut, User, CreditCard, Ban, ArrowUpRight, LayoutDashboard, BadgeDollarSign } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Agent } from '@/lib/agents'
 import { GabrielExpertiseDialog } from '@/components/gabriel-expertise-dialog'
+import { PricingModal } from '@/components/pricing-modal'
+import { useState } from 'react'
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -21,9 +23,12 @@ interface SidebarNavProps {
 
 export function SidebarNav({ agents }: SidebarNavProps) {
     const pathname = usePathname()
+    const [isPricingOpen, setIsPricingOpen] = useState(false)
 
     return (
         <nav className="flex-1 md:h-full p-4 space-y-6 overflow-y-auto custom-scrollbar">
+            <PricingModal open={isPricingOpen} onOpenChange={setIsPricingOpen} />
+
             {/* ORCHESTRATION */}
             <div className="space-y-2">
                 <div className="px-4 text-[10px] font-medium text-slate-500 uppercase tracking-wider">
@@ -80,8 +85,13 @@ export function SidebarNav({ agents }: SidebarNavProps) {
                             </Link>
                         </DropdownMenuItem>
 
-                        <DropdownMenuItem className="cursor-pointer focus:bg-white/10 focus:text-white group p-2 rounded-md">
-                            <Sparkles className="mr-2 h-4 w-4 text-gray-400 group-hover:text-white" />
+                        <DropdownMenuItem
+                            className="cursor-pointer focus:bg-white/10 focus:text-white group p-2 rounded-md"
+                            onSelect={() => {
+                                setIsPricingOpen(true)
+                            }}
+                        >
+                            <BadgeDollarSign className="mr-2 h-4 w-4 text-gray-400 group-hover:text-white" />
                             <span>Pricing</span>
                         </DropdownMenuItem>
 

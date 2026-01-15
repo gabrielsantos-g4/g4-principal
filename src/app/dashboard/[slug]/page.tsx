@@ -29,6 +29,7 @@ import { OrganicSocialDashboard } from '@/components/organic-social/organic-soci
 import { SeoDashboard } from '@/components/organic-search/seo-dashboard'
 import { StrategyOverviewDashboard } from '@/components/strategy/strategy-overview-dashboard'
 import { NotesScratchpad } from '@/components/common/notes-scratchpad'
+import { PaidSocialDashboard } from '@/components/paid-social/paid-social-dashboard'
 
 interface AgentPageProps {
     params: Promise<{
@@ -40,6 +41,7 @@ export default async function AgentPage({ params, searchParams }: AgentPageProps
     const { slug } = await params
     const { chatId, competitorId } = await searchParams
     const agent = AGENTS.find(a => a.slug === slug)
+    // Debug: Force Rebuild 12345
     const isOrchestrator = slug === 'orchestrator'
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
@@ -313,6 +315,33 @@ export default async function AgentPage({ params, searchParams }: AgentPageProps
                     <div className="flex-1 min-w-0 overflow-y-auto bg-black p-6">
                         <DesignVideoTabs />
                     </div>
+                </MobileDashboardLayout>
+            </div>
+        )
+    }
+
+    if (slug === 'paid-social') {
+        return (
+            <div className="h-screen bg-black text-white font-sans flex flex-col overflow-hidden">
+                <DashboardHeader />
+                <MobileDashboardLayout
+                    rightSidebar={
+                        <RightSidebar
+                            key={slug + (chatId || '')}
+                            userId={user?.id}
+                            userName={(user?.user_metadata?.full_name || user?.user_metadata?.name || 'there').split(' ')[0]}
+                            agent={{
+                                name: agent.name,
+                                avatarUrl: agent.avatar,
+                                role: agent.role,
+                                externalUrl: agent.externalUrl,
+                                slug: agent.slug,
+                                description: agent.description
+                            }}
+                        />
+                    }
+                >
+                    <PaidSocialDashboard />
                 </MobileDashboardLayout>
             </div>
         )

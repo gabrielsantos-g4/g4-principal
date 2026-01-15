@@ -39,10 +39,11 @@ export function RightSidebar({ agent, userId, userName = 'there', initialChatId,
     const [isTyping, setIsTyping] = useState(false)
     const [leadsCount, setLeadsCount] = useState<number>(0)
     const messagesEndRef = useRef<HTMLDivElement>(null)
+    const shouldScrollInstantly = useRef(false)
     const router = useRouter()
 
-    const scrollToBottom = () => {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+    const scrollToBottom = (behavior: ScrollBehavior = 'smooth') => {
+        messagesEndRef.current?.scrollIntoView({ behavior })
     }
 
     const getRandomVariation = (variations: string[]) => {
@@ -50,7 +51,12 @@ export function RightSidebar({ agent, userId, userName = 'there', initialChatId,
     }
 
     useEffect(() => {
-        scrollToBottom()
+        if (shouldScrollInstantly.current) {
+            scrollToBottom('instant')
+            shouldScrollInstantly.current = false
+        } else {
+            scrollToBottom('smooth')
+        }
     }, [messages, isTyping])
 
     // Load Messages for Audience Agent
@@ -101,6 +107,7 @@ export function RightSidebar({ agent, userId, userName = 'there', initialChatId,
             content: m.content
         })) as Message[]
 
+        shouldScrollInstantly.current = true
         setMessages(uiMessages)
         setIsTyping(false)
 
