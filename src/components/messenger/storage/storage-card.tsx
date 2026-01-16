@@ -85,16 +85,16 @@ export function StorageCard({ file, onDeleted }: StorageCardProps) {
                         )}
                     </div>
 
-                    <div className="p-4 text-center w-full">
-                        <p className="font-medium truncate w-full text-sm text-gray-200" title={file.name}>
+                    <div className="p-2 text-center w-full">
+                        <p className="font-medium truncate w-full text-xs text-gray-200" title={file.name}>
                             {file.name}
                         </p>
-                        <p className="text-xs text-gray-500 mt-1">
-                            {formatBytes(file.size)} • {formatDistanceToNow(new Date(file.lastModified), { addSuffix: true, locale: ptBR })}
+                        <p className="text-[10px] text-gray-500 mt-0.5">
+                            {formatBytes(file.size)}
                         </p>
                     </div>
                 </CardContent>
-                <CardFooter className="p-2 gap-2 justify-end bg-[#1a1a1a] border-t border-white/10">
+                <CardFooter className="p-1 gap-1 justify-end bg-[#1a1a1a] border-t border-white/10 h-8">
                     <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-300 hover:text-white hover:bg-white/10" asChild>
                         <a href={file.url} target="_blank" rel="noopener noreferrer">
                             <Eye className="h-4 w-4" />

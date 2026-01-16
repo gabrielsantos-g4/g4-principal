@@ -181,7 +181,7 @@ export function SidebarNav({ agents }: SidebarNavProps) {
 
 function AgentLink({ agent, pathname }: { agent: Agent, pathname: string }) {
     const href = `/dashboard/${agent.slug}`
-    const isActive = pathname === href
+    const isActive = pathname === href || pathname.startsWith(`${href}/`)
 
     return (
         <Link

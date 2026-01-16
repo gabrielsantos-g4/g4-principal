@@ -76,123 +76,72 @@ export function StorageStats({ files }: StorageStatsProps) {
     }
 
     return (
-        <div className="grid gap-4 grid-cols-1 lg:grid-cols-3">
-            <div className="grid gap-4 grid-cols-2 lg:col-span-2">
-                <Card className="bg-[#1a1a1a] border-white/10 text-white">
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium text-gray-400">
-                            Imagens
-                        </CardTitle>
-                        <ImageIcon className="h-4 w-4 text-gray-500" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">{stats.imageCount}</div>
-                    </CardContent>
-                </Card>
-
-                <Card className="bg-[#1a1a1a] border-white/10 text-white">
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium text-gray-400">
-                            Vídeos
-                        </CardTitle>
-                        <Video className="h-4 w-4 text-gray-500" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">{stats.videoCount}</div>
-                    </CardContent>
-                </Card>
-
-                <Card className="bg-[#1a1a1a] border-white/10 text-white">
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium text-gray-400">
-                            Áudios
-                        </CardTitle>
-                        <Music className="h-4 w-4 text-gray-500" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">{stats.audioCount}</div>
-                    </CardContent>
-                </Card>
-
-                <Card className="bg-[#1a1a1a] border-white/10 text-white">
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium text-gray-400">
-                            Documentos
-                        </CardTitle>
-                        <FileText className="h-4 w-4 text-gray-500" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">{stats.docCount}</div>
-                    </CardContent>
-                </Card>
-            </div>
-
-            <Card className="flex flex-col lg:col-span-1 bg-[#1a1a1a] border-white/10 text-white">
-                <CardHeader className="items-center pb-0">
-                    <CardTitle className="text-gray-300">Uso de Armazenamento</CardTitle>
+        <div className="grid gap-4 grid-cols-2 md:grid-cols-5">
+            <Card className="bg-[#1a1a1a] border-white/10 text-white shadow-sm">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 p-3 pb-1">
+                    <CardTitle className="text-xs font-medium text-gray-400">
+                        Imagens
+                    </CardTitle>
+                    <ImageIcon className="h-3 w-3 text-gray-500" />
                 </CardHeader>
-                <CardContent className="flex-1 pb-0">
-                    <div className="mx-auto aspect-square max-h-[160px]">
-                        <ChartContainer
-                            config={chartConfig}
-                            className="mx-auto aspect-square max-h-[160px]"
-                        >
-                            <PieChart>
-                                <ChartTooltip
-                                    cursor={false}
-                                    content={<ChartTooltipContent hideLabel />}
-                                />
-                                <Pie
-                                    data={stats.chartData}
-                                    dataKey="visitors"
-                                    nameKey="browser"
-                                    innerRadius={45}
-                                    strokeWidth={5}
-                                    startAngle={90}
-                                    endAngle={-270}
-                                >
-                                    <Label
-                                        content={({ viewBox }) => {
-                                            if (viewBox && "cx" in viewBox && "cy" in viewBox) {
-                                                return (
-                                                    <text
-                                                        x={viewBox.cx}
-                                                        y={viewBox.cy}
-                                                        textAnchor="middle"
-                                                        dominantBaseline="middle"
-                                                    >
-                                                        <tspan
-                                                            x={viewBox.cx}
-                                                            y={viewBox.cy}
-                                                            className="fill-white text-xl font-bold"
-                                                        >
-                                                            {stats.percentUsed.toFixed(1)}%
-                                                        </tspan>
-                                                        <tspan
-                                                            x={viewBox.cx}
-                                                            y={(viewBox.cy || 0) + 16}
-                                                            className="fill-gray-500 text-[10px]"
-                                                        >
-                                                            Utilizado
-                                                        </tspan>
-                                                    </text>
-                                                )
-                                            }
-                                        }}
-                                    />
-                                </Pie>
-                            </PieChart>
-                        </ChartContainer>
-                    </div>
+                <CardContent className="p-3 pt-0">
+                    <div className="text-xl font-bold">{stats.imageCount}</div>
                 </CardContent>
-                <div className="flex flex-col gap-1 text-sm text-center pb-4">
-                    <div className="font-medium text-gray-300">
-                        Total de Arquivos: {stats.totalCount}
+            </Card>
+
+            <Card className="bg-[#1a1a1a] border-white/10 text-white shadow-sm">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 p-3 pb-1">
+                    <CardTitle className="text-xs font-medium text-gray-400">
+                        Vídeos
+                    </CardTitle>
+                    <Video className="h-3 w-3 text-gray-500" />
+                </CardHeader>
+                <CardContent className="p-3 pt-0">
+                    <div className="text-xl font-bold">{stats.videoCount}</div>
+                </CardContent>
+            </Card>
+
+            <Card className="bg-[#1a1a1a] border-white/10 text-white shadow-sm">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 p-3 pb-1">
+                    <CardTitle className="text-xs font-medium text-gray-400">
+                        Áudios
+                    </CardTitle>
+                    <Music className="h-3 w-3 text-gray-500" />
+                </CardHeader>
+                <CardContent className="p-3 pt-0">
+                    <div className="text-xl font-bold">{stats.audioCount}</div>
+                </CardContent>
+            </Card>
+
+            <Card className="bg-[#1a1a1a] border-white/10 text-white shadow-sm">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 p-3 pb-1">
+                    <CardTitle className="text-xs font-medium text-gray-400">
+                        Documentos
+                    </CardTitle>
+                    <FileText className="h-3 w-3 text-gray-500" />
+                </CardHeader>
+                <CardContent className="p-3 pt-0">
+                    <div className="text-xl font-bold">{stats.docCount}</div>
+                </CardContent>
+            </Card>
+
+            <Card className="bg-[#1a1a1a] border-white/10 text-white shadow-sm">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 p-3 pb-1">
+                    <CardTitle className="text-xs font-medium text-gray-400">
+                        Armazenamento
+                    </CardTitle>
+                    <div className="h-3 w-3 rounded-full border border-gray-500 flex items-center justify-center">
+                        <div className="h-1.5 w-1.5 rounded-full bg-gray-500" />
                     </div>
-                    <div className="leading-none text-gray-500 text-xs">
+                </CardHeader>
+                <CardContent className="p-3 pt-0 flex flex-col">
+                    <div className="text-xl font-bold">
+                        {stats.percentUsed.toFixed(1)}%
+                    </div>
+                    <p className="text-[10px] text-gray-500 mt-1 truncate">
                         {formatBytes(stats.totalBytes)} de {formatBytes(MAX_STORAGE_BYTES)}
-                    </div>
-                </div>
+                    </p>
+                </CardContent>
             </Card>
         </div>
     )

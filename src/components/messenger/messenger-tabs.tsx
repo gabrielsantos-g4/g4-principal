@@ -65,7 +65,7 @@ export function MessengerTabs() {
                 className="w-full"
                 onValueChange={(value) => router.push(value)}
             >
-                <TabsList className="bg-[#171717] border border-white/10 p-1 rounded-lg h-auto flex-wrap justify-start w-fit">
+                <TabsList className="bg-[#171717] border-b border-white/10 p-1 h-auto flex-wrap justify-start w-full rounded-none">
                     {routes.map((route) => (
                         <TabsTrigger
                             key={route.value}

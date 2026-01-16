@@ -170,7 +170,7 @@ export function CampaignDialog({ children, campaign, open: controlledOpen, onOpe
                                 <SelectTrigger className="bg-[#0f0f0f] border-white/10 text-white focus:ring-[#1C73E8]">
                                     <SelectValue />
                                 </SelectTrigger>
-                                <SelectContent className="bg-[#1a1a1a] border-white/10 text-white">
+                                <SelectContent className="bg-[#1a1a1a] border-white/10 text-white z-[99999]">
                                     <SelectItem value="text">Apenas Texto</SelectItem>
                                     <SelectItem value="image">Imagem</SelectItem>
                                     <SelectItem value="video">Vídeo</SelectItem>
