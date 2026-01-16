@@ -31,7 +31,7 @@ export function SidebarWrapper({ children }: { children: React.ReactNode }) {
 
             {/* Sidebar Container */}
             <aside className={`
-                bg-[#171717] border-r border-[#1F1F1F] flex flex-col h-screen fixed left-0 top-0 text-white font-sans z-[100] transition-all duration-300
+                bg-[#171717] border-r border-[#1F1F1F] flex flex-col h-dvh fixed left-0 top-0 text-white font-sans z-[100] transition-all duration-300
                 ${isOpen ? 'translate-x-0' : '-translate-x-full'}
                 md:translate-x-0
                 ${isCollapsed ? 'w-[60px]' : 'w-64'}
@@ -57,7 +57,7 @@ export function SidebarWrapper({ children }: { children: React.ReactNode }) {
                 </div>
 
                 {/* Content - Hidden when collapsed */}
-                <div className={`flex-1 overflow-hidden flex flex-col transition-opacity duration-200 ${isCollapsed ? 'opacity-0 invisible' : 'opacity-100 visible'}`}>
+                <div className={`flex-1 min-h-0 flex flex-col transition-opacity duration-200`}>
                     {children}
                 </div>
 

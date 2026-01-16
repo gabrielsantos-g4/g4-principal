@@ -11,6 +11,7 @@ import { toast } from "sonner"
 import { FileUpload } from "@/components/dashboard/file-upload"
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip, Line, LineChart, CartesianGrid, Legend, Area, AreaChart } from "recharts"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { DashboardClient } from '@/components/dashboard/dashboard-client'
 
 // --- Schemas ---
 
@@ -439,100 +440,8 @@ export function PaidSocialDashboard() {
                     </form>
                 </TabsContent>
 
-                <TabsContent value="reports" className="flex-1 flex flex-col min-h-0">
-                    <Tabs defaultValue="my-reports" value={activeReportTab} onValueChange={setActiveReportTab} className="flex-1 flex flex-col">
-                        <div className="flex justify-start mb-4">
-                            <TabsList className="bg-white/5 border border-white/10 p-1 h-auto">
-                                <TabsTrigger
-                                    value="new-analysis"
-                                    className="px-4 py-1.5 text-sm data-[state=active]:bg-[#1C73E8] data-[state=active]:text-white data-[state=inactive]:text-gray-400 data-[state=inactive]:hover:text-white transition-all"
-                                >
-                                    New Analysis
-                                </TabsTrigger>
-                                <TabsTrigger
-                                    value="my-reports"
-                                    className="px-4 py-1.5 text-sm data-[state=active]:bg-[#1C73E8] data-[state=active]:text-white data-[state=inactive]:text-gray-400 data-[state=inactive]:hover:text-white transition-all"
-                                >
-                                    My Report
-                                </TabsTrigger>
-                            </TabsList>
-                        </div>
-
-                        <TabsContent value="new-analysis" className="flex-1 p-8 flex flex-col items-center justify-center m-1">
-                            <FileUpload
-                                loading={isProcessing}
-                                onFileSelect={handleFileUpload}
-                            />
-                        </TabsContent>
-
-                        <TabsContent value="my-reports" className="flex-1 overflow-y-auto">
-                            {selectedReport ? (
-                                <div className="flex flex-col h-full animate-in fade-in slide-in-from-right-4 duration-300">
-                                    <button
-                                        onClick={() => setSelectedReport(null)}
-                                        className="flex items-center gap-2 text-gray-400 hover:text-white mb-4 transition-colors w-fit"
-                                    >
-                                        <ArrowLeft size={16} /> Back to Reports
-                                    </button>
-                                    <div className="bg-white/5 border border-white/10 rounded-lg p-6 flex-1 overflow-auto">
-                                        <div className="flex justify-between items-start mb-6 border-b border-white/10 pb-4">
-                                            <div>
-                                                <h2 className="text-xl font-semibold text-white mb-1">{selectedReport.name}</h2>
-                                                <p className="text-sm text-gray-400">Generated on {selectedReport.date}</p>
-                                            </div>
-                                            <span className={`px-3 py-1 rounded-full text-xs font-medium ${selectedReport.status === 'Completed' ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'
-                                                }`}>
-                                                {selectedReport.status}
-                                            </span>
-                                        </div>
-
-                                        {selectedReport.data ? (
-                                            <PaidSocialReportView data={selectedReport.data} />
-                                        ) : (
-                                            <div className="prose prose-invert max-w-none text-gray-300 text-sm whitespace-pre-line leading-relaxed">
-                                                {selectedReport.content}
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-                            ) : (
-                                <div className="bg-white/5 rounded-lg border border-white/10 overflow-hidden">
-                                    <table className="w-full text-left text-sm">
-                                        <thead className="bg-white/5 text-gray-400 font-medium">
-                                            <tr>
-                                                <th className="p-4 border-b border-white/10">Report Name</th>
-                                                <th className="p-4 border-b border-white/10">Date</th>
-                                                <th className="p-4 border-b border-white/10">Status</th>
-                                                <th className="p-4 border-b border-white/10 text-right">Action</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody className="divide-y divide-white/10">
-                                            {reports.map((report) => (
-                                                <tr key={report.id} className="hover:bg-white/5 transition-colors">
-                                                    <td className="p-4 text-white font-medium">{report.name}</td>
-                                                    <td className="p-4 text-gray-400">{report.date}</td>
-                                                    <td className="p-4">
-                                                        <span className={`px-2 py-1 rounded text-xs ${report.status === 'Completed' ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'
-                                                            }`}>
-                                                            {report.status}
-                                                        </span>
-                                                    </td>
-                                                    <td className="p-4 text-right">
-                                                        <button
-                                                            onClick={() => setSelectedReport(report)}
-                                                            className="text-blue-400 hover:text-blue-300 hover:underline"
-                                                        >
-                                                            {report.status === 'Draft' ? 'Edit' : 'View'}
-                                                        </button>
-                                                    </td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            )}
-                        </TabsContent>
-                    </Tabs>
+                <TabsContent value="reports" className="flex-1 flex flex-col min-h-0 overflow-hidden">
+                    <DashboardClient />
                 </TabsContent>
             </Tabs>
         </div>

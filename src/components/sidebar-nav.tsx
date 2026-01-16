@@ -16,6 +16,8 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { signout } from '@/app/login/actions'
+import { useSidebar } from '@/components/providers/sidebar-provider'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 
 interface SidebarNavProps {
     agents: Agent[]
@@ -24,25 +26,28 @@ interface SidebarNavProps {
 export function SidebarNav({ agents }: SidebarNavProps) {
     const pathname = usePathname()
     const [isPricingOpen, setIsPricingOpen] = useState(false)
+    const { isCollapsed } = useSidebar()
 
     return (
-        <nav className="flex-1 md:h-full p-4 space-y-6 overflow-y-auto custom-scrollbar">
+        <nav className={`flex-1 min-h-0 p-4 space-y-4 overflow-y-auto custom-scrollbar ${isCollapsed ? 'px-2' : ''}`}>
             <PricingModal open={isPricingOpen} onOpenChange={setIsPricingOpen} />
 
             {/* ORCHESTRATION */}
             <div className="space-y-2">
-                <div className="px-4 text-[10px] font-medium text-slate-500 uppercase tracking-wider">
-                    Orchestration
-                </div>
+                {!isCollapsed && (
+                    <div className="px-4 text-[10px] font-medium text-slate-500 uppercase tracking-wider">
+                        Orchestration
+                    </div>
+                )}
 
                 {/* User Profile (Orchestrator) */}
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                         <button
-                            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 group text-left outline-none ${pathname === '/dashboard/orchestrator'
+                            className={`w-full flex items-center gap-3 py-3 rounded-lg transition-all duration-200 group text-left outline-none ${pathname === '/dashboard/orchestrator'
                                 ? 'bg-white/10 text-white shadow-[0_0_15px_rgba(28,115,232,0.1)] border border-white/5'
                                 : 'text-slate-300 hover:text-white hover:bg-white/5 border border-transparent'
-                                }`}
+                                } ${isCollapsed ? 'justify-center px-0' : 'px-4'}`}
                         >
                             <div className={`w-10 h-10 rounded-full overflow-hidden border transition-all shrink-0 ${pathname === '/dashboard/orchestrator'
                                 ? 'border-[#1C73E8]'
@@ -55,12 +60,14 @@ export function SidebarNav({ agents }: SidebarNavProps) {
                                 />
                             </div>
 
-                            <div className="flex flex-col overflow-hidden">
-                                <span className={`text-sm font-bold truncate transition-colors leading-tight ${pathname === '/dashboard/orchestrator' ? 'text-white' : 'text-slate-300 group-hover:text-white'
-                                    }`}>Gabriel Santos</span>
-                                <span className="text-xs text-slate-400 truncate leading-tight">g4 AI Agents</span>
+                            {!isCollapsed && (
+                                <div className="flex flex-col overflow-hidden">
+                                    <span className={`text-sm font-bold truncate transition-colors leading-tight ${pathname === '/dashboard/orchestrator' ? 'text-white' : 'text-slate-300 group-hover:text-white'
+                                        }`}>Gabriel Santos</span>
+                                    <span className="text-xs text-slate-400 truncate leading-tight">g4 AI Agents</span>
 
-                            </div>
+                                </div>
+                            )}
                         </button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent
@@ -126,52 +133,62 @@ export function SidebarNav({ agents }: SidebarNavProps) {
                 </DropdownMenu>
 
                 {agents.filter(a => a.category === 'orchestration').map(agent => (
-                    <AgentLink key={agent.id} agent={agent} pathname={pathname} />
+                    <AgentLink key={agent.id} agent={agent} pathname={pathname} isCollapsed={isCollapsed} />
                 ))}
             </div>
 
             {/* STRATEGY */}
             <div className="space-y-2">
-                <div className="px-4 text-[10px] font-medium text-slate-500 uppercase tracking-wider">
-                    Strategy
-                </div>
+                {!isCollapsed && (
+                    <div className="px-4 text-[10px] font-medium text-slate-500 uppercase tracking-wider">
+                        Strategy
+                    </div>
+                )}
                 {agents.filter(a => a.category === 'strategy').map(agent => (
-                    <AgentLink key={agent.id} agent={agent} pathname={pathname} />
+                    <AgentLink key={agent.id} agent={agent} pathname={pathname} isCollapsed={isCollapsed} />
                 ))}
             </div>
 
             {/* MARKETING */}
             <div className="space-y-2">
-                <div className="px-4 text-[10px] font-medium text-slate-500 uppercase tracking-wider">
-                    Marketing
-                </div>
+                {!isCollapsed && (
+                    <div className="px-4 text-[10px] font-medium text-slate-500 uppercase tracking-wider">
+                        Marketing
+                    </div>
+                )}
                 {agents.filter(a => a.category === 'marketing').map(agent => (
-                    <AgentLink key={agent.id} agent={agent} pathname={pathname} />
+                    <AgentLink key={agent.id} agent={agent} pathname={pathname} isCollapsed={isCollapsed} />
                 ))}
             </div>
 
             {/* SALES */}
             <div className="space-y-2">
-                <div className="px-4 text-[10px] font-medium text-slate-500 uppercase tracking-wider">
-                    Sales
-                </div>
+                {!isCollapsed && (
+                    <div className="px-4 text-[10px] font-medium text-slate-500 uppercase tracking-wider">
+                        Sales
+                    </div>
+                )}
                 {agents.filter(a => a.category === 'sales').map(agent => (
-                    <AgentLink key={agent.id} agent={agent} pathname={pathname} />
+                    <AgentLink key={agent.id} agent={agent} pathname={pathname} isCollapsed={isCollapsed} />
                 ))}
             </div>
 
             {/* FOOTER */}
             <div className="pt-6 mt-6 border-t border-white/5 px-2 pb-8">
-                <div className="flex flex-col gap-2 opacity-50 hover:opacity-100 transition-opacity">
+                <div className={`flex flex-col gap-2 opacity-50 hover:opacity-100 transition-opacity ${isCollapsed ? 'items-center' : ''}`}>
                     <div className="flex items-center gap-2">
                         <div className="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.4)]" />
-                        <span className="text-[10px] font-medium text-slate-400 uppercase tracking-widest">
-                            System Operational
-                        </span>
+                        {!isCollapsed && (
+                            <span className="text-[10px] font-medium text-slate-400 uppercase tracking-widest">
+                                System Operational
+                            </span>
+                        )}
                     </div>
-                    <div className="text-[10px] text-slate-600 font-medium">
-                        G4 AI Agents v1.2.0
-                    </div>
+                    {!isCollapsed && (
+                        <div className="text-[10px] text-slate-600 font-medium">
+                            G4 AI Agents v1.2.0
+                        </div>
+                    )}
                 </div>
             </div>
 
@@ -179,9 +196,42 @@ export function SidebarNav({ agents }: SidebarNavProps) {
     )
 }
 
-function AgentLink({ agent, pathname }: { agent: Agent, pathname: string }) {
+function AgentLink({ agent, pathname, isCollapsed }: { agent: Agent, pathname: string, isCollapsed: boolean }) {
     const href = `/dashboard/${agent.slug}`
     const isActive = pathname === href || pathname.startsWith(`${href}/`)
+
+    if (isCollapsed) {
+        return (
+            <TooltipProvider>
+                <Tooltip delayDuration={0}>
+                    <TooltipTrigger asChild>
+                        <Link
+                            href={href}
+                            className={`flex justify-center items-center p-2 rounded-lg transition-all duration-200 group w-full ${isActive
+                                ? 'bg-white/10 text-white shadow-[0_0_15px_rgba(28,115,232,0.1)] border border-white/5'
+                                : 'text-slate-300 hover:text-white hover:bg-slate-800'
+                                }`}
+                        >
+                            <div className={`w-8 h-8 rounded-full overflow-hidden flex-shrink-0 border transition-all ${isActive
+                                ? 'border-[#1C73E8] scale-105 shadow-sm'
+                                : 'border-white/10 group-hover:border-white/30'
+                                }`}>
+                                <img
+                                    src={agent.avatar}
+                                    alt={agent.name}
+                                    className="w-full h-full object-cover"
+                                />
+                            </div>
+                        </Link>
+                    </TooltipTrigger>
+                    <TooltipContent side="right" className="bg-[#111] border-white/10 text-white">
+                        <p className="font-medium">{agent.name}</p>
+                        <p className="text-xs text-slate-400">{agent.role}</p>
+                    </TooltipContent>
+                </Tooltip>
+            </TooltipProvider>
+        )
+    }
 
     return (
         <Link

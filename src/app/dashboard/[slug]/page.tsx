@@ -319,7 +319,6 @@ export default async function AgentPage({ params, searchParams }: AgentPageProps
             </div>
         )
     }
-
     if (slug === 'paid-social') {
         return (
             <div className="h-screen bg-black text-white font-sans flex flex-col overflow-hidden">
@@ -341,7 +340,9 @@ export default async function AgentPage({ params, searchParams }: AgentPageProps
                         />
                     }
                 >
-                    <PaidSocialDashboard />
+                    <div className="flex-1 w-full h-full overflow-hidden">
+                        <PaidSocialDashboard />
+                    </div>
                 </MobileDashboardLayout>
             </div>
         )

@@ -306,11 +306,20 @@ export function DashboardClient({ initialData }: { initialData?: AdsReportData |
 
                 <div className="max-w-7xl mx-auto space-y-8 w-full flex-1 flex flex-col justify-center">
 
-
+                    <motion.div
+                        initial={{ opacity: 0, y: -20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="mb-8"
+                    >
+                        <h1 className="text-4xl font-bold mb-2 bg-gradient-to-r from-orange-400 to-red-500 bg-clip-text text-transparent">
+                            Ads Performance Dashboard
+                        </h1>
+                        <p className="text-slate-400 text-lg">Import data to view report</p>
+                    </motion.div>
                     {loading ? (
                         <div className="flex flex-col items-center justify-center h-64 border-2 border-dashed border-white/10 rounded-lg bg-white/5">
                             <Loader2 className="w-10 h-10 text-[#1C73E8] animate-spin mb-4" />
-                            <p className="text-gray-300">{statusMessage}</p>
+                            <p className="text-slate-300">{statusMessage}</p>
                         </div>
                     ) : (
                         <div className="h-[60vh] flex items-center justify-center">
@@ -426,20 +435,20 @@ export function DashboardClient({ initialData }: { initialData?: AdsReportData |
         {
             metric: 'Total Spend',
             value: `$${(overview.total_spent || 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}`,
-            benchmark: efficiencyConfig.spend.min === 0 ? '-' : `$${efficiencyConfig.spend.min}-$${efficiencyConfig.spend.max}`,
-            status: getMetricStatus(overview.total_spent || 0, efficiencyConfig.spend.min, efficiencyConfig.spend.max, 'higher-better')
+            benchmark: '-',
+            status: 'neutral-no-benchmark' as const
         },
         {
             metric: 'Impressions',
             value: (overview.total_impressions || 0).toLocaleString(undefined, { notation: "compact" }),
-            benchmark: efficiencyConfig.impressions.min === 0 ? '-' : `${efficiencyConfig.impressions.min}-${efficiencyConfig.impressions.max}`,
-            status: getMetricStatus(overview.total_impressions || 0, efficiencyConfig.impressions.min, efficiencyConfig.impressions.max, 'higher-better')
+            benchmark: '-',
+            status: 'neutral-no-benchmark' as const
         },
         {
             metric: 'Clicks',
             value: (overview.total_clicks || 0).toLocaleString(),
-            benchmark: efficiencyConfig.clicks.min === 0 ? '-' : `${efficiencyConfig.clicks.min}-${efficiencyConfig.clicks.max}`,
-            status: getMetricStatus(overview.total_clicks || 0, efficiencyConfig.clicks.min, efficiencyConfig.clicks.max, 'higher-better')
+            benchmark: '-',
+            status: 'neutral-no-benchmark' as const
         },
         {
             metric: 'CTR',
@@ -492,12 +501,15 @@ export function DashboardClient({ initialData }: { initialData?: AdsReportData |
                 >
                     <div className="flex items-center gap-4">
                         <div className="flex flex-col">
+                            <h1 className="text-4xl font-bold mb-2 bg-gradient-to-r from-orange-400 to-red-500 bg-clip-text text-transparent">
+                                Ads Performance Dashboard
+                            </h1>
                             {reportData?.meta?.start_date && reportData?.meta?.end_date ? (
                                 <p className="text-slate-300 text-lg font-medium">
                                     Report Period: <span className="text-white">{new Date(reportData.meta.start_date).toLocaleDateString(undefined, { timeZone: 'UTC' })} - {new Date(reportData.meta.end_date).toLocaleDateString(undefined, { timeZone: 'UTC' })}</span>
                                 </p>
                             ) : null}
-                            <p className="text-gray-500 text-sm">
+                            <p className="text-white0 text-sm">
                                 Generated on {reportData?.meta?.date_generated ? new Date(reportData.meta.date_generated).toLocaleDateString() : 'N/A'}
                             </p>
                         </div>
@@ -562,7 +574,7 @@ export function DashboardClient({ initialData }: { initialData?: AdsReportData |
                                         </CardHeader>
                                         <CardContent>
                                             <div className="text-2xl font-bold text-white">{item.value}</div>
-                                            <div className="text-xs text-gray-500 mt-1 flex items-center gap-1">
+                                            <div className="text-xs text-white0 mt-1 flex items-center gap-1">
                                                 <span>Benchmark: {item.benchmark}</span>
                                             </div>
                                         </CardContent>
@@ -774,7 +786,7 @@ export function DashboardClient({ initialData }: { initialData?: AdsReportData |
                                             <span>Summarize</span>
                                         </button>
                                         <div className="h-4 w-px bg-slate-800" />
-                                        <div className="flex gap-2 bg-slate-950 p-1 rounded-lg border border-slate-800">
+                                        <div className="flex gap-2 bg-black p-1 rounded-lg border border-slate-800">
                                             {(['all', 'scale', 'monitor', 'pause'] as const).map((status) => (
                                                 <button
                                                     key={status}
@@ -808,25 +820,25 @@ export function DashboardClient({ initialData }: { initialData?: AdsReportData |
                                                         }`} />
                                                     <div>
                                                         <p className="font-medium text-slate-200">{ad.creative_name.substring(0, 50)}</p>
-                                                        <p className="text-xs text-gray-500 mt-1">{ad.campaign_name.substring(0, 60)}...</p>
+                                                        <p className="text-xs text-white0 mt-1">{ad.campaign_name.substring(0, 60)}...</p>
                                                     </div>
                                                 </div>
                                                 <div className="flex items-center gap-8 text-right">
                                                     <div>
-                                                        <p className="text-xs text-gray-500">CTR</p>
+                                                        <p className="text-xs text-white0">CTR</p>
                                                         <p className={`font-mono font-medium ${(ad.ctr_percent || 0) * 100 > 1 ? 'text-emerald-400' : 'text-slate-300'
                                                             }`}>
                                                             {((ad.ctr_percent || 0) * 100).toFixed(2)}%
                                                         </p>
                                                     </div>
                                                     <div>
-                                                        <p className="text-xs text-gray-500">Spend</p>
+                                                        <p className="text-xs text-white0">Spend</p>
                                                         <p className="font-mono text-slate-300">
                                                             ${(ad.spent || 0).toLocaleString()}
                                                         </p>
                                                     </div>
                                                     <div>
-                                                        <p className="text-xs text-gray-500">Action</p>
+                                                        <p className="text-xs text-white0">Action</p>
                                                         <span className={`text-xs px-2 py-1 rounded-full uppercase font-bold tracking-wider ${ad.status_bucket === 'scale' ? 'bg-emerald-500/20 text-emerald-400' :
                                                             ad.status_bucket === 'pause' ? 'bg-red-500/20 text-red-400' :
                                                                 'bg-amber-500/20 text-amber-400'
@@ -838,7 +850,7 @@ export function DashboardClient({ initialData }: { initialData?: AdsReportData |
                                             </div>
                                         ))}
                                     {ads?.by_ctr_ranked?.filter(ad => filterStatus === 'all' || ad.status_bucket === filterStatus).length === 0 && (
-                                        <div className="text-center py-10 text-gray-500">
+                                        <div className="text-center py-10 text-white0">
                                             No ads found with status "{filterStatus}"
                                         </div>
                                     )}
@@ -872,7 +884,7 @@ export function DashboardClient({ initialData }: { initialData?: AdsReportData |
                                         </div>
                                     </CardHeader>
                                     <CardContent>
-                                        <div className="bg-slate-950/50 p-4 rounded-md border border-slate-800">
+                                        <div className="bg-black/50 p-4 rounded-md border border-slate-800">
                                             <p className="text-sm text-slate-400 font-mono">
                                                 {action.supporting_stats || 'No stats available'}
                                             </p>
@@ -947,12 +959,12 @@ export function DashboardClient({ initialData }: { initialData?: AdsReportData |
                             <h4 className="font-medium text-sm text-slate-300 border-b border-slate-800 pb-1">CTR (Click-Through Rate) % - Higher is better</h4>
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-1">
-                                    <label className="text-xs text-gray-500">Min (Below this is Poor)</label>
+                                    <label className="text-xs text-white0">Min (Below this is Poor)</label>
                                     <div className="relative">
                                         <input
                                             type="number"
                                             step="0.01"
-                                            className="w-full bg-slate-950 border border-slate-700 rounded p-2 text-sm text-white"
+                                            className="w-full bg-black border border-slate-700 rounded p-2 text-sm text-white"
                                             value={tempConfig.ctr.min}
                                             onChange={(e) => setTempConfig({ ...tempConfig, ctr: { ...tempConfig.ctr, min: parseFloat(e.target.value) } })}
                                         />
@@ -960,12 +972,12 @@ export function DashboardClient({ initialData }: { initialData?: AdsReportData |
                                     </div>
                                 </div>
                                 <div className="space-y-1">
-                                    <label className="text-xs text-gray-500">Max (Above this is Great)</label>
+                                    <label className="text-xs text-white0">Max (Above this is Great)</label>
                                     <div className="relative">
                                         <input
                                             type="number"
                                             step="0.01"
-                                            className="w-full bg-slate-950 border border-slate-700 rounded p-2 text-sm text-white"
+                                            className="w-full bg-black border border-slate-700 rounded p-2 text-sm text-white"
                                             value={tempConfig.ctr.max}
                                             onChange={(e) => setTempConfig({ ...tempConfig, ctr: { ...tempConfig.ctr, max: parseFloat(e.target.value) } })}
                                         />
@@ -980,26 +992,26 @@ export function DashboardClient({ initialData }: { initialData?: AdsReportData |
                             <h4 className="font-medium text-sm text-slate-300 border-b border-slate-800 pb-1">CPC (Cost Per Click) $ - Lower is better</h4>
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-1">
-                                    <label className="text-xs text-gray-500">Min (Below this is Great)</label>
+                                    <label className="text-xs text-white0">Min (Below this is Great)</label>
                                     <div className="relative">
                                         <span className="absolute left-3 top-2 text-slate-600 text-xs">$</span>
                                         <input
                                             type="number"
                                             step="0.01"
-                                            className="w-full bg-slate-950 border border-slate-700 rounded p-2 pl-6 text-sm text-white"
+                                            className="w-full bg-black border border-slate-700 rounded p-2 pl-6 text-sm text-white"
                                             value={tempConfig.cpc.min}
                                             onChange={(e) => setTempConfig({ ...tempConfig, cpc: { ...tempConfig.cpc, min: parseFloat(e.target.value) } })}
                                         />
                                     </div>
                                 </div>
                                 <div className="space-y-1">
-                                    <label className="text-xs text-gray-500">Max (Above this is Poor)</label>
+                                    <label className="text-xs text-white0">Max (Above this is Poor)</label>
                                     <div className="relative">
                                         <span className="absolute left-3 top-2 text-slate-600 text-xs">$</span>
                                         <input
                                             type="number"
                                             step="0.01"
-                                            className="w-full bg-slate-950 border border-slate-700 rounded p-2 pl-6 text-sm text-white"
+                                            className="w-full bg-black border border-slate-700 rounded p-2 pl-6 text-sm text-white"
                                             value={tempConfig.cpc.max}
                                             onChange={(e) => setTempConfig({ ...tempConfig, cpc: { ...tempConfig.cpc, max: parseFloat(e.target.value) } })}
                                         />
@@ -1013,26 +1025,26 @@ export function DashboardClient({ initialData }: { initialData?: AdsReportData |
                             <h4 className="font-medium text-sm text-slate-300 border-b border-slate-800 pb-1">eCPM (Cost Per Mille) $ - Lower is better</h4>
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-1">
-                                    <label className="text-xs text-gray-500">Min (Below this is Great)</label>
+                                    <label className="text-xs text-white0">Min (Below this is Great)</label>
                                     <div className="relative">
                                         <span className="absolute left-3 top-2 text-slate-600 text-xs">$</span>
                                         <input
                                             type="number"
                                             step="0.01"
-                                            className="w-full bg-slate-950 border border-slate-700 rounded p-2 pl-6 text-sm text-white"
+                                            className="w-full bg-black border border-slate-700 rounded p-2 pl-6 text-sm text-white"
                                             value={tempConfig.cpm.min}
                                             onChange={(e) => setTempConfig({ ...tempConfig, cpm: { ...tempConfig.cpm, min: parseFloat(e.target.value) } })}
                                         />
                                     </div>
                                 </div>
                                 <div className="space-y-1">
-                                    <label className="text-xs text-gray-500">Max (Above this is Poor)</label>
+                                    <label className="text-xs text-white0">Max (Above this is Poor)</label>
                                     <div className="relative">
                                         <span className="absolute left-3 top-2 text-slate-600 text-xs">$</span>
                                         <input
                                             type="number"
                                             step="0.01"
-                                            className="w-full bg-slate-950 border border-slate-700 rounded p-2 pl-6 text-sm text-white"
+                                            className="w-full bg-black border border-slate-700 rounded p-2 pl-6 text-sm text-white"
                                             value={tempConfig.cpm.max}
                                             onChange={(e) => setTempConfig({ ...tempConfig, cpm: { ...tempConfig.cpm, max: parseFloat(e.target.value) } })}
                                         />
@@ -1045,24 +1057,24 @@ export function DashboardClient({ initialData }: { initialData?: AdsReportData |
                             <h4 className="font-medium text-sm text-slate-300 border-b border-slate-800 pb-1">Total Spend $ - Higher is better</h4>
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-1">
-                                    <label className="text-xs text-gray-500">Min (Below this is Poor)</label>
+                                    <label className="text-xs text-white0">Min (Below this is Poor)</label>
                                     <div className="relative">
                                         <span className="absolute left-3 top-2 text-slate-600 text-xs">$</span>
                                         <input
                                             type="number"
-                                            className="w-full bg-slate-950 border border-slate-700 rounded p-2 pl-6 text-sm text-white"
+                                            className="w-full bg-black border border-slate-700 rounded p-2 pl-6 text-sm text-white"
                                             value={tempConfig.spend.min}
                                             onChange={(e) => setTempConfig({ ...tempConfig, spend: { ...tempConfig.spend, min: parseFloat(e.target.value) } })}
                                         />
                                     </div>
                                 </div>
                                 <div className="space-y-1">
-                                    <label className="text-xs text-gray-500">Max (Above this is Great)</label>
+                                    <label className="text-xs text-white0">Max (Above this is Great)</label>
                                     <div className="relative">
                                         <span className="absolute left-3 top-2 text-slate-600 text-xs">$</span>
                                         <input
                                             type="number"
-                                            className="w-full bg-slate-950 border border-slate-700 rounded p-2 pl-6 text-sm text-white"
+                                            className="w-full bg-black border border-slate-700 rounded p-2 pl-6 text-sm text-white"
                                             value={tempConfig.spend.max}
                                             onChange={(e) => setTempConfig({ ...tempConfig, spend: { ...tempConfig.spend, max: parseFloat(e.target.value) } })}
                                         />
@@ -1076,19 +1088,19 @@ export function DashboardClient({ initialData }: { initialData?: AdsReportData |
                             <h4 className="font-medium text-sm text-slate-300 border-b border-slate-800 pb-1">Impressions - Higher is better</h4>
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-1">
-                                    <label className="text-xs text-gray-500">Min (Below this is Poor)</label>
+                                    <label className="text-xs text-white0">Min (Below this is Poor)</label>
                                     <input
                                         type="number"
-                                        className="w-full bg-slate-950 border border-slate-700 rounded p-2 text-sm text-white"
+                                        className="w-full bg-black border border-slate-700 rounded p-2 text-sm text-white"
                                         value={tempConfig.impressions.min}
                                         onChange={(e) => setTempConfig({ ...tempConfig, impressions: { ...tempConfig.impressions, min: parseFloat(e.target.value) } })}
                                     />
                                 </div>
                                 <div className="space-y-1">
-                                    <label className="text-xs text-gray-500">Max (Above this is Great)</label>
+                                    <label className="text-xs text-white0">Max (Above this is Great)</label>
                                     <input
                                         type="number"
-                                        className="w-full bg-slate-950 border border-slate-700 rounded p-2 text-sm text-white"
+                                        className="w-full bg-black border border-slate-700 rounded p-2 text-sm text-white"
                                         value={tempConfig.impressions.max}
                                         onChange={(e) => setTempConfig({ ...tempConfig, impressions: { ...tempConfig.impressions, max: parseFloat(e.target.value) } })}
                                     />
@@ -1101,19 +1113,19 @@ export function DashboardClient({ initialData }: { initialData?: AdsReportData |
                             <h4 className="font-medium text-sm text-slate-300 border-b border-slate-800 pb-1">Clicks - Higher is better</h4>
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-1">
-                                    <label className="text-xs text-gray-500">Min (Below this is Poor)</label>
+                                    <label className="text-xs text-white0">Min (Below this is Poor)</label>
                                     <input
                                         type="number"
-                                        className="w-full bg-slate-950 border border-slate-700 rounded p-2 text-sm text-white"
+                                        className="w-full bg-black border border-slate-700 rounded p-2 text-sm text-white"
                                         value={tempConfig.clicks.min}
                                         onChange={(e) => setTempConfig({ ...tempConfig, clicks: { ...tempConfig.clicks, min: parseFloat(e.target.value) } })}
                                     />
                                 </div>
                                 <div className="space-y-1">
-                                    <label className="text-xs text-gray-500">Max (Above this is Great)</label>
+                                    <label className="text-xs text-white0">Max (Above this is Great)</label>
                                     <input
                                         type="number"
-                                        className="w-full bg-slate-950 border border-slate-700 rounded p-2 text-sm text-white"
+                                        className="w-full bg-black border border-slate-700 rounded p-2 text-sm text-white"
                                         value={tempConfig.clicks.max}
                                         onChange={(e) => setTempConfig({ ...tempConfig, clicks: { ...tempConfig.clicks, max: parseFloat(e.target.value) } })}
                                     />
@@ -1141,7 +1153,7 @@ export function DashboardClient({ initialData }: { initialData?: AdsReportData |
 
             {/* Detail Modal */}
             <Dialog open={!!selectedAd} onOpenChange={(open) => !open && setSelectedAd(null)}>
-                <DialogContent className="w-full max-w-4xl sm:max-w-4xl bg-slate-950 border-slate-800">
+                <DialogContent className="w-full max-w-4xl sm:max-w-4xl bg-black border-slate-800">
                     <DialogHeader>
                         <DialogTitle className="text-xl leading-normal">{selectedAd?.creative_name}</DialogTitle>
                         <DialogDescription className="pt-2">
@@ -1152,31 +1164,31 @@ export function DashboardClient({ initialData }: { initialData?: AdsReportData |
                     {selectedAd && (
                         <div className="space-y-6 mt-4">
                             <div className="p-4 rounded-lg bg-slate-900/50 border border-slate-800">
-                                <p className="text-xs text-gray-500 mb-1">Campaign</p>
+                                <p className="text-xs text-white0 mb-1">Campaign</p>
                                 <p className="text-sm font-medium text-slate-200">{selectedAd.campaign_name}</p>
                             </div>
 
                             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                                 <div className="p-4 rounded-lg bg-slate-900/50 border border-slate-800">
-                                    <p className="text-xs text-gray-500">Impressions</p>
+                                    <p className="text-xs text-white0">Impressions</p>
                                     <p className="text-lg font-mono font-bold text-slate-200 truncate" title={((selectedAd.impressions || 0).toLocaleString())}>
                                         {(selectedAd.impressions || 0).toLocaleString()}
                                     </p>
                                 </div>
                                 <div className="p-4 rounded-lg bg-slate-900/50 border border-slate-800">
-                                    <p className="text-xs text-gray-500">Clicks</p>
+                                    <p className="text-xs text-white0">Clicks</p>
                                     <p className="text-lg font-mono font-bold text-slate-200 truncate" title={((selectedAd.clicks || 0).toLocaleString())}>
                                         {(selectedAd.clicks || 0).toLocaleString()}
                                     </p>
                                 </div>
                                 <div className="p-4 rounded-lg bg-slate-900/50 border border-slate-800">
-                                    <p className="text-xs text-gray-500">Spend</p>
+                                    <p className="text-xs text-white0">Spend</p>
                                     <p className="text-lg font-mono font-bold text-slate-200 truncate" title={`$${(selectedAd.spent || 0).toLocaleString()}`}>
                                         ${(selectedAd.spent || 0).toLocaleString()}
                                     </p>
                                 </div>
                                 <div className="p-4 rounded-lg bg-slate-900/50 border border-slate-800">
-                                    <p className="text-xs text-gray-500">CTR</p>
+                                    <p className="text-xs text-white0">CTR</p>
                                     <p className={`text-lg font-mono font-bold truncate ${(selectedAd.ctr_percent || 0) * 100 > 1 ? 'text-emerald-400' : 'text-slate-200'
                                         }`}>
                                         {((selectedAd.ctr_percent || 0) * 100).toFixed(2)}%
@@ -1186,13 +1198,13 @@ export function DashboardClient({ initialData }: { initialData?: AdsReportData |
 
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="p-4 rounded-lg bg-slate-900/50 border border-slate-800">
-                                    <p className="text-xs text-gray-500">CPC (Cost Per Click)</p>
+                                    <p className="text-xs text-white0">CPC (Cost Per Click)</p>
                                     <p className="text-lg font-mono font-bold text-slate-200">
                                         ${((selectedAd.spent || 0) / (selectedAd.clicks || 1)).toFixed(2)}
                                     </p>
                                 </div>
                                 <div className="p-4 rounded-lg bg-slate-900/50 border border-slate-800">
-                                    <p className="text-xs text-gray-500">CPM (Cost Per Mille)</p>
+                                    <p className="text-xs text-white0">CPM (Cost Per Mille)</p>
                                     <p className="text-lg font-mono font-bold text-slate-200">
                                         ${((selectedAd.spent || 0) / ((selectedAd.impressions || 1) / 1000)).toFixed(2)}
                                     </p>
@@ -1200,7 +1212,7 @@ export function DashboardClient({ initialData }: { initialData?: AdsReportData |
                             </div>
 
                             <div className="flex items-center justify-between pt-4 border-t border-slate-800">
-                                <span className="text-sm text-gray-500">Status Recommendation</span>
+                                <span className="text-sm text-white0">Status Recommendation</span>
                                 <span className={`px-4 py-1.5 rounded-full text-sm font-bold uppercase tracking-wider ${selectedAd.status_bucket === 'scale' ? 'bg-emerald-500/20 text-emerald-400' :
                                     selectedAd.status_bucket === 'pause' ? 'bg-red-500/20 text-red-400' :
                                         'bg-amber-500/20 text-amber-400'
@@ -1215,7 +1227,7 @@ export function DashboardClient({ initialData }: { initialData?: AdsReportData |
 
             {/* Summary Modal */}
             <Dialog open={!!summaryStatus} onOpenChange={(open) => !open && setSummaryStatus(null)}>
-                <DialogContent className="w-full max-w-7xl sm:max-w-7xl bg-slate-950 border-slate-800 max-h-[85vh] overflow-y-auto custom-scrollbar">
+                <DialogContent className="w-full max-w-7xl sm:max-w-7xl bg-black border-slate-800 max-h-[85vh] overflow-y-auto custom-scrollbar">
                     <DialogHeader>
                         <DialogTitle className="flex items-center gap-2">
                             <span>Performance Summary:</span>
@@ -1251,35 +1263,35 @@ export function DashboardClient({ initialData }: { initialData?: AdsReportData |
                                     {/* Summary Cards */}
                                     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
                                         <div className="p-3 rounded-lg bg-slate-900/50 border border-slate-800">
-                                            <p className="text-[10px] text-gray-500 uppercase tracking-widest">Ads Count</p>
+                                            <p className="text-[10px] text-white0 uppercase tracking-widest">Ads Count</p>
                                             <p className="text-xl font-mono font-bold text-slate-200">{filteredAds.length}</p>
                                         </div>
                                         <div className="p-3 rounded-lg bg-slate-900/50 border border-slate-800">
-                                            <p className="text-[10px] text-gray-500 uppercase tracking-widest">Spend</p>
+                                            <p className="text-[10px] text-white0 uppercase tracking-widest">Spend</p>
                                             <p className="text-xl font-mono font-bold text-slate-200 truncate" title={`$${totalSpent.toLocaleString()}`}>
                                                 ${totalSpent.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                                             </p>
                                         </div>
                                         <div className="p-3 rounded-lg bg-slate-900/50 border border-slate-800">
-                                            <p className="text-[10px] text-gray-500 uppercase tracking-widest">Impr.</p>
+                                            <p className="text-[10px] text-white0 uppercase tracking-widest">Impr.</p>
                                             <p className="text-xl font-mono font-bold text-slate-200 truncate" title={totalImpressions.toLocaleString()}>
                                                 {totalImpressions.toLocaleString(undefined, { notation: "compact" })}
                                             </p>
                                         </div>
                                         <div className="p-3 rounded-lg bg-slate-900/50 border border-slate-800">
-                                            <p className="text-[10px] text-gray-500 uppercase tracking-widest">Clicks</p>
+                                            <p className="text-[10px] text-white0 uppercase tracking-widest">Clicks</p>
                                             <p className="text-xl font-mono font-bold text-slate-200">
                                                 {totalClicks.toLocaleString()}
                                             </p>
                                         </div>
                                         <div className="p-3 rounded-lg bg-slate-900/50 border border-slate-800">
-                                            <p className="text-[10px] text-gray-500 uppercase tracking-widest">Avg CPC</p>
+                                            <p className="text-[10px] text-white0 uppercase tracking-widest">Avg CPC</p>
                                             <p className="text-xl font-mono font-bold text-slate-200">
                                                 ${avgCPC.toFixed(2)}
                                             </p>
                                         </div>
                                         <div className="p-3 rounded-lg bg-slate-900/50 border border-slate-800">
-                                            <p className="text-[10px] text-gray-500 uppercase tracking-widest">Avg CTR</p>
+                                            <p className="text-[10px] text-white0 uppercase tracking-widest">Avg CTR</p>
                                             <p className={`text-xl font-mono font-bold ${avgCTR * 100 > 1 ? 'text-emerald-400' : 'text-slate-200'}`}>
                                                 {(avgCTR * 100).toFixed(2)}%
                                             </p>
@@ -1293,7 +1305,7 @@ export function DashboardClient({ initialData }: { initialData?: AdsReportData |
                                         </div>
                                         <div className="max-h-[300px] overflow-y-auto custom-scrollbar">
                                             <table className="w-full text-sm text-left">
-                                                <thead className="text-xs text-gray-500 uppercase bg-slate-950 sticky top-0">
+                                                <thead className="text-xs text-white0 uppercase bg-black sticky top-0">
                                                     <tr>
                                                         <th className="px-4 py-3">Creative Name</th>
                                                         <th className="px-4 py-3 text-right">Spend</th>
