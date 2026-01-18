@@ -1,20 +1,27 @@
+import { getCrmData } from "@/actions/crm/get-crm-data";
+import { getCrmSettings } from "@/actions/crm/get-crm-settings";
+import { CrmContainer } from "@/components/crm/crm-container";
 import { Agent } from "@/lib/agents";
-import { CrmStats } from "./crm-stats";
-import { CrmFilters } from "./crm-filters";
-import { CrmTable } from "./crm-table";
 
 interface CrmDashboardProps {
-    agent: Agent;
+    agent?: Agent;
 }
 
-export function CrmDashboard({ agent }: CrmDashboardProps) {
+export async function CrmDashboard({ agent }: CrmDashboardProps) {
+    const crmData = await getCrmData();
+    const settings = await getCrmSettings();
+
+    if (!crmData) {
+        return <div className="text-white">Failed to load CRM data. Please try again.</div>;
+    }
+
+    const { leads, stats } = crmData;
+
     return (
-        <div className="flex-1 overflow-y-auto bg-black p-4 lg:p-6">
-            <div className="max-w-[1600px] mx-auto">
-                <CrmStats />
-                <CrmFilters />
-                <CrmTable />
-            </div>
-        </div>
+        <CrmContainer
+            initialLeads={leads}
+            stats={stats}
+            settings={settings}
+        />
     );
 }

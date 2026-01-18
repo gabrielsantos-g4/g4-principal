@@ -8,9 +8,10 @@ import { LayoutList, Target } from "lucide-react"
 interface OutreachTabsProps {
     initialIcp: any
     initialProspects: any[]
+    initialDemands?: any[]
 }
 
-export function OutreachTabs({ initialIcp, initialProspects }: OutreachTabsProps) {
+export function OutreachTabs({ initialIcp, initialProspects, initialDemands = [] }: OutreachTabsProps) {
     const [activeTab, setActiveTab] = useState<"targeting" | "leads">("targeting")
     const hasICP = !!initialIcp
 
@@ -21,8 +22,8 @@ export function OutreachTabs({ initialIcp, initialProspects }: OutreachTabsProps
                 <button
                     onClick={() => setActiveTab("targeting")}
                     className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${activeTab === "targeting"
-                            ? "bg-[#2a2a2a] text-white shadow-sm"
-                            : "text-gray-400 hover:text-white hover:bg-white/5"
+                        ? "bg-[#2a2a2a] text-white shadow-sm"
+                        : "text-gray-400 hover:text-white hover:bg-white/5"
                         }`}
                 >
                     <Target size={16} />
@@ -31,8 +32,8 @@ export function OutreachTabs({ initialIcp, initialProspects }: OutreachTabsProps
                 <button
                     onClick={() => setActiveTab("leads")}
                     className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${activeTab === "leads"
-                            ? "bg-[#2a2a2a] text-white shadow-sm"
-                            : "text-gray-400 hover:text-white hover:bg-white/5"
+                        ? "bg-[#2a2a2a] text-white shadow-sm"
+                        : "text-gray-400 hover:text-white hover:bg-white/5"
                         }`}
                 >
                     <LayoutList size={16} />
@@ -43,7 +44,7 @@ export function OutreachTabs({ initialIcp, initialProspects }: OutreachTabsProps
             {/* Tab Content */}
             <div className="flex-1">
                 {activeTab === "targeting" ? (
-                    <ICPForm key={hasICP ? 'edit' : 'create'} initialData={initialIcp} />
+                    <ICPForm key={hasICP ? 'edit' : 'create'} initialData={initialIcp} initialDemands={initialDemands} />
                 ) : (
                     <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
                         {hasICP ? (

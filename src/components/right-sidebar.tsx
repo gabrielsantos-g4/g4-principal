@@ -281,7 +281,7 @@ export function RightSidebar({ agent, userId, userName = 'there', initialChatId,
 
 
     return (
-        <div className={`border-l border-white/10 flex flex-col bg-[#171717] shrink-0 transition-all duration-300 relative ${isRightSidebarCollapsed ? 'w-[60px]' : 'w-[400px]'}`}>
+        <div className={`border-l border-white/10 flex flex-col bg-[#171717] w-full h-full transition-all duration-300 relative`}>
 
             {/* Toggle Button - Absolute */}
             <button
@@ -385,7 +385,7 @@ export function RightSidebar({ agent, userId, userName = 'there', initialChatId,
             </div>
 
             {/* Chat Input Mock */}
-            <div className={`p-8 pt-4 border-t border-white/10 shrink-0 transition-opacity duration-200 ${isRightSidebarCollapsed ? 'opacity-0 invisible hidden' : 'opacity-100 visible'}`}>
+            <div className={`p-4 pt-4 border-t border-white/10 shrink-0 transition-opacity duration-200 ${isRightSidebarCollapsed ? 'opacity-0 invisible hidden' : 'opacity-100 visible'}`}>
                 <div className="bg-white/5 border border-white/10 rounded-xl flex gap-2 p-2 items-end">
                     <textarea
                         onKeyDown={(e) => {
@@ -399,8 +399,7 @@ export function RightSidebar({ agent, userId, userName = 'there', initialChatId,
                         }}
                         rows={1}
                         placeholder={`Ask ${agent?.name || 'an agent'} a question...`}
-                        className="bg-transparent text-sm w-full outline-none text-white placeholder-gray-500 px-3 py-2 resize-none max-h-[200px] overflow-y-auto"
-                        style={{ minHeight: '40px' }}
+                        className="bg-transparent text-sm w-full outline-none text-white placeholder-gray-500 px-3 py-2 resize-none max-h-[200px] overflow-y-auto min-h-[40px]"
                         onInput={(e) => {
                             const target = e.target as HTMLTextAreaElement;
                             target.style.height = 'auto';
@@ -414,7 +413,7 @@ export function RightSidebar({ agent, userId, userName = 'there', initialChatId,
                             textarea.value = ''
                             textarea.style.height = 'auto'
                         }}
-                        className="bg-white text-black text-xs font-bold px-4 py-2 rounded-lg uppercase hover:bg-gray-200 transition-colors h-9 mb-0.5"
+                        className="bg-white text-black text-xs font-bold px-3 py-2 rounded-lg uppercase hover:bg-gray-200 transition-colors h-9 mb-0.5 whitespace-nowrap"
                     >
                         Send
                     </button>

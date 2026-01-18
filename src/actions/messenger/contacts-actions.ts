@@ -61,6 +61,22 @@ export async function getContactsByListId(listId: string) {
     return data as Contact[]
 }
 
+
+export async function getContactListCount(listId: string) {
+    const supabase = await createClient()
+
+    const { count, error } = await supabase
+        .from('camp_contacts')
+        .select('*', { count: 'exact', head: true })
+        .eq('list_id', listId)
+
+    if (error) {
+        console.error('Error fetching count:', error)
+        throw new Error('Failed to fetch count')
+    }
+
+    return count || 0
+}
 export async function updateContactSubscription(contactId: string, status: boolean) {
     const supabase = await createClient()
 

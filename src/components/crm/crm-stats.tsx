@@ -1,12 +1,22 @@
 
-export function CrmStats() {
+interface CrmStatsProps {
+    stats: {
+        contacts: number;
+        pipeline: number;
+        today: number;
+        tomorrow: number;
+        overdue: number;
+    };
+}
+
+export function CrmStats({ stats }: CrmStatsProps) {
     return (
-        <div className="grid grid-cols-5 gap-3 mb-4">
-            <StatCard label="Contacts" value="63" />
-            <StatCard label="Pipeline" value="$ 13,320" />
-            <StatCard label="Today" value="0" />
-            <StatCard label="Tomorrow" value="0" />
-            <StatCard label="Overdue" value="15" />
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mb-4">
+            <StatCard label="Contacts" value={stats.contacts.toString()} />
+            <StatCard label="Pipeline" value={`$ ${stats.pipeline.toLocaleString()}`} />
+            <StatCard label="Today" value={stats.today.toString()} />
+            <StatCard label="Tomorrow" value={stats.tomorrow.toString()} />
+            <StatCard label="Overdue" value={stats.overdue.toString()} />
         </div>
     );
 }

@@ -3,6 +3,7 @@ import { DashboardHeader } from '@/components/dashboard-header'
 import { RightSidebar } from '@/components/right-sidebar'
 import { redirect } from 'next/navigation'
 import { getProspects } from '@/actions/outreach-actions'
+import { getDemands } from '@/actions/outreach/get-demands'
 import { ProspectsGrid } from '@/components/outreach/prospects-grid'
 import { createClient } from '@/lib/supabase'
 
@@ -98,6 +99,7 @@ export default async function AgentPage({ params, searchParams }: AgentPageProps
     const companyId = profile?.empresa_id
 
     let outreachData = null
+    let outreachDemands: any[] = []
     let hasICP = false
     let audienceChats: any[] = []
     let competitors: any[] = []
@@ -105,11 +107,13 @@ export default async function AgentPage({ params, searchParams }: AgentPageProps
 
     if (isOutreach) {
         // Parallel fetching for performance
-        const [prospects, icp] = await Promise.all([
+        const [prospects, icp, demands] = await Promise.all([
             getProspects(),
-            getICP()
+            getICP(),
+            getDemands()
         ])
         outreachData = prospects
+        outreachDemands = demands
         hasICP = !!icp
     }
 
@@ -496,6 +500,7 @@ export default async function AgentPage({ params, searchParams }: AgentPageProps
                             <OutreachTabs
                                 initialIcp={hasICP ? await getICP() : null}
                                 initialProspects={outreachData || []}
+                                initialDemands={outreachDemands || []}
                             />
                         ) : (
                             // Default Print View for other agents
