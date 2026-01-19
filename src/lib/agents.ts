@@ -37,7 +37,7 @@ export const AGENTS: Agent[] = [
     {
         id: 'audience-luke',
         name: 'Luke',
-        role: 'Audience, ICP, Insights',
+        role: 'Audience, ICP',
         slug: 'audience-channels',
         category: 'strategy',
         avatar: 'https://i.pinimg.com/736x/e0/af/9e/e0af9e4a18ae1113820e9dbcf030220b.jpg',
@@ -48,7 +48,7 @@ export const AGENTS: Agent[] = [
     {
         id: 'competitors-celine',
         name: 'Celine',
-        role: 'Competitors, Differentiation',
+        role: 'Competitors Analysis',
         slug: 'competitors-analysis',
         category: 'strategy',
         avatar: 'https://i.pinimg.com/736x/00/8c/0b/008c0bc9ebc79b1e2c0f8fffe8f81183.jpg',
@@ -93,7 +93,7 @@ export const AGENTS: Agent[] = [
     {
         id: 'seo-joelle',
         name: 'Joelle',
-        role: 'Organic Search (SEO)',
+        role: 'Organic Search, SEO',
         slug: 'organic-search',
         category: 'marketing',
         avatar: 'https://i.pinimg.com/736x/70/47/86/7047860f62606dd66724cf3a18a5bf6b.jpg',
@@ -115,7 +115,7 @@ export const AGENTS: Agent[] = [
     {
         id: 'design-melinda',
         name: 'Melinda',
-        role: 'Design & Video',
+        role: 'Design, Video',
         slug: 'design-video',
         category: 'marketing',
         avatar: 'https://i.pinimg.com/736x/d9/dd/c2/d9ddc27d2a07dc48e539146bf5d8eb48.jpg',
@@ -126,7 +126,7 @@ export const AGENTS: Agent[] = [
     {
         id: 'copy-noah',
         name: 'Noah',
-        role: 'Copy & Messaging',
+        role: 'Copy, Messaging',
         slug: 'copy-messaging',
         category: 'marketing',
         avatar: 'https://i.pinimg.com/736x/fc/9d/56/fc9d561d46549ccf9f252f5a23137765.jpg',
@@ -148,7 +148,7 @@ export const AGENTS: Agent[] = [
     {
         id: 'utm-bella',
         name: 'Bella',
-        role: 'UTM Tracking',
+        role: 'UTM, Tracking',
         slug: 'utm-tracking',
         category: 'marketing',
         avatar: 'https://i.pinimg.com/736x/e3/84/bb/e384bba92cfbe0b20581b525c3d17e71.jpg',
@@ -193,7 +193,7 @@ export const AGENTS: Agent[] = [
     {
         id: 'crm-emily',
         name: 'Emily',
-        role: 'Pipeline & CRM',
+        role: 'Pipeline, CRM',
         slug: 'crm',
         category: 'sales',
         avatar: 'https://i.pinimg.com/736x/1c/22/8b/1c228b39c34d484e87b2c93c8a215159.jpg',

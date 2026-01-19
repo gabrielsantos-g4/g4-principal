@@ -1,10 +1,37 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { updateCompanyDNA } from '@/actions/company-actions'
 import { toast } from 'sonner'
 import { Loader2 } from 'lucide-react'
+
+function AutoResizeTextarea(props: React.TextareaHTMLAttributes<HTMLTextAreaElement>) {
+    const textareaRef = useRef<HTMLTextAreaElement>(null)
+
+    useEffect(() => {
+        if (textareaRef.current) {
+            textareaRef.current.style.height = 'auto'
+            textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`
+        }
+    }, [props.defaultValue, props.value])
+
+    const handleInput = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+        const target = e.target
+        target.style.height = 'auto'
+        target.style.height = `${target.scrollHeight}px`
+        props.onInput?.(e)
+    }
+
+    return (
+        <textarea
+            {...props}
+            ref={textareaRef}
+            onInput={handleInput}
+            className={`${props.className} overflow-hidden`}
+        />
+    )
+}
 
 interface CompanyDNAProps {
     company: any // Typed as any for simplicity, ideally should be a partial interface
@@ -37,7 +64,7 @@ export function CompanyDNADialog({ company, children }: CompanyDNAProps) {
             <DialogTrigger asChild>
                 {children}
             </DialogTrigger>
-            <DialogContent showCloseButton={false} className="bg-black border border-white/10 text-white sm:max-w-4xl max-h-[90vh] overflow-y-auto custom-scrollbar p-0 gap-0">
+            <DialogContent showCloseButton={false} className="bg-[#171717] border border-white/10 text-white sm:max-w-4xl max-h-[90vh] overflow-y-auto custom-scrollbar p-0 gap-0">
                 <div className="p-6 pb-4 border-b border-white/10">
                     <DialogTitle className="text-lg font-bold tracking-wider">COMPANY DNA</DialogTitle>
                     <p className="text-xs text-gray-500 mt-1 uppercase tracking-wide">Customize your AI context</p>
@@ -72,7 +99,7 @@ export function CompanyDNADialog({ company, children }: CompanyDNAProps) {
                     {/* Useful Links */}
                     <div className="space-y-2">
                         <label className="text-xs font-bold text-gray-500 uppercase tracking-wider block">Useful Links</label>
-                        <textarea
+                        <AutoResizeTextarea
                             name="useful_links"
                             defaultValue={company?.useful_links || ''}
                             placeholder={`LinkedIn: https://linkedin.com/company/...\nBlog: https://blog.company.com\nCase Studies: https://...`}
@@ -85,7 +112,7 @@ export function CompanyDNADialog({ company, children }: CompanyDNAProps) {
                     {/* ICP */}
                     <div className="space-y-2">
                         <label className="text-xs font-bold text-gray-500 uppercase tracking-wider block">About the Company / Product</label>
-                        <textarea
+                        <AutoResizeTextarea
                             name="icp"
                             defaultValue={company?.ideal_customer_profile || ''}
                             placeholder={`Company size: 50-200 employees\nIndustry: B2B SaaS, Tech\nDecision makers: VP of Sales, CMO\nPain points: Manual processes, low conversion\nBudget range: $50K-$200K annually`}
@@ -98,7 +125,7 @@ export function CompanyDNADialog({ company, children }: CompanyDNAProps) {
                     {/* Brand Voice */}
                     <div className="space-y-2">
                         <label className="text-xs font-bold text-gray-500 uppercase tracking-wider block">Brand Voice & Copy Style</label>
-                        <textarea
+                        <AutoResizeTextarea
                             name="brand_voice"
                             defaultValue={company?.brand_voice || ''}
                             placeholder={`Tone: Professional yet conversational\nStyle: Direct and benefit-driven, avoid jargon\nLanguage: Use active voice, short sentences\nPersonality: Confident but not arrogant\nAvoid: Corporate speak, buzzwords, hype`}

@@ -33,11 +33,13 @@ export async function Sidebar() {
         .single()
 
     const companies = profile?.main_empresas
-    const companyInfo = Array.isArray(companies) ? companies[0] : companies
-    const companyName = companyInfo?.name || 'My Company'
-    const userName = profile?.name || user?.email || 'User'
+    // Supabase can return an array or object depending on relation type, but typically object for M-1
+    // We treat it safely
+    const companyData = Array.isArray(companies) ? companies[0] : companies
+    const companyName = companyData?.name || 'My Company'
+    const userName = profile?.name || 'User'
     const userRole = profile?.role || 'User'
-    const userAvatar = profile?.avatar_url || '/gabriel-santos.png'
+    const userAvatar = '/gabriel-santos.png'
 
     return (
         <SidebarWrapper>
@@ -48,7 +50,8 @@ export async function Sidebar() {
                     name: userName,
                     role: userRole,
                     avatar: userAvatar,
-                    companyName: companyName
+                    companyName: companyName,
+                    email: user?.email || ''
                 }}
             />
         </SidebarWrapper>

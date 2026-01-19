@@ -12,8 +12,6 @@ interface SupportDashboardProps {
 
 export function SupportDashboard({ agent, trainings, companyId }: SupportDashboardProps) {
     return (
-        <div className="flex-1 overflow-y-auto bg-black p-4 lg:p-6">
-            <SupportTabs trainings={trainings} companyId={companyId} />
-        </div>
+        <SupportTabs trainings={trainings} companyId={companyId} />
     );
 }

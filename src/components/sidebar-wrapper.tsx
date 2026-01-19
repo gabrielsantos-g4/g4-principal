@@ -62,11 +62,7 @@ export function SidebarWrapper({ children }: { children: React.ReactNode }) {
                 </div>
 
                 {/* Collapsed State Placeholder (if needed, but user said "no content") */}
-                {isCollapsed && (
-                    <div className="flex-1 flex flex-col items-center py-4 gap-4">
-                        {/* Icons could go here if we wanted a mini-sidebar, but user said "sem conteúdo nenhum" (no content at all) */}
-                    </div>
-                )}
+
             </aside>
 
             {/* Overlay for mobile */}

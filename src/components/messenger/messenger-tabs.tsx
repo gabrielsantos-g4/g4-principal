@@ -56,7 +56,10 @@ export function MessengerTabs() {
     ]
 
     // Determine current tab value based on pathname
-    const currentTab = routes.find(r => r.value === pathname)?.value || routes[0].value
+    // If exact match doesn't exist, try to match by prefix for nested routes
+    const currentTab = routes.find(r => r.value === pathname)?.value ||
+        routes.find(r => pathname.startsWith(r.value) && r.value !== "/dashboard/messenger")?.value ||
+        "/dashboard/messenger"
 
     return (
         <div className="pb-6">
@@ -65,21 +68,25 @@ export function MessengerTabs() {
                 className="w-full"
                 onValueChange={(value) => router.push(value)}
             >
-                <TabsList className="bg-[#171717] border-b border-white/10 p-1 h-auto flex-wrap justify-start w-full rounded-none">
-                    {routes.map((route) => (
-                        <TabsTrigger
-                            key={route.value}
-                            value={route.value}
-                            className={cn(
-                                "data-[state=active]:bg-[#2a2a2a] data-[state=active]:text-white data-[state=active]:shadow-sm rounded-md px-3 py-2 text-sm font-medium text-gray-400 hover:text-white hover:bg-white/5 transition-all flex items-center gap-2",
-                                currentTab === route.value ? "text-white" : ""
-                            )}
-                        >
-                            <route.icon className="h-4 w-4" />
-                            {route.label}
-                        </TabsTrigger>
-                    ))}
-                </TabsList>
+                <div className="w-full overflow-x-auto no-scrollbar border-b border-white/10">
+                    <TabsList className="bg-transparent p-0 h-auto flex w-max justify-start space-x-2 px-4 py-2">
+                        {routes.map((route) => (
+                            <TabsTrigger
+                                key={route.value}
+                                value={route.value}
+                                className={cn(
+                                    "rounded-full px-4 py-2 text-sm font-medium transition-all flex items-center gap-2 border border-transparent",
+                                    currentTab === route.value
+                                        ? "bg-white/10 text-white border-white/20"
+                                        : "text-gray-400 hover:text-white hover:bg-white/5"
+                                )}
+                            >
+                                <route.icon className="h-4 w-4" />
+                                {route.label}
+                            </TabsTrigger>
+                        ))}
+                    </TabsList>
+                </div>
             </Tabs>
         </div>
     )

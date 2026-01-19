@@ -78,16 +78,15 @@ export function GabrielExpertiseDialog({ children }: { children: React.ReactNode
                             <h3 className="text-xs font-bold text-[#1C73E8] uppercase tracking-widest border-b border-white/5 pb-2">
                                 {area.category}
                             </h3>
-                            <div className="space-y-2">
-                                {area.roles.map((role) => (
-                                    <div
-                                        key={role}
-                                        className="text-gray-300 text-sm py-2 px-3 rounded hover:bg-white/5 hover:text-white transition-colors cursor-default border border-transparent hover:border-white/5"
-                                    >
-                                        {role}
-                                    </div>
-                                ))}
-                            </div>
+                            {area.roles.map((role) => (
+                                <a
+                                    key={role}
+                                    href="mailto:gabriel@startg4.com?subject=Professional%20Services"
+                                    className="block text-gray-300 text-sm py-2 px-3 rounded hover:bg-white/5 hover:text-white transition-colors cursor-pointer border border-transparent hover:border-white/5"
+                                >
+                                    {role}
+                                </a>
+                            ))}
                         </div>
                     ))}
                 </div>

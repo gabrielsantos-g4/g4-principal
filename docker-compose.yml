@@ -1,0 +1,80 @@
+version: "3.7"
+
+services:
+  ads-metrics-front:
+    image: gabrielsantosg4/g4-principal:v0.12
+    networks:
+      - network_public
+    environment:
+      - NODE_ENV=production
+      - NEXT_TELEMETRY_DISABLED=1
+      # Supabase Configuration
+      - NEXT_PUBLIC_SUPABASE_URL=https://eookwjdxufyrokrajdfu.supabase.co
+      - NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVvb2t3amR4dWZ5cm9rcmFqZGZ1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxOTY4MzIsImV4cCI6MjA3MDc3MjgzMn0.AZ6LxbERq7UsV7-DMyPxewEn6UBs3fkv6bGY7iM87qA
+      - SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVvb2t3amR4dWZ5cm9rcmFqZGZ1Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NTE5NjgzMiwiZXhwIjoyMDcwNzcyODMyfQ.NAm-SZuucaZ78x-VOl3vdvdGT0qt7MqDjp9pwZo7l7U
+      - SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVvb2t3amR4dWZ5cm9rcmFqZGZ1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxOTY4MzIsImV4cCI6MjA3MDc3MjgzMn0.AZ6LxbERq7UsV7-DMyPxewEn6UBs3fkv6bGY7iM87qA
+
+      # R2 Configuration
+      - R2_ACCOUNT_ID=6e04ebe98309549c3fdbe7af689e8c2d
+      - NEXT_PUBLIC_R2_PUBLIC_DOMAIN=s3.startg4.com
+      - R2_BUCKET_NAME=startg4
+      - R2_ACCESS_KEY_ID=02e5338877d20a583d77dda166a53181
+      - R2_SECRET_ACCESS_KEY=36c884947c88b42f6df8fdec78badaf44e1541b249cbb28638753be342615364
+
+      # Frontend URL
+      - NEXT_PUBLIC_APP_URL=https://app.startg4.com
+
+    deploy:
+      mode: replicated
+      replicas: 1
+      update_config:
+        order: start-first
+        failure_action: rollback
+        delay: 10s
+      rollback_config:
+        parallelism: 0
+        order: stop-first
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+        window: 120s
+      labels:
+        # Traefik configurações básicas
+        - "traefik.enable=true"
+        - "traefik.http.routers.ads-metrics.rule=Host(`app.startg4.com`)"
+        - "traefik.http.routers.ads-metrics.entrypoints=websecure"
+        - "traefik.http.routers.ads-metrics.tls.certresolver=letsencryptresolver"
+        - "traefik.http.services.ads-metrics.loadbalancer.server.port=3000"
+
+        # Headers de segurança
+        - "traefik.http.middlewares.ads-headers.headers.customResponseHeaders.X-Robots-Tag=noindex,nofollow,nosnippet,noarchive,notranslate,noimageindex"
+        - "traefik.http.middlewares.ads-headers.headers.sslRedirect=true"
+        - "traefik.http.middlewares.ads-headers.headers.stsSeconds=31536000"
+        - "traefik.http.middlewares.ads-headers.headers.stsIncludeSubdomains=true"
+        - "traefik.http.middlewares.ads-headers.headers.stsPreload=true"
+        - "traefik.http.middlewares.ads-headers.headers.forceSTSHeader=true"
+        - "traefik.http.middlewares.ads-headers.headers.customFrameOptionsValue=SAMEORIGIN"
+
+        # Headers para Server Actions (CRITICAL FIX from working stack)
+        - "traefik.http.middlewares.ads-headers.headers.customRequestHeaders.Origin=https://app.startg4.com"
+        - "traefik.http.middlewares.ads-headers.headers.customRequestHeaders.Host=app.startg4.com"
+
+        # Aplicar middlewares
+        - "traefik.http.routers.ads-metrics.middlewares=ads-headers"
+
+        # Compressão
+        - "traefik.http.middlewares.ads-compress.compress=true"
+        - "traefik.http.routers.ads-metrics.middlewares=ads-compress,ads-headers"
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+
+networks:
+  network_public:
+    external: true
+    name: network_public

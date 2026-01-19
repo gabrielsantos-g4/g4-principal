@@ -23,8 +23,8 @@ export function SupportTabs({ trainings, companyId }: SupportTabsProps) {
                 <button
                     onClick={() => setActiveTab("training")}
                     className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-all ${activeTab === "training"
-                            ? "bg-[#2a2a2a] text-white shadow-sm"
-                            : "text-gray-400 hover:text-white hover:bg-white/5"
+                        ? "bg-[#2a2a2a] text-white shadow-sm"
+                        : "text-gray-400 hover:text-white hover:bg-white/5"
                         }`}
                 >
                     <GraduationCap size={16} />
@@ -33,8 +33,8 @@ export function SupportTabs({ trainings, companyId }: SupportTabsProps) {
                 <button
                     onClick={() => setActiveTab("connectors")}
                     className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-all ${activeTab === "connectors"
-                            ? "bg-[#2a2a2a] text-white shadow-sm"
-                            : "text-gray-400 hover:text-white hover:bg-white/5"
+                        ? "bg-[#2a2a2a] text-white shadow-sm"
+                        : "text-gray-400 hover:text-white hover:bg-white/5"
                         }`}
                 >
                     <Waypoints size={16} />
@@ -43,8 +43,8 @@ export function SupportTabs({ trainings, companyId }: SupportTabsProps) {
                 <button
                     onClick={() => setActiveTab("reports")}
                     className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-all ${activeTab === "reports"
-                            ? "bg-[#2a2a2a] text-white shadow-sm"
-                            : "text-gray-400 hover:text-white hover:bg-white/5"
+                        ? "bg-[#2a2a2a] text-white shadow-sm"
+                        : "text-gray-400 hover:text-white hover:bg-white/5"
                         }`}
                 >
                     <BarChart3 size={16} />
@@ -55,7 +55,7 @@ export function SupportTabs({ trainings, companyId }: SupportTabsProps) {
             {/* Tab Content */}
             <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
                 {activeTab === "training" && (
-                    <div className="flex flex-col gap-6 max-w-[1600px] mx-auto">
+                    <div className="flex flex-col gap-6 max-w-5xl mx-auto">
                         <KnowledgeBaseUpload companyId={companyId} />
                         <TrainingsList trainings={trainings} />
                         <FineTuneForm companyId={companyId} />
@@ -63,7 +63,7 @@ export function SupportTabs({ trainings, companyId }: SupportTabsProps) {
                 )}
 
                 {activeTab === "connectors" && (
-                    <div className="flex flex-col gap-6 max-w-[1600px] mx-auto">
+                    <div className="flex flex-col gap-6 max-w-5xl mx-auto">
                         <ChannelsConfig companyId={companyId} />
                     </div>
                 )}

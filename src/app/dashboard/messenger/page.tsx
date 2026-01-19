@@ -2,7 +2,6 @@ import { getDashboardStats, getDashboardChartData, getRecentActivity } from "@/a
 import { Overview } from "@/components/messenger/overview"
 import { RecentActivity } from "@/components/messenger/recent-activity"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { Separator } from "@/components/ui/separator"
 import { MessageSquare, Users, Megaphone, CheckCheck } from "lucide-react"
 
 export default async function MessengerDashboardPage() {
@@ -11,12 +10,7 @@ export default async function MessengerDashboardPage() {
     const recentActivity = await getRecentActivity()
 
     return (
-
         <div className="flex-1 space-y-4 p-8 pt-6">
-            <div className="flex items-center justify-between space-y-2">
-                <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
-            </div>
-
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                 <Card className="bg-[#1a1a1a] border-white/10 text-white">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">

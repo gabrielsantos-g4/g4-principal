@@ -26,6 +26,7 @@ interface SidebarNavProps {
         role: string
         avatar: string
         companyName: string
+        email: string
     }
 }
 
@@ -86,6 +87,7 @@ export function SidebarNav({ agents, user }: SidebarNavProps) {
                         <DropdownMenuLabel className="font-normal p-3">
                             <div className="flex flex-col space-y-1">
                                 <p className="text-sm font-medium leading-none text-white">{user.name}</p>
+                                <p className="text-xs leading-none text-gray-500">{user.email}</p>
                                 <p className="text-xs leading-none text-gray-500">{user.companyName}</p>
                             </div>
                         </DropdownMenuLabel>
@@ -200,10 +202,10 @@ export function SidebarNav({ agents, user }: SidebarNavProps) {
                         {!isCollapsed && (
                             <div className="flex flex-col overflow-hidden">
                                 <span className="truncate text-sm font-medium text-slate-200 group-hover:text-white transition-colors">
-                                    {user.name.split(' ')[0]}
+                                    Gabriel Santos
                                 </span>
                                 <span className="text-xs text-slate-500 group-hover:text-slate-400 transition-colors whitespace-normal leading-tight">
-                                    {user.role}
+                                    Fractional Full-Stack Marketer and Sales Dev
                                 </span>
                             </div>
                         )}

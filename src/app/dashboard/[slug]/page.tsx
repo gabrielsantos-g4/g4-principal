@@ -69,28 +69,10 @@ export default async function AgentPage({ params, searchParams }: AgentPageProps
         return (
             <div className="h-screen bg-black text-white font-sans flex flex-col overflow-hidden">
                 <DashboardHeader />
-                <MobileDashboardLayout
-                    rightSidebar={
-                        <RightSidebar
-                            key="orchestrator"
-                            userId={user?.id}
-                            companyId={companyId}
-                            userName={(user?.user_metadata?.full_name || user?.user_metadata?.name || 'there').split(' ')[0]}
-                            agent={{
-                                name: 'Gabriel Santos',
-                                avatarUrl: '/gabriel-santos.png',
-                                role: 'Orchestrator',
-                                externalUrl: '',
-                                slug: 'orchestrator',
-                                description: 'Orchestrator'
-                            }}
-                        />
-                    }
-                >
-                    <div className="hidden md:flex flex-1 bg-black overflow-hidden">
-                        <NotesScratchpad agentName="Orchestrator" />
-                    </div>
-                </MobileDashboardLayout>
+                <div className="flex-1 bg-black w-full h-full flex items-center justify-center text-zinc-900">
+                    {/* Empty Black Screen */}
+                    Orchestrator
+                </div>
             </div>
         )
     }
@@ -280,23 +262,28 @@ export default async function AgentPage({ params, searchParams }: AgentPageProps
         return (
             <div className="h-screen bg-black text-white font-sans flex flex-col overflow-hidden">
                 <DashboardHeader />
-                <div className="flex flex-1 min-h-0">
-                    <SupportDashboard agent={agent} trainings={trainings} companyId={companyId} />
-                    <RightSidebar
-                        key={slug + (chatId || '')}
-                        userId={user?.id}
-                        companyId={companyId}
-                        userName={(user?.user_metadata?.full_name || user?.user_metadata?.name || 'there').split(' ')[0]}
-                        agent={{
-                            name: agent.name,
-                            avatarUrl: agent.avatar,
-                            role: agent.role,
-                            externalUrl: agent.externalUrl,
-                            slug: agent.slug,
-                            description: agent.description
-                        }}
-                    />
-                </div>
+                <MobileDashboardLayout
+                    rightSidebar={
+                        <RightSidebar
+                            key={slug + (chatId || '')}
+                            userId={user?.id}
+                            companyId={companyId}
+                            userName={(user?.user_metadata?.full_name || user?.user_metadata?.name || 'there').split(' ')[0]}
+                            agent={{
+                                name: agent.name,
+                                avatarUrl: agent.avatar,
+                                role: agent.role,
+                                externalUrl: agent.externalUrl,
+                                slug: agent.slug,
+                                description: agent.description
+                            }}
+                        />
+                    }
+                >
+                    <div className="flex-1 w-full h-full overflow-hidden">
+                        <SupportDashboard agent={agent} trainings={trainings} companyId={companyId} />
+                    </div>
+                </MobileDashboardLayout>
             </div>
         )
     }

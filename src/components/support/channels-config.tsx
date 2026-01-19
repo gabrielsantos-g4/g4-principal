@@ -114,7 +114,7 @@ export function ChannelsConfig({ companyId, showWebChat = true }: ChannelsConfig
             if (result.error) {
                 toast.error(result.error);
             } else {
-                toast.success("Instância excluída com sucesso!");
+                toast.success("Instance deleted successfully!");
                 setDeleteDialogOpen(false);
                 setInstanceToDelete(null);
                 // Silent refresh
@@ -122,7 +122,7 @@ export function ChannelsConfig({ companyId, showWebChat = true }: ChannelsConfig
             }
         } catch (error) {
             console.error("Delete instance exception:", error);
-            toast.error("Erro ao excluir instância.");
+            toast.error("Error deleting instance.");
         } finally {
             setIsDeleting(false);
         }
@@ -143,7 +143,7 @@ export function ChannelsConfig({ companyId, showWebChat = true }: ChannelsConfig
             if (result.error) {
                 toast.error(result.error);
             } else {
-                toast.success("Instância criada com sucesso!");
+                toast.success("Instance created successfully!");
                 setNewInstanceOpen(false);
                 setNewInstanceName("");
                 // Refresh manually to be safe
@@ -151,7 +151,7 @@ export function ChannelsConfig({ companyId, showWebChat = true }: ChannelsConfig
                 setInstances(waInstances);
             }
         } catch (error) {
-            toast.error("Erro ao criar instância.");
+            toast.error("Error creating instance.");
         } finally {
             setCreatingInstance(false);
         }
@@ -183,13 +183,13 @@ export function ChannelsConfig({ companyId, showWebChat = true }: ChannelsConfig
                     ));
                 }
 
-                toast.success("Solicitação de QR Code enviada!");
+                toast.success("QR Code request sent!");
             } else {
-                toast.error("Falha ao solicitar QR Code.");
+                toast.error("Failed to request QR Code.");
             }
         } catch (error) {
             console.error(error);
-            toast.error("Erro ao enviar solicitação.");
+            toast.error("Error sending request.");
         } finally {
             setGenerating(null);
         }
@@ -257,29 +257,29 @@ export function ChannelsConfig({ companyId, showWebChat = true }: ChannelsConfig
                                 <DialogTrigger asChild>
                                     <Button className="bg-[#1C73E8] hover:bg-[#1557b0] text-white h-8 text-xs">
                                         <Plus className="mr-2 h-3 w-3" />
-                                        Nova Instância
+                                        New Instance
                                     </Button>
                                 </DialogTrigger>
                                 <DialogContent className="sm:max-w-[425px] bg-[#1a1a1a] border-white/10 text-white">
                                     <DialogHeader>
-                                        <DialogTitle>Nova Instância</DialogTitle>
+                                        <DialogTitle>New Instance</DialogTitle>
                                         <DialogDescription className="text-gray-400">
-                                            Crie uma nova instância para conectar seu WhatsApp.
+                                            Create a new instance to connect your WhatsApp.
                                         </DialogDescription>
                                     </DialogHeader>
                                     <form onSubmit={handleCreateInstance} className="space-y-4">
                                         <div className="space-y-2">
-                                            <Label htmlFor="name">Nome da Instância</Label>
+                                            <Label htmlFor="name">Instance Name</Label>
                                             <Input
                                                 id="name"
                                                 value={newInstanceName}
                                                 onChange={(e) => setNewInstanceName(e.target.value)}
-                                                placeholder="Ex: Comercial"
+                                                placeholder="e.g. Sales"
                                                 className="bg-[#0f0f0f] border-white/10 text-white placeholder:text-gray-600 focus-visible:ring-[#1C73E8]"
                                                 required
                                             />
                                             <p className="text-xs text-gray-500">
-                                                Apenas letras, números, hífens e underlines.
+                                                Only letters, numbers, hyphens and underscores.
                                             </p>
                                         </div>
                                         <DialogFooter>
@@ -290,7 +290,7 @@ export function ChannelsConfig({ companyId, showWebChat = true }: ChannelsConfig
                                                 disabled={creatingInstance}
                                                 className="border-white/10 hover:bg-white/5 text-gray-300"
                                             >
-                                                Cancelar
+                                                Cancel
                                             </Button>
                                             <Button
                                                 type="submit"
@@ -298,7 +298,7 @@ export function ChannelsConfig({ companyId, showWebChat = true }: ChannelsConfig
                                                 className="bg-[#1C73E8] hover:bg-[#1557b0] text-white"
                                             >
                                                 {creatingInstance && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                                Criar
+                                                Create
                                             </Button>
                                         </DialogFooter>
                                     </form>
@@ -312,18 +312,18 @@ export function ChannelsConfig({ companyId, showWebChat = true }: ChannelsConfig
                             </div>
                         ) : instances.length === 0 ? (
                             <div className="text-center p-8 text-gray-500 text-sm border border-dashed border-white/10 rounded-lg">
-                                Nenhuma instância conectada. Clique em "Nova Instância" para começar.
+                                No instance connected. Click on "New Instance" to start.
                             </div>
                         ) : (
                             <div className="rounded-md border border-white/10 overflow-hidden">
                                 <Table>
                                     <TableHeader className="bg-white/5">
                                         <TableRow className="border-white/5 hover:bg-transparent">
-                                            <TableHead className="text-gray-400">Instância</TableHead>
+                                            <TableHead className="text-gray-400">Instance</TableHead>
 
                                             <TableHead className="text-center text-gray-400">Status</TableHead>
                                             <TableHead className="text-center text-gray-400">QR Code</TableHead>
-                                            <TableHead className="text-right text-gray-400">Ações</TableHead>
+                                            <TableHead className="text-right text-gray-400">Actions</TableHead>
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
@@ -356,7 +356,7 @@ export function ChannelsConfig({ companyId, showWebChat = true }: ChannelsConfig
                                                             isQrStatus ? 'bg-yellow-500/20 text-yellow-500' :
                                                                 'bg-gray-500/20 text-gray-400'
                                                             }`}>
-                                                            {isWorking ? 'Online' : isQrStatus ? 'QR Code' : 'Desconectado'}
+                                                            {isWorking ? 'Online' : isQrStatus ? 'QR Code' : 'Disconnected'}
                                                         </div>
                                                     </TableCell>
                                                     <TableCell className="text-center">
@@ -384,7 +384,7 @@ export function ChannelsConfig({ companyId, showWebChat = true }: ChannelsConfig
                                                                     onClick={() => handleGenerateQR(inst.uid)}
                                                                     disabled={generating === inst.uid}
                                                                 >
-                                                                    {generating === inst.uid ? <Loader2 className="w-3 h-3 animate-spin" /> : "Conectar"}
+                                                                    {generating === inst.uid ? <Loader2 className="w-3 h-3 animate-spin" /> : "Connect"}
                                                                 </Button>
                                                             )}
                                                             <Button
@@ -492,14 +492,14 @@ export function ChannelsConfig({ companyId, showWebChat = true }: ChannelsConfig
             <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
                 <AlertDialogContent className="bg-[#1a1a1a] border-white/10 text-white">
                     <AlertDialogHeader>
-                        <AlertDialogTitle>Excluir Instância</AlertDialogTitle>
+                        <AlertDialogTitle>Delete Instance</AlertDialogTitle>
                         <AlertDialogDescription className="text-gray-400">
-                            Tem certeza que deseja excluir a instância <strong>{instanceToDelete?.nome?.split('_')[0]}</strong>?
-                            Esta ação não pode ser desfeita.
+                            Are you sure you want to delete the instance <strong>{instanceToDelete?.nome?.split('_')[0]}</strong>?
+                            This action cannot be undone.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                        <AlertDialogCancel className="border-white/10 hover:bg-white/5 text-gray-300 bg-transparent">Cancelar</AlertDialogCancel>
+                        <AlertDialogCancel className="border-white/10 hover:bg-white/5 text-gray-300 bg-transparent">Cancel</AlertDialogCancel>
                         <AlertDialogAction
                             onClick={(e) => {
                                 e.preventDefault();
@@ -509,7 +509,7 @@ export function ChannelsConfig({ companyId, showWebChat = true }: ChannelsConfig
                             className="bg-red-500 hover:bg-red-600 text-white border-none"
                         >
                             {isDeleting ? <Loader2 className="w-3 h-3 animate-spin mr-2" /> : null}
-                            Excluir
+                            Delete
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>

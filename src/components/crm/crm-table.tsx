@@ -343,421 +343,429 @@ export function CrmTable({ initialLeads, settings, filters }: CrmTableProps) {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-white/5 bg-transparent">
-                            {filteredLeads.map((lead) => (
-                                <tr
-                                    key={lead.id}
-                                    className="hover:bg-white/5 transition-colors group"
-                                >
-                                    <td className="px-4 py-3">
-                                        <div className="font-medium text-white truncate text-xs">{lead.name}</div>
+                            {filteredLeads.length === 0 ? (
+                                <tr>
+                                    <td colSpan={14} className="text-left py-8 text-gray-500 text-sm px-4">
+                                        You haven't registered any leads yet. Register the first one.
                                     </td>
-                                    <td className="px-4 py-3">
-                                        <div className="font-normal text-white/70 truncate text-xs">{lead.company}</div>
-                                    </td>
-                                    <td className="px-4 py-3">
-                                        <div className="flex justify-center">
-                                            <Popover>
-                                                <TooltipProvider>
-                                                    <Tooltip>
-                                                        <TooltipTrigger asChild>
-                                                            <PopoverTrigger asChild>
-                                                                <div className="p-1.5 rounded-md hover:bg-white/10 text-gray-500 hover:text-white transition-colors cursor-pointer" onClick={(e) => e.stopPropagation()}>
-                                                                    <Phone size={14} />
-                                                                </div>
-                                                            </PopoverTrigger>
-                                                        </TooltipTrigger>
-                                                        <TooltipContent>
-                                                            <p>{lead.phone}</p>
-                                                        </TooltipContent>
-                                                    </Tooltip>
-                                                </TooltipProvider>
-                                                <PopoverContent className="w-auto p-3 bg-[#1A1A1A] border-white/10 text-white flex flex-col gap-2 z-[9999]" align="center" onClick={(e) => e.stopPropagation()}>
-                                                    <p className="text-sm font-medium text-gray-300 text-center mb-1">{lead.phone}</p>
-                                                    <div className="flex flex-col gap-1">
-                                                        <a href={`tel:${lead.phone}`} className="flex items-center gap-2 px-3 py-2 rounded-md hover:bg-white/10 transition-colors text-xs text-white">
-                                                            <Phone size={12} /> Make a call
+                                </tr>
+                            ) : (
+                                filteredLeads.map((lead) => (
+                                    <tr
+                                        key={lead.id}
+                                        className="hover:bg-white/5 transition-colors group"
+                                    >
+                                        <td className="px-4 py-3">
+                                            <div className="font-medium text-white truncate text-xs">{lead.name}</div>
+                                        </td>
+                                        <td className="px-4 py-3">
+                                            <div className="font-normal text-white/70 truncate text-xs">{lead.company}</div>
+                                        </td>
+                                        <td className="px-4 py-3">
+                                            <div className="flex justify-center">
+                                                <Popover>
+                                                    <TooltipProvider>
+                                                        <Tooltip>
+                                                            <TooltipTrigger asChild>
+                                                                <PopoverTrigger asChild>
+                                                                    <div className="p-1.5 rounded-md hover:bg-white/10 text-gray-500 hover:text-white transition-colors cursor-pointer" onClick={(e) => e.stopPropagation()}>
+                                                                        <Phone size={14} />
+                                                                    </div>
+                                                                </PopoverTrigger>
+                                                            </TooltipTrigger>
+                                                            <TooltipContent>
+                                                                <p>{lead.phone}</p>
+                                                            </TooltipContent>
+                                                        </Tooltip>
+                                                    </TooltipProvider>
+                                                    <PopoverContent className="w-auto p-3 bg-[#1A1A1A] border-white/10 text-white flex flex-col gap-2 z-[9999]" align="center" onClick={(e) => e.stopPropagation()}>
+                                                        <p className="text-sm font-medium text-gray-300 text-center mb-1">{lead.phone}</p>
+                                                        <div className="flex flex-col gap-1">
+                                                            <a href={`tel:${lead.phone}`} className="flex items-center gap-2 px-3 py-2 rounded-md hover:bg-white/10 transition-colors text-xs text-white">
+                                                                <Phone size={12} /> Make a call
+                                                            </a>
+                                                            <a href={`sms:${lead.phone}`} className="flex items-center gap-2 px-3 py-2 rounded-md hover:bg-white/10 transition-colors text-xs text-white">
+                                                                <MessageCircle size={12} /> Send iMessage
+                                                            </a>
+                                                            <a href={`https://wa.me/${lead.phone?.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-3 py-2 rounded-md hover:bg-white/10 transition-colors text-xs text-white">
+                                                                <svg viewBox="0 0 24 24" fill="currentColor" className="w-3 h-3">
+                                                                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z" />
+                                                                </svg>
+                                                                Open WhatsApp
+                                                            </a>
+                                                        </div>
+                                                    </PopoverContent>
+                                                </Popover>
+                                            </div>
+                                        </td>
+                                        <td className="px-4 py-3">
+                                            <div className="flex justify-center">
+                                                <Popover>
+                                                    <TooltipProvider>
+                                                        <Tooltip>
+                                                            <TooltipTrigger asChild>
+                                                                <PopoverTrigger asChild>
+                                                                    <div className="p-1.5 rounded-md hover:bg-white/10 text-gray-500 hover:text-white transition-colors cursor-pointer" onClick={(e) => e.stopPropagation()}>
+                                                                        <Mail size={14} />
+                                                                    </div>
+                                                                </PopoverTrigger>
+                                                            </TooltipTrigger>
+                                                            <TooltipContent>
+                                                                <p>{lead.email}</p>
+                                                            </TooltipContent>
+                                                        </Tooltip>
+                                                    </TooltipProvider>
+                                                    <PopoverContent className="w-auto p-3 bg-[#1A1A1A] border-white/10 text-white z-[9999]" align="center" onClick={(e) => e.stopPropagation()}>
+                                                        <a href={`mailto:${lead.email}`} className="text-sm font-medium text-blue-400 hover:underline hover:text-blue-300 transition-colors flex items-center gap-2">
+                                                            <Mail size={14} />
+                                                            {lead.email}
                                                         </a>
-                                                        <a href={`sms:${lead.phone}`} className="flex items-center gap-2 px-3 py-2 rounded-md hover:bg-white/10 transition-colors text-xs text-white">
-                                                            <MessageCircle size={12} /> Send iMessage
+                                                    </PopoverContent>
+                                                </Popover>
+                                            </div>
+                                        </td>
+                                        <td className="px-4 py-3">
+                                            <div className="flex justify-center">
+                                                <Popover>
+                                                    <TooltipProvider>
+                                                        <Tooltip>
+                                                            <TooltipTrigger asChild>
+                                                                <PopoverTrigger asChild>
+                                                                    <div className="p-1.5 rounded-md hover:bg-white/10 text-gray-500 hover:text-white transition-colors cursor-pointer" onClick={(e) => e.stopPropagation()}>
+                                                                        <Linkedin size={14} />
+                                                                    </div>
+                                                                </PopoverTrigger>
+                                                            </TooltipTrigger>
+                                                            <TooltipContent>
+                                                                <p>{lead.linkedin}</p>
+                                                            </TooltipContent>
+                                                        </Tooltip>
+                                                    </TooltipProvider>
+                                                    <PopoverContent className="w-auto p-3 bg-[#1A1A1A] border-white/10 text-white z-[9999]" align="center" onClick={(e) => e.stopPropagation()}>
+                                                        <a href={lead.linkedin} target="_blank" rel="noopener noreferrer" className="text-sm font-medium text-blue-400 hover:underline hover:text-blue-300 transition-colors flex items-center gap-2">
+                                                            <Linkedin size={14} />
+                                                            {lead.linkedin}
                                                         </a>
-                                                        <a href={`https://wa.me/${lead.phone?.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-3 py-2 rounded-md hover:bg-white/10 transition-colors text-xs text-white">
-                                                            <svg viewBox="0 0 24 24" fill="currentColor" className="w-3 h-3">
-                                                                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z" />
-                                                            </svg>
-                                                            Open WhatsApp
-                                                        </a>
-                                                    </div>
-                                                </PopoverContent>
-                                            </Popover>
-                                        </div>
-                                    </td>
-                                    <td className="px-4 py-3">
-                                        <div className="flex justify-center">
-                                            <Popover>
-                                                <TooltipProvider>
-                                                    <Tooltip>
-                                                        <TooltipTrigger asChild>
-                                                            <PopoverTrigger asChild>
-                                                                <div className="p-1.5 rounded-md hover:bg-white/10 text-gray-500 hover:text-white transition-colors cursor-pointer" onClick={(e) => e.stopPropagation()}>
-                                                                    <Mail size={14} />
-                                                                </div>
-                                                            </PopoverTrigger>
-                                                        </TooltipTrigger>
-                                                        <TooltipContent>
-                                                            <p>{lead.email}</p>
-                                                        </TooltipContent>
-                                                    </Tooltip>
-                                                </TooltipProvider>
-                                                <PopoverContent className="w-auto p-3 bg-[#1A1A1A] border-white/10 text-white z-[9999]" align="center" onClick={(e) => e.stopPropagation()}>
-                                                    <a href={`mailto:${lead.email}`} className="text-sm font-medium text-blue-400 hover:underline hover:text-blue-300 transition-colors flex items-center gap-2">
-                                                        <Mail size={14} />
-                                                        {lead.email}
-                                                    </a>
-                                                </PopoverContent>
-                                            </Popover>
-                                        </div>
-                                    </td>
-                                    <td className="px-4 py-3">
-                                        <div className="flex justify-center">
-                                            <Popover>
-                                                <TooltipProvider>
-                                                    <Tooltip>
-                                                        <TooltipTrigger asChild>
-                                                            <PopoverTrigger asChild>
-                                                                <div className="p-1.5 rounded-md hover:bg-white/10 text-gray-500 hover:text-white transition-colors cursor-pointer" onClick={(e) => e.stopPropagation()}>
-                                                                    <Linkedin size={14} />
-                                                                </div>
-                                                            </PopoverTrigger>
-                                                        </TooltipTrigger>
-                                                        <TooltipContent>
-                                                            <p>{lead.linkedin}</p>
-                                                        </TooltipContent>
-                                                    </Tooltip>
-                                                </TooltipProvider>
-                                                <PopoverContent className="w-auto p-3 bg-[#1A1A1A] border-white/10 text-white z-[9999]" align="center" onClick={(e) => e.stopPropagation()}>
-                                                    <a href={lead.linkedin} target="_blank" rel="noopener noreferrer" className="text-sm font-medium text-blue-400 hover:underline hover:text-blue-300 transition-colors flex items-center gap-2">
-                                                        <Linkedin size={14} />
-                                                        {lead.linkedin}
-                                                    </a>
-                                                </PopoverContent>
-                                            </Popover>
-                                        </div>
-                                    </td>
-                                    <td className="px-4 py-3">
-                                        <div className="flex flex-col gap-1.5" onClick={(e) => e.stopPropagation()}>
-                                            <Popover>
-                                                <PopoverTrigger asChild>
-                                                    <button
-                                                        className={`text-[11px] font-semibold hover:bg-white/10 rounded px-1 -ml-1 w-fit transition-colors text-left ${parseDateStr(lead.nextStep.date) < new Date(new Date().setHours(0, 0, 0, 0)) ? 'text-red-400' : 'text-gray-400'}`}
-                                                    >
-                                                        {lead.nextStep.date}
-                                                    </button>
-                                                </PopoverTrigger>
-                                                <PopoverContent className="w-auto p-0" align="start">
-                                                    <Calendar
-                                                        mode="single"
-                                                        selected={parseDateStr(lead.nextStep.date)}
-                                                        onSelect={(date) => handleDateSelect(lead.id, date)}
-                                                        initialFocus
-                                                    />
-                                                </PopoverContent>
-                                            </Popover>
+                                                    </PopoverContent>
+                                                </Popover>
+                                            </div>
+                                        </td>
+                                        <td className="px-4 py-3">
+                                            <div className="flex flex-col gap-1.5" onClick={(e) => e.stopPropagation()}>
+                                                <Popover>
+                                                    <PopoverTrigger asChild>
+                                                        <button
+                                                            className={`text-[11px] font-semibold hover:bg-white/10 rounded px-1 -ml-1 w-fit transition-colors text-left ${parseDateStr(lead.nextStep.date) < new Date(new Date().setHours(0, 0, 0, 0)) ? 'text-red-400' : 'text-gray-400'}`}
+                                                        >
+                                                            {lead.nextStep.date}
+                                                        </button>
+                                                    </PopoverTrigger>
+                                                    <PopoverContent className="w-auto p-0" align="start">
+                                                        <Calendar
+                                                            mode="single"
+                                                            selected={parseDateStr(lead.nextStep.date)}
+                                                            onSelect={(date) => handleDateSelect(lead.id, date)}
+                                                            initialFocus
+                                                        />
+                                                    </PopoverContent>
+                                                </Popover>
 
 
-                                            <div className="flex items-center gap-1">
-                                                <div className="flex space-x-1.5">
-                                                    {[...Array(lead.nextStep.total)].map((_, i) => {
-                                                        const stepIndex = i + 1;
-                                                        const isActive = stepIndex <= lead.nextStep.progress;
-                                                        // Last step (5) is MsgSaida (Red), others are Green
-                                                        const isMsgSaida = stepIndex === 5;
+                                                <div className="flex items-center gap-1">
+                                                    <div className="flex space-x-1.5">
+                                                        {[...Array(lead.nextStep.total)].map((_, i) => {
+                                                            const stepIndex = i + 1;
+                                                            const isActive = stepIndex <= lead.nextStep.progress;
+                                                            // Last step (5) is MsgSaida (Red), others are Green
+                                                            const isMsgSaida = stepIndex === 5;
 
-                                                        let bgColor = 'bg-gray-700 hover:bg-gray-600';
-                                                        let shadow = '';
+                                                            let bgColor = 'bg-gray-700 hover:bg-gray-600';
+                                                            let shadow = '';
 
-                                                        if (isActive) {
-                                                            if (isMsgSaida) {
-                                                                bgColor = 'bg-red-500 hover:bg-red-400';
-                                                                shadow = 'shadow-[0_0_8px_rgba(239,68,68,0.4)]';
-                                                            } else {
-                                                                bgColor = 'bg-green-500 hover:bg-green-400';
-                                                                shadow = 'shadow-[0_0_8px_rgba(34,197,94,0.4)]';
+                                                            if (isActive) {
+                                                                if (isMsgSaida) {
+                                                                    bgColor = 'bg-red-500 hover:bg-red-400';
+                                                                    shadow = 'shadow-[0_0_8px_rgba(239,68,68,0.4)]';
+                                                                } else {
+                                                                    bgColor = 'bg-green-500 hover:bg-green-400';
+                                                                    shadow = 'shadow-[0_0_8px_rgba(34,197,94,0.4)]';
+                                                                }
                                                             }
-                                                        }
 
-                                                        return (
-                                                            <button
-                                                                key={i}
-                                                                onClick={(e) => {
-                                                                    e.stopPropagation();
-                                                                    handleProgressClick(lead.id, stepIndex, lead.nextStep.progress);
-                                                                }}
-                                                                className={`w-3 h-3 rounded-full transition-all hover:scale-110 focus:outline-none focus:ring-2 focus:ring-[#1C73E8]/50 ${bgColor} ${shadow}`}
-                                                            />
-                                                        );
-                                                    })}
+                                                            return (
+                                                                <button
+                                                                    key={i}
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        handleProgressClick(lead.id, stepIndex, lead.nextStep.progress);
+                                                                    }}
+                                                                    className={`w-3 h-3 rounded-full transition-all hover:scale-110 focus:outline-none focus:ring-2 focus:ring-[#1C73E8]/50 ${bgColor} ${shadow}`}
+                                                                />
+                                                            );
+                                                        })}
+                                                    </div>
+                                                    <span className="text-[10px] text-gray-500 ml-1">{lead.nextStep.progress}/{lead.nextStep.total}</span>
                                                 </div>
-                                                <span className="text-[10px] text-gray-500 ml-1">{lead.nextStep.progress}/{lead.nextStep.total}</span>
                                             </div>
-                                        </div>
-                                    </td>
-                                    <td className="px-1 py-3">
-                                        <div className="flex justify-center">
-                                            <div
-                                                className="cursor-pointer hover:bg-white/10 p-1.5 rounded-full transition-colors text-[#1C73E8]"
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    setHistoryLead(lead);
-                                                }}
-                                            >
-                                                <MessageCircle size={14} />
+                                        </td>
+                                        <td className="px-1 py-3">
+                                            <div className="flex justify-center">
+                                                <div
+                                                    className="cursor-pointer hover:bg-white/10 p-1.5 rounded-full transition-colors text-[#1C73E8]"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setHistoryLead(lead);
+                                                    }}
+                                                >
+                                                    <MessageCircle size={14} />
+                                                </div>
                                             </div>
-                                        </div>
-                                    </td>
-                                    <td className="px-4 py-3">
-                                        <div className="font-normal text-white/70 truncate text-xs">{lead.product}</div>
-                                    </td>
-                                    <td className="px-4 py-3">
-                                        <button
-                                            className="font-mono text-gray-300 text-[12px] hover:text-white hover:bg-white/5 rounded px-1.5 py-0.5 transition-colors text-left"
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                setAmountLead(lead);
-                                            }}
-                                        >
-                                            {lead.amount}
-                                        </button>
-                                    </td>
-                                    <td className="px-4 py-3">
-                                        <DropdownMenu>
-                                            <DropdownMenuTrigger asChild>
-                                                <button
-                                                    className={`flex items-center justify-between text-[11px] px-2 py-1 rounded w-full outline-none transition-colors border ${(() => {
-                                                        const opt = CUSTOM_OPTIONS.find((o: any) => (typeof o === 'string' ? o : o.label) === lead.custom);
-                                                        return (opt && typeof opt !== 'string' && opt.bg)
-                                                            ? `${opt.bg} ${opt.text} border-white/10 font-medium`
-                                                            : 'text-gray-400 border-transparent hover:bg-white/5 hover:text-white';
-                                                    })()}`}
-                                                    onClick={(e) => e.stopPropagation()}
-                                                >
-                                                    <span className="whitespace-nowrap overflow-hidden text-ellipsis">
-                                                        {lead.custom || <span className="text-gray-600 italic font-normal">Select...</span>}
-                                                    </span>
-                                                    <ChevronDown size={12} className="ml-2 shrink-0 opacity-50" />
-                                                </button>
-                                            </DropdownMenuTrigger>
-                                            <DropdownMenuContent className="w-[180px] p-1 bg-[#1A1A1A] border-white/10 text-white" align="start">
-                                                {CUSTOM_OPTIONS.map((opt: any) => {
-                                                    const label = typeof opt === 'string' ? opt : opt.label;
-                                                    return (
-                                                        <DropdownMenuItem
-                                                            key={label}
-                                                            className="w-full text-left px-2 py-1.5 text-[12px] hover:bg-white/10 rounded-sm transition-colors text-gray-300 hover:text-white cursor-pointer focus:bg-white/10 focus:text-white"
-                                                            onClick={() => {
-                                                                setLeads(prev => prev.map(l => l.id === lead.id ? { ...l, custom: label } : l));
-                                                            }}
-                                                        >
-                                                            {typeof opt !== 'string' && (
-                                                                <span className={`w-2 h-2 rounded-full mr-2 ${opt.bg}`} />
-                                                            )}
-                                                            {label}
-                                                        </DropdownMenuItem>
-                                                    );
-                                                })}
-                                                <DropdownMenuSeparator className="bg-white/10 my-1" />
-                                                <DropdownMenuItem
-                                                    className="w-full text-left px-2 py-1.5 text-[12px] hover:bg-white/10 rounded-sm transition-colors text-blue-400 hover:text-blue-300 cursor-pointer focus:bg-white/10 focus:text-blue-300 flex items-center gap-2"
-                                                    onClick={() => setIsSettingsOpen(true)}
-                                                >
-                                                    <Settings size={12} />
-                                                    Manage...
-                                                </DropdownMenuItem>
-                                            </DropdownMenuContent>
-                                        </DropdownMenu>
-                                    </td>
-                                    <td className="px-4 py-3">
-                                        <DropdownMenu>
-                                            <DropdownMenuTrigger asChild>
-                                                <button
-                                                    className={`flex items-center justify-between text-[11px] px-2 py-1 rounded w-full outline-none transition-colors border ${(() => {
-                                                        const opt = SOURCES.find((o: any) => (typeof o === 'string' ? o : o.label) === lead.source);
-                                                        return (opt && typeof opt !== 'string' && opt.bg)
-                                                            ? `${opt.bg} ${opt.text} border-white/10 font-medium`
-                                                            : 'text-gray-400 border-transparent hover:bg-white/5 hover:text-white';
-                                                    })()}`}
-                                                    onClick={(e) => e.stopPropagation()}
-                                                >
-                                                    <span className="whitespace-nowrap overflow-hidden text-ellipsis">
-                                                        {lead.source || <span className="text-gray-600 italic font-normal">Select...</span>}
-                                                    </span>
-                                                    <ChevronDown size={12} className="ml-2 shrink-0 opacity-50" />
-                                                </button>
-                                            </DropdownMenuTrigger>
-                                            <DropdownMenuContent className="w-[180px] p-1 bg-[#1A1A1A] border-white/10 text-white" align="start">
-                                                {SOURCES.map((src: any) => {
-                                                    const label = typeof src === 'string' ? src : src.label;
-                                                    return (
-                                                        <DropdownMenuItem
-                                                            key={label}
-                                                            className="w-full text-left px-2 py-1.5 text-[12px] hover:bg-white/10 rounded-sm transition-colors text-gray-300 hover:text-white cursor-pointer focus:bg-white/10 focus:text-white"
-                                                            onClick={() => {
-                                                                setLeads(prev => prev.map(l => l.id === lead.id ? { ...l, source: label } : l));
-                                                            }}
-                                                        >
-                                                            {typeof src !== 'string' && (
-                                                                <span className={`w-2 h-2 rounded-full mr-2 ${src.bg}`} />
-                                                            )}
-                                                            {label}
-                                                        </DropdownMenuItem>
-                                                    );
-                                                })}
-                                                <DropdownMenuSeparator className="bg-white/10 my-1" />
-                                                <DropdownMenuItem
-                                                    className="w-full text-left px-2 py-1.5 text-[12px] hover:bg-white/10 rounded-sm transition-colors text-blue-400 hover:text-blue-300 cursor-pointer focus:bg-white/10 focus:text-blue-300 flex items-center gap-2"
-                                                    onClick={() => setIsSettingsOpen(true)}
-                                                >
-                                                    <Settings size={12} />
-                                                    Manage...
-                                                </DropdownMenuItem>
-                                            </DropdownMenuContent>
-                                        </DropdownMenu>
-                                    </td>
-                                    <td className="px-4 py-3">
-                                        <DropdownMenu>
-                                            <DropdownMenuTrigger asChild>
-                                                <button
-                                                    className="flex items-center gap-1 text-[11px] w-full outline-none group/status"
-                                                    onClick={(e) => e.stopPropagation()}
-                                                >
-                                                    {(() => {
-                                                        const status = settings.statuses?.find(s => s.label === lead.status) || {
-                                                            bg: 'bg-[#1C73E8]/10',
-                                                            text: 'text-[#1C73E8]'
-                                                        };
-                                                        return (
-                                                            <div className={`${status.bg} ${status.text} border border-white/5 px-3 py-1 rounded text-[11px] font-bold flex items-center justify-between w-full min-w-fit hover:opacity-80 transition-opacity whitespace-nowrap gap-2`}>
-                                                                <span>{lead.status}</span>
-                                                                <ChevronDown size={12} className="shrink-0" />
-                                                            </div>
-                                                        );
-                                                    })()}
-                                                </button>
-                                            </DropdownMenuTrigger>
-                                            <DropdownMenuContent className="w-[180px] p-1 bg-[#1A1A1A] border-white/10 text-white" align="start">
-                                                {(settings.statuses || []).map((status: any) => (
-                                                    <DropdownMenuItem
-                                                        key={status.label}
-                                                        className="w-full text-left px-2 py-1.5 text-[12px] hover:bg-white/10 rounded-sm transition-colors text-gray-300 hover:text-white cursor-pointer focus:bg-white/10 focus:text-white"
-                                                        onClick={() => {
-                                                            setLeads(prev => prev.map(l => l.id === lead.id ? { ...l, status: status.label } : l));
-                                                        }}
-                                                    >
-                                                        <span className={`w-2 h-2 rounded-full mr-2 ${status.bg}`} />
-                                                        {status.label}
-                                                    </DropdownMenuItem>
-                                                ))}
-                                                <DropdownMenuSeparator className="bg-white/10 my-1" />
-                                                <DropdownMenuItem
-                                                    className="w-full text-left px-2 py-1.5 text-[12px] hover:bg-white/10 rounded-sm transition-colors text-blue-400 hover:text-blue-300 cursor-pointer focus:bg-white/10 focus:text-blue-300 flex items-center gap-2"
-                                                    onClick={() => setIsSettingsOpen(true)}
-                                                >
-                                                    <Settings size={12} />
-                                                    Manage...
-                                                </DropdownMenuItem>
-                                            </DropdownMenuContent>
-                                        </DropdownMenu>
-                                    </td>
-                                    <td className="px-4 py-3">
-                                        <DropdownMenu>
-                                            <DropdownMenuTrigger asChild>
-                                                <button
-                                                    className={`flex items-center justify-between text-[11px] px-2 py-1 rounded w-full outline-none transition-colors border ${(() => {
-                                                        const opt = RESPONSIBLES.find((o: any) => (typeof o === 'string' ? o : o.label) === lead.responsible);
-                                                        return (opt && typeof opt !== 'string' && opt.bg)
-                                                            ? `${opt.bg} ${opt.text} border-white/10 font-medium`
-                                                            : 'text-gray-400 border-transparent hover:bg-white/5 hover:text-white';
-                                                    })()}`}
-                                                    onClick={(e) => e.stopPropagation()}
-                                                >
-                                                    <span className="whitespace-nowrap overflow-hidden text-ellipsis">
-                                                        {lead.responsible || <span className="text-gray-600 italic font-normal">Select...</span>}
-                                                    </span>
-                                                    <ChevronDown size={12} className="ml-2 shrink-0 opacity-50" />
-                                                </button>
-                                            </DropdownMenuTrigger>
-                                            <DropdownMenuContent className="w-[180px] p-1 bg-[#1A1A1A] border-white/10 text-white" align="start">
-                                                {RESPONSIBLES.map((person: any) => {
-                                                    const label = typeof person === 'string' ? person : person.label;
-                                                    return (
-                                                        <DropdownMenuItem
-                                                            key={label}
-                                                            className="w-full text-left px-2 py-1.5 text-[12px] hover:bg-white/10 rounded-sm transition-colors text-gray-300 hover:text-white cursor-pointer focus:bg-white/10 focus:text-white"
-                                                            onClick={() => {
-                                                                setLeads(prev => prev.map(l => l.id === lead.id ? { ...l, responsible: label } : l));
-                                                            }}
-                                                        >
-                                                            {typeof person !== 'string' && (
-                                                                <span className={`w-2 h-2 rounded-full mr-2 ${person.bg}`} />
-                                                            )}
-                                                            {label}
-                                                        </DropdownMenuItem>
-                                                    );
-                                                })}
-                                                <DropdownMenuSeparator className="bg-white/10 my-1" />
-                                                <DropdownMenuItem
-                                                    className="w-full text-left px-2 py-1.5 text-[12px] hover:bg-white/10 rounded-sm transition-colors text-blue-400 hover:text-blue-300 cursor-pointer focus:bg-white/10 focus:text-blue-300 flex items-center gap-2"
-                                                    onClick={() => setIsSettingsOpen(true)}
-                                                >
-                                                    <Settings size={12} />
-                                                    Manage...
-                                                </DropdownMenuItem>
-                                            </DropdownMenuContent>
-                                        </DropdownMenu>
-                                    </td>
-
-                                    <td className="px-4 py-3 text-center">
-                                        <div className="flex items-center justify-center gap-1">
+                                        </td>
+                                        <td className="px-4 py-3">
+                                            <div className="font-normal text-white/70 truncate text-xs">{lead.product}</div>
+                                        </td>
+                                        <td className="px-4 py-3">
                                             <button
-                                                className="text-gray-500 hover:text-white transition-colors p-1 rounded hover:bg-white/10 outline-none"
+                                                className="font-mono text-gray-300 text-[12px] hover:text-white hover:bg-white/5 rounded px-1.5 py-0.5 transition-colors text-left"
                                                 onClick={(e) => {
                                                     e.stopPropagation();
-                                                    setEditLead(lead);
+                                                    setAmountLead(lead);
                                                 }}
                                             >
-                                                <Edit2 size={16} />
+                                                {lead.amount}
                                             </button>
+                                        </td>
+                                        <td className="px-4 py-3">
                                             <DropdownMenu>
                                                 <DropdownMenuTrigger asChild>
-                                                    <button className="text-gray-500 hover:text-white transition-colors p-1 rounded hover:bg-white/10 outline-none">
-                                                        <MoreHorizontal size={16} />
+                                                    <button
+                                                        className={`flex items-center justify-between text-[11px] px-2 py-1 rounded w-full outline-none transition-colors border ${(() => {
+                                                            const opt = CUSTOM_OPTIONS.find((o: any) => (typeof o === 'string' ? o : o.label) === lead.custom);
+                                                            return (opt && typeof opt !== 'string' && opt.bg)
+                                                                ? `${opt.bg} ${opt.text} border-white/10 font-medium`
+                                                                : 'text-gray-400 border-transparent hover:bg-white/5 hover:text-white';
+                                                        })()}`}
+                                                        onClick={(e) => e.stopPropagation()}
+                                                    >
+                                                        <span className="whitespace-nowrap overflow-hidden text-ellipsis">
+                                                            {lead.custom || <span className="text-gray-600 italic font-normal">Select...</span>}
+                                                        </span>
+                                                        <ChevronDown size={12} className="ml-2 shrink-0 opacity-50" />
                                                     </button>
                                                 </DropdownMenuTrigger>
-                                                <DropdownMenuContent className="w-[160px] bg-[#1A1A1A] border-white/10 text-white" align="end">
+                                                <DropdownMenuContent className="w-[180px] p-1 bg-[#1A1A1A] border-white/10 text-white" align="start">
+                                                    {CUSTOM_OPTIONS.map((opt: any) => {
+                                                        const label = typeof opt === 'string' ? opt : opt.label;
+                                                        return (
+                                                            <DropdownMenuItem
+                                                                key={label}
+                                                                className="w-full text-left px-2 py-1.5 text-[12px] hover:bg-white/10 rounded-sm transition-colors text-gray-300 hover:text-white cursor-pointer focus:bg-white/10 focus:text-white"
+                                                                onClick={() => {
+                                                                    setLeads(prev => prev.map(l => l.id === lead.id ? { ...l, custom: label } : l));
+                                                                }}
+                                                            >
+                                                                {typeof opt !== 'string' && (
+                                                                    <span className={`w-2 h-2 rounded-full mr-2 ${opt.bg}`} />
+                                                                )}
+                                                                {label}
+                                                            </DropdownMenuItem>
+                                                        );
+                                                    })}
+                                                    <DropdownMenuSeparator className="bg-white/10 my-1" />
                                                     <DropdownMenuItem
-                                                        className="cursor-pointer hover:bg-white/10 text-[12px] focus:bg-white/10 focus:text-white"
-                                                        onClick={() => handleMoveToWon(lead.id)}
+                                                        className="w-full text-left px-2 py-1.5 text-[12px] hover:bg-white/10 rounded-sm transition-colors text-blue-400 hover:text-blue-300 cursor-pointer focus:bg-white/10 focus:text-blue-300 flex items-center gap-2"
+                                                        onClick={() => setIsSettingsOpen(true)}
                                                     >
-                                                        Move to Won
-                                                    </DropdownMenuItem>
-                                                    <DropdownMenuItem
-                                                        className="cursor-pointer hover:bg-white/10 text-[12px] focus:bg-white/10 focus:text-white"
-                                                        onClick={() => handleMoveToLost(lead.id)}
-                                                    >
-                                                        Move to Lost
-                                                    </DropdownMenuItem>
-                                                    <DropdownMenuSeparator className="bg-white/10" />
-                                                    <DropdownMenuItem
-                                                        className="cursor-pointer hover:bg-red-500/10 text-red-400 hover:text-red-300 text-[12px] focus:bg-red-500/10 focus:text-red-300"
-                                                        onClick={() => setDeleteLeadId(lead.id)}
-                                                    >
-                                                        Delete
+                                                        <Settings size={12} />
+                                                        Manage...
                                                     </DropdownMenuItem>
                                                 </DropdownMenuContent>
                                             </DropdownMenu>
-                                        </div>
-                                    </td>
-                                </tr>
-                            ))}
+                                        </td>
+                                        <td className="px-4 py-3">
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                    <button
+                                                        className={`flex items-center justify-between text-[11px] px-2 py-1 rounded w-full outline-none transition-colors border ${(() => {
+                                                            const opt = SOURCES.find((o: any) => (typeof o === 'string' ? o : o.label) === lead.source);
+                                                            return (opt && typeof opt !== 'string' && opt.bg)
+                                                                ? `${opt.bg} ${opt.text} border-white/10 font-medium`
+                                                                : 'text-gray-400 border-transparent hover:bg-white/5 hover:text-white';
+                                                        })()}`}
+                                                        onClick={(e) => e.stopPropagation()}
+                                                    >
+                                                        <span className="whitespace-nowrap overflow-hidden text-ellipsis">
+                                                            {lead.source || <span className="text-gray-600 italic font-normal">Select...</span>}
+                                                        </span>
+                                                        <ChevronDown size={12} className="ml-2 shrink-0 opacity-50" />
+                                                    </button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent className="w-[180px] p-1 bg-[#1A1A1A] border-white/10 text-white" align="start">
+                                                    {SOURCES.map((src: any) => {
+                                                        const label = typeof src === 'string' ? src : src.label;
+                                                        return (
+                                                            <DropdownMenuItem
+                                                                key={label}
+                                                                className="w-full text-left px-2 py-1.5 text-[12px] hover:bg-white/10 rounded-sm transition-colors text-gray-300 hover:text-white cursor-pointer focus:bg-white/10 focus:text-white"
+                                                                onClick={() => {
+                                                                    setLeads(prev => prev.map(l => l.id === lead.id ? { ...l, source: label } : l));
+                                                                }}
+                                                            >
+                                                                {typeof src !== 'string' && (
+                                                                    <span className={`w-2 h-2 rounded-full mr-2 ${src.bg}`} />
+                                                                )}
+                                                                {label}
+                                                            </DropdownMenuItem>
+                                                        );
+                                                    })}
+                                                    <DropdownMenuSeparator className="bg-white/10 my-1" />
+                                                    <DropdownMenuItem
+                                                        className="w-full text-left px-2 py-1.5 text-[12px] hover:bg-white/10 rounded-sm transition-colors text-blue-400 hover:text-blue-300 cursor-pointer focus:bg-white/10 focus:text-blue-300 flex items-center gap-2"
+                                                        onClick={() => setIsSettingsOpen(true)}
+                                                    >
+                                                        <Settings size={12} />
+                                                        Manage...
+                                                    </DropdownMenuItem>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
+                                        </td>
+                                        <td className="px-4 py-3">
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                    <button
+                                                        className="flex items-center gap-1 text-[11px] w-full outline-none group/status"
+                                                        onClick={(e) => e.stopPropagation()}
+                                                    >
+                                                        {(() => {
+                                                            const status = settings.statuses?.find(s => s.label === lead.status) || {
+                                                                bg: 'bg-[#1C73E8]/10',
+                                                                text: 'text-[#1C73E8]'
+                                                            };
+                                                            return (
+                                                                <div className={`${status.bg} ${status.text} border border-white/5 px-3 py-1 rounded text-[11px] font-bold flex items-center justify-between w-full min-w-fit hover:opacity-80 transition-opacity whitespace-nowrap gap-2`}>
+                                                                    <span>{lead.status}</span>
+                                                                    <ChevronDown size={12} className="shrink-0" />
+                                                                </div>
+                                                            );
+                                                        })()}
+                                                    </button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent className="w-[180px] p-1 bg-[#1A1A1A] border-white/10 text-white" align="start">
+                                                    {(settings.statuses || []).map((status: any) => (
+                                                        <DropdownMenuItem
+                                                            key={status.label}
+                                                            className="w-full text-left px-2 py-1.5 text-[12px] hover:bg-white/10 rounded-sm transition-colors text-gray-300 hover:text-white cursor-pointer focus:bg-white/10 focus:text-white"
+                                                            onClick={() => {
+                                                                setLeads(prev => prev.map(l => l.id === lead.id ? { ...l, status: status.label } : l));
+                                                            }}
+                                                        >
+                                                            <span className={`w-2 h-2 rounded-full mr-2 ${status.bg}`} />
+                                                            {status.label}
+                                                        </DropdownMenuItem>
+                                                    ))}
+                                                    <DropdownMenuSeparator className="bg-white/10 my-1" />
+                                                    <DropdownMenuItem
+                                                        className="w-full text-left px-2 py-1.5 text-[12px] hover:bg-white/10 rounded-sm transition-colors text-blue-400 hover:text-blue-300 cursor-pointer focus:bg-white/10 focus:text-blue-300 flex items-center gap-2"
+                                                        onClick={() => setIsSettingsOpen(true)}
+                                                    >
+                                                        <Settings size={12} />
+                                                        Manage...
+                                                    </DropdownMenuItem>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
+                                        </td>
+                                        <td className="px-4 py-3">
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                    <button
+                                                        className={`flex items-center justify-between text-[11px] px-2 py-1 rounded w-full outline-none transition-colors border ${(() => {
+                                                            const opt = RESPONSIBLES.find((o: any) => (typeof o === 'string' ? o : o.label) === lead.responsible);
+                                                            return (opt && typeof opt !== 'string' && opt.bg)
+                                                                ? `${opt.bg} ${opt.text} border-white/10 font-medium`
+                                                                : 'text-gray-400 border-transparent hover:bg-white/5 hover:text-white';
+                                                        })()}`}
+                                                        onClick={(e) => e.stopPropagation()}
+                                                    >
+                                                        <span className="whitespace-nowrap overflow-hidden text-ellipsis">
+                                                            {lead.responsible || <span className="text-gray-600 italic font-normal">Select...</span>}
+                                                        </span>
+                                                        <ChevronDown size={12} className="ml-2 shrink-0 opacity-50" />
+                                                    </button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent className="w-[180px] p-1 bg-[#1A1A1A] border-white/10 text-white" align="start">
+                                                    {RESPONSIBLES.map((person: any) => {
+                                                        const label = typeof person === 'string' ? person : person.label;
+                                                        return (
+                                                            <DropdownMenuItem
+                                                                key={label}
+                                                                className="w-full text-left px-2 py-1.5 text-[12px] hover:bg-white/10 rounded-sm transition-colors text-gray-300 hover:text-white cursor-pointer focus:bg-white/10 focus:text-white"
+                                                                onClick={() => {
+                                                                    setLeads(prev => prev.map(l => l.id === lead.id ? { ...l, responsible: label } : l));
+                                                                }}
+                                                            >
+                                                                {typeof person !== 'string' && (
+                                                                    <span className={`w-2 h-2 rounded-full mr-2 ${person.bg}`} />
+                                                                )}
+                                                                {label}
+                                                            </DropdownMenuItem>
+                                                        );
+                                                    })}
+                                                    <DropdownMenuSeparator className="bg-white/10 my-1" />
+                                                    <DropdownMenuItem
+                                                        className="w-full text-left px-2 py-1.5 text-[12px] hover:bg-white/10 rounded-sm transition-colors text-blue-400 hover:text-blue-300 cursor-pointer focus:bg-white/10 focus:text-blue-300 flex items-center gap-2"
+                                                        onClick={() => setIsSettingsOpen(true)}
+                                                    >
+                                                        <Settings size={12} />
+                                                        Manage...
+                                                    </DropdownMenuItem>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
+                                        </td>
+
+                                        <td className="px-4 py-3 text-center">
+                                            <div className="flex items-center justify-center gap-1">
+                                                <button
+                                                    className="text-gray-500 hover:text-white transition-colors p-1 rounded hover:bg-white/10 outline-none"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setEditLead(lead);
+                                                    }}
+                                                >
+                                                    <Edit2 size={16} />
+                                                </button>
+                                                <DropdownMenu>
+                                                    <DropdownMenuTrigger asChild>
+                                                        <button className="text-gray-500 hover:text-white transition-colors p-1 rounded hover:bg-white/10 outline-none">
+                                                            <MoreHorizontal size={16} />
+                                                        </button>
+                                                    </DropdownMenuTrigger>
+                                                    <DropdownMenuContent className="w-[160px] bg-[#1A1A1A] border-white/10 text-white" align="end">
+                                                        <DropdownMenuItem
+                                                            className="cursor-pointer hover:bg-white/10 text-[12px] focus:bg-white/10 focus:text-white"
+                                                            onClick={() => handleMoveToWon(lead.id)}
+                                                        >
+                                                            Move to Won
+                                                        </DropdownMenuItem>
+                                                        <DropdownMenuItem
+                                                            className="cursor-pointer hover:bg-white/10 text-[12px] focus:bg-white/10 focus:text-white"
+                                                            onClick={() => handleMoveToLost(lead.id)}
+                                                        >
+                                                            Move to Lost
+                                                        </DropdownMenuItem>
+                                                        <DropdownMenuSeparator className="bg-white/10" />
+                                                        <DropdownMenuItem
+                                                            className="cursor-pointer hover:bg-red-500/10 text-red-400 hover:text-red-300 text-[12px] focus:bg-red-500/10 focus:text-red-300"
+                                                            onClick={() => setDeleteLeadId(lead.id)}
+                                                        >
+                                                            Delete
+                                                        </DropdownMenuItem>
+                                                    </DropdownMenuContent>
+                                                </DropdownMenu>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))
+                            )}
                         </tbody>
                     </table >
                 </div >

@@ -316,7 +316,7 @@ export function CrmSettingsModal({ isOpen, onClose, settings }: CrmSettingsModal
     return (
         <>
             <Dialog open={isOpen} onOpenChange={onClose}>
-                <DialogContent className="w-[95vw] max-w-[1200px] max-h-[90vh] overflow-y-auto bg-[#1a1a1a] text-white p-6 border border-white/10 rounded-lg">
+                <DialogContent className="w-[95vw] max-w-[95vw] sm:max-w-[95vw] md:max-w-[95vw] max-h-[90vh] overflow-y-auto bg-[#1a1a1a] text-white p-6 border border-white/10 rounded-lg">
                     <DialogHeader className="mb-4">
                         <DialogTitle className="text-xl font-bold">CRM Settings</DialogTitle>
                         <DialogDescription className="text-gray-400">Manage your CRM products, statuses, and options.</DialogDescription>
