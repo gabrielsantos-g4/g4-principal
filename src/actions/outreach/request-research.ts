@@ -14,12 +14,13 @@ export async function requestResearch() {
     // Get company ID from profile
     const { data: profile } = await supabase
         .from('main_profiles')
-        .select('empresa_id, email')
+        .select('empresa_id')
         .eq('id', user.id)
         .single()
 
     if (!profile?.empresa_id) {
-        return { error: 'Company not found' }
+        console.error('FAIL: No company found for user', user.id)
+        return { error: `Debug Error: User ${user.email} (${user.id}) found, but has no company linked. Profile data: ${JSON.stringify(profile)}` }
     }
 
     // Get current ICP config to get the name
@@ -43,7 +44,7 @@ export async function requestResearch() {
             icp_name: icpName,
             request_date: now.toISOString(),
             deadline: deadline.toISOString(),
-            email_to_send: profile.email || user.email,
+            email_to_send: user.email,
             status: 'Pending'
         })
 

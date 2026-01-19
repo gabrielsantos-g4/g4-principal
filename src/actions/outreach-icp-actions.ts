@@ -33,13 +33,21 @@ export async function saveICP(formData: FormData) {
 
     if (!user) return { error: 'Unauthorized' }
 
+    console.log('--- Save ICP Debug ---')
+    console.log('Auth User ID:', user.id)
+
     const { data: profile } = await supabase
         .from('main_profiles')
         .select('empresa_id')
         .eq('id', user.id)
         .single()
 
-    if (!profile?.empresa_id) return { error: 'No company found' }
+    console.log('Profile Result:', profile)
+
+    if (!profile?.empresa_id) {
+        console.error('FAIL: No company found for user')
+        return { error: `Debug Error: User ${user.email} (${user.id}) found, but has no company linked. Profile data: ${JSON.stringify(profile)}` }
+    }
 
     const data = {
         empresa_id: profile.empresa_id,

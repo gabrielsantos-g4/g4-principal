@@ -123,7 +123,7 @@ export function ICPForm({ initialData, initialDemands = [] }: ICPFormProps) {
                 <p className="text-gray-400">Define the core characteristics of your target audience to help us generate better prospects.</p>
             </div>
 
-            <form action={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 bg-black">
+            <form action={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-black">
                 {/* Hidden Inputs for MultiSelect Arrays */}
                 <input type="hidden" name="company_headcount" value={JSON.stringify(headcount)} />
                 <input type="hidden" name="company_type" value={JSON.stringify(companyType)} />
@@ -133,7 +133,6 @@ export function ICPForm({ initialData, initialDemands = [] }: ICPFormProps) {
                 {/* Row 1 */}
                 <div className="space-y-1">
                     <label className="block text-xs font-bold text-white uppercase tracking-wider">Company headcount</label>
-                    <p className="text-[10px] text-gray-500 mb-1">e.g., 50-200 employees</p>
                     <MultiSelect
                         options={HEADCOUNT_OPTIONS}
                         value={headcount}
@@ -144,21 +143,19 @@ export function ICPForm({ initialData, initialDemands = [] }: ICPFormProps) {
 
                 <div className="space-y-1">
                     <label className="block text-xs font-bold text-white uppercase tracking-wider">Example of ideal companies</label>
-                    <p className="text-[10px] text-gray-500 mb-1">Clients you already have that are ideal</p>
-                    <input
+                    <textarea
                         name="example_ideal_companies"
                         value={textExamples}
                         onChange={e => setTextExamples(e.target.value)}
-                        type="text"
                         placeholder="Type here"
-                        className="w-full bg-[#1A1A1A] text-gray-200 text-sm rounded bg-opacity-50 border border-white/10 p-2 outline-none focus:ring-1 focus:ring-blue-500 transition-all"
+                        rows={3}
+                        className="w-full bg-[#1A1A1A] text-gray-200 text-sm rounded bg-opacity-50 border border-white/10 p-2 outline-none focus:ring-1 focus:ring-blue-500 transition-all resize-none"
                     />
                 </div>
 
                 {/* Row 2 */}
                 <div className="space-y-1">
                     <label className="block text-xs font-bold text-white uppercase tracking-wider">Company type</label>
-                    <p className="text-[10px] text-gray-500 mb-1">Lorem Ipsum</p>
                     <MultiSelect
                         options={COMPANY_TYPE_OPTIONS}
                         value={companyType}
@@ -169,7 +166,6 @@ export function ICPForm({ initialData, initialDemands = [] }: ICPFormProps) {
 
                 <div className="space-y-1">
                     <label className="block text-xs font-bold text-white uppercase tracking-wider">Headquarters location</label>
-                    <p className="text-[10px] text-gray-500 mb-1">Type city, state, country or region</p>
                     <input
                         name="company_headquarter_location"
                         value={textLocation}
@@ -183,7 +179,6 @@ export function ICPForm({ initialData, initialDemands = [] }: ICPFormProps) {
                 {/* Row 3 */}
                 <div className="space-y-1">
                     <label className="block text-xs font-bold text-white uppercase tracking-wider">Function or Area</label>
-                    <p className="text-[10px] text-gray-500 mb-1">e.g., Marketing, Sales, Engineering</p>
                     <MultiSelect
                         options={FUNCTION_AREA_OPTIONS}
                         value={functionArea}
@@ -194,21 +189,19 @@ export function ICPForm({ initialData, initialDemands = [] }: ICPFormProps) {
 
                 <div className="space-y-1">
                     <label className="block text-xs font-bold text-white uppercase tracking-wider">Job title</label>
-                    <p className="text-[10px] text-gray-500 mb-1">e.g., Marketing Director, VP of Sales</p>
-                    <input
+                    <textarea
                         name="job_title"
                         value={textJobTitle}
                         onChange={e => setTextJobTitle(e.target.value)}
-                        type="text"
                         placeholder="VP of Human Resource"
-                        className="w-full bg-[#1A1A1A] text-gray-200 text-sm rounded bg-opacity-50 border border-white/10 p-2 outline-none focus:ring-1 focus:ring-blue-500 transition-all"
+                        rows={3}
+                        className="w-full bg-[#1A1A1A] text-gray-200 text-sm rounded bg-opacity-50 border border-white/10 p-2 outline-none focus:ring-1 focus:ring-blue-500 transition-all resize-none"
                     />
                 </div>
 
                 {/* Row 4 */}
                 <div className="space-y-1">
                     <label className="block text-xs font-bold text-white uppercase tracking-wider">Seniority level</label>
-                    <p className="text-[10px] text-gray-500 mb-1">e.g., Manager, Director, VP, C-Level</p>
                     <MultiSelect
                         options={SENIORITY_LEVEL_OPTIONS}
                         value={seniority}
@@ -219,23 +212,22 @@ export function ICPForm({ initialData, initialDemands = [] }: ICPFormProps) {
 
                 <div className="space-y-1">
                     <label className="block text-xs font-bold text-white uppercase tracking-wider">Any additional instructions</label>
-                    <p className="text-[10px] text-gray-500 mb-1">Any other details</p>
-                    <input
+                    <textarea
                         name="additional_instruction"
                         value={textInstructions}
                         onChange={e => setTextInstructions(e.target.value)}
-                        type="text"
                         placeholder="Type here"
-                        className="w-full bg-[#1A1A1A] text-gray-200 text-sm rounded bg-opacity-50 border border-white/10 p-2 outline-none focus:ring-1 focus:ring-blue-500 transition-all"
+                        rows={3}
+                        className="w-full bg-[#1A1A1A] text-gray-200 text-sm rounded bg-opacity-50 border border-white/10 p-2 outline-none focus:ring-1 focus:ring-blue-500 transition-all resize-none"
                     />
                 </div>
 
-                <div className="md:col-span-2 lg:col-span-4 flex justify-end mt-2 gap-3">
+                <div className="md:col-span-2 flex justify-end mt-2 gap-3">
                     <button
                         type="button"
                         onClick={handleRequestResearch}
                         disabled={isRequesting}
-                        className="bg-white/5 border border-white/10 text-white text-sm px-6 py-2 rounded font-bold hover:bg-white/10 transition-colors disabled:opacity-50 flex items-center"
+                        className="bg-white/5 border border-white/10 text-white text-xs px-4 py-2 rounded font-bold hover:bg-white/10 transition-colors disabled:opacity-50 flex items-center h-9"
                     >
                         {isRequesting ? <Loader2 className="w-3 h-3 mr-2 animate-spin" /> : <Plus className="w-3 h-3 mr-2" />}
                         Request Research
@@ -243,7 +235,7 @@ export function ICPForm({ initialData, initialDemands = [] }: ICPFormProps) {
                     <button
                         type="submit"
                         disabled={isPending}
-                        className="bg-[#1C73E8] text-white text-sm px-6 py-2 rounded font-bold hover:bg-[#1557b0] transition-colors disabled:opacity-50 flex items-center"
+                        className="bg-[#1C73E8] text-white text-xs px-4 py-2 rounded font-bold hover:bg-[#1557b0] transition-colors disabled:opacity-50 flex items-center h-9"
                     >
                         {isPending && <Loader2 className="w-3 h-3 mr-2 animate-spin" />}
                         Update Configuration
