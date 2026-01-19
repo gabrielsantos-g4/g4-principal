@@ -62,31 +62,29 @@ export function GabrielExpertiseDialog({ children }: { children: React.ReactNode
             <DialogTrigger asChild>
                 {children}
             </DialogTrigger>
-            <DialogContent className="max-w-5xl bg-[#0c0c0c] border-white/10">
-                <DialogHeader>
-                    <DialogTitle className="text-xl font-bold text-white">
-                        Áreas que o Gabriel pode desenvolver pra você
+            <DialogContent className="max-w-[90vw] md:max-w-7xl bg-[#0c0c0c] border border-white/10 p-8 sm:p-12 shadow-2xl">
+                <DialogHeader className="mb-8">
+                    <DialogTitle className="text-3xl font-light text-white tracking-tight">
+                        Gabriel's Expertise
                     </DialogTitle>
+                    <p className="text-slate-400 font-light text-lg mt-2">
+                        Comprehensive fractional marketing leadership and execution capabilities.
+                    </p>
                 </DialogHeader>
 
-                <div className="space-y-8 py-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
                     {EXPERTISE_AREAS.map((area) => (
-                        <div key={area.category}>
-                            <h3 className="text-xs font-medium text-gray-400 uppercase tracking-wider mb-4">
+                        <div key={area.category} className="space-y-4">
+                            <h3 className="text-xs font-bold text-[#1C73E8] uppercase tracking-widest border-b border-white/5 pb-2">
                                 {area.category}
                             </h3>
-                            <div className="grid grid-cols-4 gap-3">
+                            <div className="space-y-2">
                                 {area.roles.map((role) => (
                                     <div
                                         key={role}
-                                        className="bg-white/5 border border-white/10 rounded-lg p-4 hover:bg-white/10 hover:border-white/20 transition-all cursor-pointer group"
+                                        className="text-gray-300 text-sm py-2 px-3 rounded hover:bg-white/5 hover:text-white transition-colors cursor-default border border-transparent hover:border-white/5"
                                     >
-                                        <div className="flex flex-col items-center text-center gap-2">
-                                            <div className="text-2xl">💼</div>
-                                            <p className="text-sm text-gray-300 group-hover:text-white transition-colors font-medium">
-                                                {role}
-                                            </p>
-                                        </div>
+                                        {role}
                                     </div>
                                 ))}
                             </div>
