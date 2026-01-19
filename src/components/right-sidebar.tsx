@@ -5,6 +5,7 @@ import { createPendingLeads } from '@/actions/outreach-actions'
 import { useRouter } from 'next/navigation'
 import { useSidebar } from '@/components/providers/sidebar-provider'
 import { Sidebar as SidebarIcon } from 'lucide-react'
+import { saveChatMessage, getChatMessages } from '@/actions/agent-chat-actions'
 
 interface AgentContext {
     name: string
@@ -27,12 +28,13 @@ interface Message {
 interface RightSidebarProps {
     agent?: AgentContext
     userId?: string
+    companyId?: string
     userName?: string
     initialChatId?: string
     chatTitle?: string
 }
 
-export function RightSidebar({ agent, userId, userName = 'there', initialChatId, chatTitle }: RightSidebarProps) {
+export function RightSidebar({ agent, userId, companyId, userName = 'there', initialChatId, chatTitle }: RightSidebarProps) {
     console.log('RightSidebar mounted/updated. ChatTitle:', chatTitle, 'InitialChatId:', initialChatId)
     const { isRightSidebarCollapsed, toggleRightSidebar } = useSidebar()
     const [messages, setMessages] = useState<Message[]>([])
@@ -95,6 +97,27 @@ export function RightSidebar({ agent, userId, userName = 'there', initialChatId,
         }
     }, [agent?.slug, initialChatId])
 
+    // Load Messages for AI Agents (Generic)
+    useEffect(() => {
+        if (agent?.slug && agent.slug !== 'audience-channels' && companyId) {
+            loadAgentChatHistory(agent.name, companyId)
+        }
+    }, [agent?.slug, agent?.name, companyId])
+
+    const loadAgentChatHistory = async (agentName: string, companyId: string) => {
+        setIsTyping(true)
+        setMessages([])
+        const result = await getChatMessages({ empresa_id: companyId, agent_name: agentName })
+        if (result.success && result.messages) {
+            // Map IDs to strings to match Message interface if they are UUIDs
+            setMessages(result.messages.map(m => ({
+                ...m,
+                id: m.id.toString()
+            })) as Message[])
+        }
+        setIsTyping(false)
+    }
+
     const startChatSession = async (chatId: string) => {
         setIsTyping(true)
         setMessages([]) // Clear previous
@@ -137,6 +160,17 @@ export function RightSidebar({ agent, userId, userName = 'there', initialChatId,
         setMessages(prev => [...prev, newMessage])
         setIsTyping(true)
 
+        // Persist User Message (except for audience-channels which has its own logic)
+        if (agent?.slug !== 'audience-channels' && companyId && userId && agent?.name) {
+            saveChatMessage({
+                empresa_id: companyId,
+                user_id: userId,
+                agent_name: agent.name,
+                message: text,
+                sender: 'USER'
+            })
+        }
+
         // Audience Logic (Real DB)
         if (agent?.slug === 'audience-channels' && initialChatId) {
             // 1. Send User Message & Get AI Response
@@ -155,69 +189,58 @@ export function RightSidebar({ agent, userId, userName = 'there', initialChatId,
             return
         }
 
-        // Outreach Logic (Existing)
+        // Outreach Logic (Amanda Webhook API)
         if (agent?.slug === 'outreach') {
-            const numberMatch = text.match(/(\d+)/)
+            try {
+                // Send POST to Amanda's specific hook
+                const response = await fetch('https://hook.startg4.com/webhook/2c65b755-6b30-44b2-ae51-7072d7e63510-amanda', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        empresa_id: companyId,
+                        text: text,
+                        agent_name: agent?.name
+                    })
+                })
 
-            if (numberMatch) {
-                const number = parseInt(numberMatch[0])
-                setLeadsCount(number) // Store for webhook
+                if (!response.ok) {
+                    throw new Error('Failed to send webhook')
+                }
 
-                // 1. Immediate Response Variations
-                const greetingVariations = [
-                    `Ok ${userName}, understood. You want to find ${number} leads.`,
-                    `Got it ${userName}. I see you're looking for ${number} leads.`,
-                    `Understood ${userName}. So you need ${number} leads.`,
-                    `Right ${userName}, noted. You are targeting ${number} leads.`,
-                    `Ok ${userName}, I can help with that. You need ${number} leads.`
-                ]
+                const data = await response.json()
+                const aiMsg = Array.isArray(data) && data[0]?.output
+                    ? data[0].output
+                    : (data.output || "Understood. I'm processing your request.");
 
-                setTimeout(() => {
-                    setMessages(prev => [...prev, {
-                        id: Date.now().toString(),
-                        role: 'assistant',
-                        content: getRandomVariation(greetingVariations)
-                    }])
-                    // Keep typing for next message
-                }, 1000)
+                setMessages(prev => [...prev, {
+                    id: Date.now().toString() + '-ai',
+                    role: 'assistant',
+                    content: aiMsg
+                }])
 
-                // 2. Delayed Response Variations
-                const confirmationVariations = [
-                    "First, I need you to confirm the ICP on the left. If the information is correct, click send. If you need to change anything, update it, click 'Update Configuration' and then send.",
-                    "Please verify the ICP details on the left before we proceed. If everything looks good, click send. Otherwise, make your changes, click 'Update Configuration', and then send.",
-                    "I just need you to check the ICP configuration on the left. If it's accurate, go ahead and click send. If not, please update it, save the configuration, and then send.",
-                    "Before I start, could you confirm the ICP settings on the left? Click send if they are correct. If you need to edit, update the fields, save the configuration, and then send.",
-                    "One last thing: please review the ICP information on the left. If it's all correct, simply click send. If you need to adjust anything, update it, click 'Update Configuration', and send."
-                ]
+                setIsTyping(false)
 
-                setTimeout(() => {
-                    setIsTyping(false)
-                    setMessages(prev => [...prev, {
-                        id: (Date.now() + 1).toString(),
-                        role: 'assistant',
-                        content: (
-                            <div className="space-y-3">
-                                <p>{getRandomVariation(confirmationVariations)}</p>
-                                <button
-                                    onClick={(e) => handleSendWebhook(e, number)}
-                                    className="bg-[#1C73E8] text-white px-4 py-2 rounded text-sm font-bold hover:bg-[#1557b0] transition-colors w-full"
-                                >
-                                    Confirm and Send
-                                </button>
-                            </div>
-                        )
-                    }])
-                }, 4000)
-            } else {
-                // Fallback for no number
-                setTimeout(() => {
-                    setIsTyping(false)
-                    setMessages(prev => [...prev, {
-                        id: Date.now().toString(),
-                        role: 'assistant',
-                        content: `Please specify how many leads you need (type a number), ${userName}.`
-                    }])
-                }, 1500)
+                // Persist Agent Message
+                if (companyId && userId && agent?.name) {
+                    saveChatMessage({
+                        empresa_id: companyId,
+                        user_id: userId,
+                        agent_name: agent.name,
+                        message: aiMsg,
+                        sender: 'AGENT'
+                    })
+                }
+
+                // Check for numeric leads logic (keeping backward compatibility if needed)
+                const numberMatch = text.match(/(\d+)/)
+            } catch (error) {
+                console.error('Amanda Webhook Error:', error)
+                setIsTyping(false)
+                setMessages(prev => [...prev, {
+                    id: Date.now().toString(),
+                    role: 'assistant',
+                    content: "Sorry, I encountered an error while processing your request. Please try again later."
+                }])
             }
         } else {
             // Default echo for others if needed, or nothing

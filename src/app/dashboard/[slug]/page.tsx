@@ -47,6 +47,24 @@ export default async function AgentPage({ params, searchParams }: AgentPageProps
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
 
+    // Agent-specific data fetching
+    const isOutreach = slug === 'outreach'
+    const isAudience = slug === 'audience-channels'
+    const isCrm = slug === 'crm'
+    const isSupport = slug === 'customer-support'
+    const isDesign = slug === 'design-video'
+    const isCompetitors = slug === 'competitors-analysis'
+    const isBi = slug === 'bi-data-analysis'
+
+    // Get company_id (Needed for all agents)
+    const { data: profile } = await supabase
+        .from('main_profiles')
+        .select('empresa_id')
+        .eq('id', user?.id)
+        .single()
+
+    const companyId = profile?.empresa_id
+
     if (isOrchestrator) {
         return (
             <div className="h-screen bg-black text-white font-sans flex flex-col overflow-hidden">
@@ -56,6 +74,7 @@ export default async function AgentPage({ params, searchParams }: AgentPageProps
                         <RightSidebar
                             key="orchestrator"
                             userId={user?.id}
+                            companyId={companyId}
                             userName={(user?.user_metadata?.full_name || user?.user_metadata?.name || 'there').split(' ')[0]}
                             agent={{
                                 name: 'Gabriel Santos',
@@ -79,24 +98,6 @@ export default async function AgentPage({ params, searchParams }: AgentPageProps
     if (!agent) {
         redirect('/dashboard')
     }
-
-    // Agent-specific data fetching
-    const isOutreach = slug === 'outreach'
-    const isAudience = slug === 'audience-channels'
-    const isCrm = slug === 'crm'
-    const isSupport = slug === 'customer-support'
-    const isDesign = slug === 'design-video'
-    const isCompetitors = slug === 'competitors-analysis'
-    const isBi = slug === 'bi-data-analysis'
-
-    // Get company_id
-    const { data: profile } = await supabase
-        .from('main_profiles')
-        .select('empresa_id')
-        .eq('id', user?.id)
-        .single()
-
-    const companyId = profile?.empresa_id
 
     let outreachData = null
     let outreachDemands: any[] = []
@@ -130,6 +131,7 @@ export default async function AgentPage({ params, searchParams }: AgentPageProps
                         <RightSidebar
                             key={slug + (chatId || '')}
                             userId={user?.id}
+                            companyId={companyId}
                             userName={(user?.user_metadata?.full_name || user?.user_metadata?.name || 'there').split(' ')[0]}
                             agent={{
                                 name: agent.name,
@@ -197,6 +199,7 @@ export default async function AgentPage({ params, searchParams }: AgentPageProps
                         <RightSidebar
                             key={slug + (chatId || '')}
                             userId={user?.id}
+                            companyId={companyId}
                             userName={(user?.user_metadata?.full_name || user?.user_metadata?.name || 'there').split(' ')[0]}
                             agent={{
                                 name: agent.name,
@@ -224,6 +227,7 @@ export default async function AgentPage({ params, searchParams }: AgentPageProps
                         <RightSidebar
                             key={slug + (chatId || '')}
                             userId={user?.id}
+                            companyId={companyId}
                             userName={(user?.user_metadata?.full_name || user?.user_metadata?.name || 'there').split(' ')[0]}
                             agent={{
                                 name: agent.name,
@@ -251,6 +255,7 @@ export default async function AgentPage({ params, searchParams }: AgentPageProps
                         <RightSidebar
                             key={slug + (chatId || '')}
                             userId={user?.id}
+                            companyId={companyId}
                             userName={(user?.user_metadata?.full_name || user?.user_metadata?.name || 'there').split(' ')[0]}
                             agent={{
                                 name: agent.name,
@@ -280,6 +285,7 @@ export default async function AgentPage({ params, searchParams }: AgentPageProps
                     <RightSidebar
                         key={slug + (chatId || '')}
                         userId={user?.id}
+                        companyId={companyId}
                         userName={(user?.user_metadata?.full_name || user?.user_metadata?.name || 'there').split(' ')[0]}
                         agent={{
                             name: agent.name,
@@ -304,6 +310,7 @@ export default async function AgentPage({ params, searchParams }: AgentPageProps
                         <RightSidebar
                             key={slug + (chatId || '')}
                             userId={user?.id}
+                            companyId={companyId}
                             userName={(user?.user_metadata?.full_name || user?.user_metadata?.name || 'there').split(' ')[0]}
                             agent={{
                                 name: agent.name,
@@ -415,6 +422,7 @@ export default async function AgentPage({ params, searchParams }: AgentPageProps
                         <RightSidebar
                             key={slug + (competitorId || '')}
                             userId={user?.id}
+                            companyId={companyId}
                             userName={(user?.user_metadata?.full_name || user?.user_metadata?.name || 'there').split(' ')[0]}
                             agent={{
                                 name: agent.name,
@@ -462,6 +470,7 @@ export default async function AgentPage({ params, searchParams }: AgentPageProps
                     <RightSidebar
                         key={slug + (chatId || '')} // Re-mount if chat changes
                         userId={user?.id}
+                        companyId={companyId}
                         userName={(user?.user_metadata?.full_name || user?.user_metadata?.name || 'there').split(' ')[0]}
                         agent={{
                             name: agent.name,

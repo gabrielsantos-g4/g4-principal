@@ -21,9 +21,15 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 
 interface SidebarNavProps {
     agents: Agent[]
+    user: {
+        name: string
+        role: string
+        avatar: string
+        companyName: string
+    }
 }
 
-export function SidebarNav({ agents }: SidebarNavProps) {
+export function SidebarNav({ agents, user }: SidebarNavProps) {
     const pathname = usePathname()
     const [isPricingOpen, setIsPricingOpen] = useState(false)
     const { isCollapsed } = useSidebar()
@@ -54,8 +60,8 @@ export function SidebarNav({ agents }: SidebarNavProps) {
                                 : 'border-white/10 group-hover:border-[#1C73E8]'
                                 }`}>
                                 <img
-                                    src="/gabriel-santos.png"
-                                    alt="Gabriel Santos"
+                                    src={user.avatar}
+                                    alt={user.name}
                                     className="w-full h-full object-cover"
                                 />
                             </div>
@@ -63,8 +69,8 @@ export function SidebarNav({ agents }: SidebarNavProps) {
                             {!isCollapsed && (
                                 <div className="flex flex-col overflow-hidden">
                                     <span className={`text-sm font-bold truncate transition-colors leading-tight ${pathname === '/dashboard/orchestrator' ? 'text-white' : 'text-slate-300 group-hover:text-white'
-                                        }`}>Gabriel Santos</span>
-                                    <span className="text-xs text-slate-400 truncate leading-tight">g4 AI Agents</span>
+                                        }`}>{user.name}</span>
+                                    <span className="text-xs text-slate-400 truncate leading-tight">{user.companyName}</span>
 
                                 </div>
                             )}
@@ -79,8 +85,8 @@ export function SidebarNav({ agents }: SidebarNavProps) {
                     >
                         <DropdownMenuLabel className="font-normal p-3">
                             <div className="flex flex-col space-y-1">
-                                <p className="text-sm font-medium leading-none text-white">Gabriel Santos</p>
-                                <p className="text-xs leading-none text-gray-500">g4 AI Agents</p>
+                                <p className="text-sm font-medium leading-none text-white">{user.name}</p>
+                                <p className="text-xs leading-none text-gray-500">{user.companyName}</p>
                             </div>
                         </DropdownMenuLabel>
                         <DropdownMenuSeparator className="bg-white/10" />
@@ -108,7 +114,7 @@ export function SidebarNav({ agents }: SidebarNavProps) {
                         </DropdownMenuItem>
 
                         <DropdownMenuItem asChild className="cursor-pointer focus:bg-white/10 focus:text-white group p-2 rounded-md">
-                            <a href="mailto:gabriel@startg4.com" className="w-full flex items-center">
+                            <a href={`mailto:${user.name.toLowerCase().replace(' ', '.')}.g4@example.com`} className="w-full flex items-center">
                                 <ArrowUpRight className="mr-2 h-4 w-4 text-gray-400 group-hover:text-white" />
                                 <span>Support</span>
                             </a>
@@ -185,8 +191,8 @@ export function SidebarNav({ agents }: SidebarNavProps) {
                     <button className={`w-full flex items-center gap-3 px-4 py-2 rounded-lg transition-all duration-200 group text-left ${isCollapsed ? 'justify-center px-2' : ''} hover:bg-slate-800`}>
                         <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0 border border-white/10 group-hover:border-white/30 transition-all">
                             <img
-                                src="/gabriel-santos.png"
-                                alt="Gabriel"
+                                src={user.avatar}
+                                alt={user.name}
                                 className="w-full h-full object-cover"
                             />
                         </div>
@@ -194,10 +200,10 @@ export function SidebarNav({ agents }: SidebarNavProps) {
                         {!isCollapsed && (
                             <div className="flex flex-col overflow-hidden">
                                 <span className="truncate text-sm font-medium text-slate-200 group-hover:text-white transition-colors">
-                                    Gabriel
+                                    {user.name.split(' ')[0]}
                                 </span>
                                 <span className="text-xs text-slate-500 group-hover:text-slate-400 transition-colors whitespace-normal leading-tight">
-                                    Fractional Full-Stack Marketer
+                                    {user.role}
                                 </span>
                             </div>
                         )}
