@@ -11,7 +11,7 @@ export default async function StoragePage() {
                 <div>
                     <h2 className="text-2xl font-bold tracking-tight">Storage</h2>
                     <p className="text-gray-400">
-                        Gerencie seus arquivos de mídia (imagens, vídeos, documentos).
+                        Manage your media files (images, videos, documents).
                     </p>
                 </div>
             </div>

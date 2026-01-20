@@ -3,7 +3,7 @@
 import { saveICP } from "@/actions/outreach-icp-actions"
 import { requestResearch } from "@/actions/outreach/request-research"
 import { useTransition, useState, useEffect } from "react"
-import { Loader2, Plus } from "lucide-react"
+import { Loader2, Plus, Users, Building2, Briefcase, MonitorSmartphone, MapPin, Badge, Building, FileText } from "lucide-react"
 import { MultiSelect } from "@/components/ui/multi-select"
 import { toast } from "sonner"
 import { OutreachDemandsList } from "./outreach-demands-list"
@@ -123,16 +123,19 @@ export function ICPForm({ initialData, initialDemands = [] }: ICPFormProps) {
                 <p className="text-gray-400">Define the core characteristics of your target audience to help us generate better prospects.</p>
             </div>
 
-            <form action={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-black">
+            <form action={handleSubmit} className="grid grid-cols-1 md:grid-cols-6 gap-6 bg-transparent">
                 {/* Hidden Inputs for MultiSelect Arrays */}
                 <input type="hidden" name="company_headcount" value={JSON.stringify(headcount)} />
                 <input type="hidden" name="company_type" value={JSON.stringify(companyType)} />
                 <input type="hidden" name="function_or_area" value={JSON.stringify(functionArea)} />
                 <input type="hidden" name="seniority_level" value={JSON.stringify(seniority)} />
 
-                {/* Row 1 */}
-                <div className="space-y-1">
-                    <label className="block text-xs font-bold text-white uppercase tracking-wider">Company headcount</label>
+                {/* Row 1: 3 Columns (Headcount, Type, Seniority) */}
+                <div className="space-y-2 md:col-span-2">
+                    <label className="flex items-center gap-2 text-sm font-medium text-white">
+                        <Users className="w-4 h-4 text-[#1C73E8]" />
+                        Company headcount
+                    </label>
                     <MultiSelect
                         options={HEADCOUNT_OPTIONS}
                         value={headcount}
@@ -141,21 +144,11 @@ export function ICPForm({ initialData, initialDemands = [] }: ICPFormProps) {
                     />
                 </div>
 
-                <div className="space-y-1">
-                    <label className="block text-xs font-bold text-white uppercase tracking-wider">Example of ideal companies</label>
-                    <textarea
-                        name="example_ideal_companies"
-                        value={textExamples}
-                        onChange={e => setTextExamples(e.target.value)}
-                        placeholder="Type here"
-                        rows={3}
-                        className="w-full bg-[#1A1A1A] text-gray-200 text-sm rounded bg-opacity-50 border border-white/10 p-2 outline-none focus:ring-1 focus:ring-blue-500 transition-all resize-none"
-                    />
-                </div>
-
-                {/* Row 2 */}
-                <div className="space-y-1">
-                    <label className="block text-xs font-bold text-white uppercase tracking-wider">Company type</label>
+                <div className="space-y-2 md:col-span-2">
+                    <label className="flex items-center gap-2 text-sm font-medium text-white">
+                        <Building2 className="w-4 h-4 text-[#1C73E8]" />
+                        Company type
+                    </label>
                     <MultiSelect
                         options={COMPANY_TYPE_OPTIONS}
                         value={companyType}
@@ -164,44 +157,11 @@ export function ICPForm({ initialData, initialDemands = [] }: ICPFormProps) {
                     />
                 </div>
 
-                <div className="space-y-1">
-                    <label className="block text-xs font-bold text-white uppercase tracking-wider">Headquarters location</label>
-                    <input
-                        name="company_headquarter_location"
-                        value={textLocation}
-                        onChange={e => setTextLocation(e.target.value)}
-                        type="text"
-                        placeholder="Los angeles/CA"
-                        className="w-full bg-[#1A1A1A] text-gray-200 text-sm rounded bg-opacity-50 border border-white/10 p-2 outline-none focus:ring-1 focus:ring-blue-500 transition-all"
-                    />
-                </div>
-
-                {/* Row 3 */}
-                <div className="space-y-1">
-                    <label className="block text-xs font-bold text-white uppercase tracking-wider">Function or Area</label>
-                    <MultiSelect
-                        options={FUNCTION_AREA_OPTIONS}
-                        value={functionArea}
-                        onChange={setFunctionArea}
-                        placeholder="Select area"
-                    />
-                </div>
-
-                <div className="space-y-1">
-                    <label className="block text-xs font-bold text-white uppercase tracking-wider">Job title</label>
-                    <textarea
-                        name="job_title"
-                        value={textJobTitle}
-                        onChange={e => setTextJobTitle(e.target.value)}
-                        placeholder="VP of Human Resource"
-                        rows={3}
-                        className="w-full bg-[#1A1A1A] text-gray-200 text-sm rounded bg-opacity-50 border border-white/10 p-2 outline-none focus:ring-1 focus:ring-blue-500 transition-all resize-none"
-                    />
-                </div>
-
-                {/* Row 4 */}
-                <div className="space-y-1">
-                    <label className="block text-xs font-bold text-white uppercase tracking-wider">Seniority level</label>
+                <div className="space-y-2 md:col-span-2">
+                    <label className="flex items-center gap-2 text-sm font-medium text-white">
+                        <Briefcase className="w-4 h-4 text-[#1C73E8]" />
+                        Seniority level
+                    </label>
                     <MultiSelect
                         options={SENIORITY_LEVEL_OPTIONS}
                         value={seniority}
@@ -210,34 +170,101 @@ export function ICPForm({ initialData, initialDemands = [] }: ICPFormProps) {
                     />
                 </div>
 
-                <div className="space-y-1">
-                    <label className="block text-xs font-bold text-white uppercase tracking-wider">Any additional instructions</label>
+                {/* Row 2: 2 Columns (Function, Location) */}
+                <div className="space-y-2 md:col-span-3">
+                    <label className="flex items-center gap-2 text-sm font-medium text-white">
+                        <MonitorSmartphone className="w-4 h-4 text-[#1C73E8]" />
+                        Function or Area
+                    </label>
+                    <MultiSelect
+                        options={FUNCTION_AREA_OPTIONS}
+                        value={functionArea}
+                        onChange={setFunctionArea}
+                        placeholder="Select area"
+                    />
+                </div>
+
+                <div className="space-y-2 md:col-span-3">
+                    <label className="flex items-center gap-2 text-sm font-medium text-white">
+                        <MapPin className="w-4 h-4 text-[#1C73E8]" />
+                        Headquarters location
+                    </label>
+                    <div className="relative">
+                        <input
+                            name="company_headquarter_location"
+                            value={textLocation}
+                            onChange={e => setTextLocation(e.target.value)}
+                            type="text"
+                            placeholder="e.g. Los Angeles/CA"
+                            className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-[#1C73E8] transition-colors"
+                        />
+                    </div>
+                </div>
+
+                {/* Row 3: 2 Columns (Job Title, Examples) */}
+                <div className="space-y-2 md:col-span-3">
+                    <label className="flex items-center gap-2 text-sm font-medium text-white">
+                        <Badge className="w-4 h-4 text-[#1C73E8]" />
+                        Job title
+                    </label>
+                    <textarea
+                        name="job_title"
+                        value={textJobTitle}
+                        onChange={e => setTextJobTitle(e.target.value)}
+                        placeholder="e.g. VP of Human Resources"
+                        rows={3}
+                        className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-[#1C73E8] transition-colors resize-none"
+                    />
+                </div>
+
+                <div className="space-y-2 md:col-span-3">
+                    <label className="flex items-center gap-2 text-sm font-medium text-white">
+                        <Building className="w-4 h-4 text-[#1C73E8]" />
+                        Example of ideal companies
+                    </label>
+                    <textarea
+                        name="example_ideal_companies"
+                        value={textExamples}
+                        onChange={e => setTextExamples(e.target.value)}
+                        placeholder="List specific companies you want to target..."
+                        rows={3}
+                        className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-[#1C73E8] transition-colors resize-none"
+                    />
+                </div>
+
+                {/* Row 4: Full Width (Instructions) */}
+                <div className="space-y-2 md:col-span-6">
+                    <label className="flex items-center gap-2 text-sm font-medium text-white">
+                        <FileText className="w-4 h-4 text-[#1C73E8]" />
+                        Any additional instructions
+                    </label>
                     <textarea
                         name="additional_instruction"
                         value={textInstructions}
                         onChange={e => setTextInstructions(e.target.value)}
-                        placeholder="Type here"
+                        placeholder="Any other criteria or context for the AI researcher..."
                         rows={3}
-                        className="w-full bg-[#1A1A1A] text-gray-200 text-sm rounded bg-opacity-50 border border-white/10 p-2 outline-none focus:ring-1 focus:ring-blue-500 transition-all resize-none"
+                        className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-[#1C73E8] transition-colors resize-none"
                     />
                 </div>
 
-                <div className="md:col-span-2 flex justify-end mt-2 gap-3">
+                {/* Footer Buttons */}
+                <div className="md:col-span-6 flex justify-end mt-4 gap-3 pt-4 border-t border-white/10">
                     <button
                         type="button"
                         onClick={handleRequestResearch}
                         disabled={isRequesting}
-                        className="bg-white/5 border border-white/10 text-white text-xs px-4 py-2 rounded font-bold hover:bg-white/10 transition-colors disabled:opacity-50 flex items-center h-9"
+                        className="px-4 py-2 text-sm font-medium text-white bg-white/5 border border-white/10 rounded-lg hover:bg-white/10 transition-colors disabled:opacity-50 flex items-center gap-2"
                     >
-                        {isRequesting ? <Loader2 className="w-3 h-3 mr-2 animate-spin" /> : <Plus className="w-3 h-3 mr-2" />}
+                        {isRequesting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
                         Request Research
                     </button>
                     <button
                         type="submit"
                         disabled={isPending}
-                        className="bg-[#1C73E8] text-white text-xs px-4 py-2 rounded font-bold hover:bg-[#1557b0] transition-colors disabled:opacity-50 flex items-center h-9"
+                        className="px-6 py-2 text-sm font-bold text-white bg-[#1C73E8] rounded-lg hover:bg-[#1557b0] transition-colors disabled:opacity-50 flex items-center gap-2"
                     >
-                        {isPending && <Loader2 className="w-3 h-3 mr-2 animate-spin" />}
+                        {isPending && <Loader2 className="w-4 h-4 animate-spin" />}
                         Update Configuration
                     </button>
                 </div>

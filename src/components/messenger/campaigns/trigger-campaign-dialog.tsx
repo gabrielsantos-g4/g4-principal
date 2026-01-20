@@ -96,10 +96,10 @@ export function TriggerCampaignDialog({ campaigns, lists, instances }: TriggerCa
                 return
             }
 
-            toast.success("Campanha enviada para processamento!")
+            toast.success("Campaign sent for processing!")
             handleOpenChange(false)
         } catch (error) {
-            toast.error("Erro ao disparar campanha.")
+            toast.error("Error triggering campaign.")
         } finally {
             setIsSending(false)
         }
@@ -114,17 +114,17 @@ export function TriggerCampaignDialog({ campaigns, lists, instances }: TriggerCa
             <DialogTrigger asChild>
                 <Button variant="default" className="bg-green-600 hover:bg-green-700 text-white gap-2">
                     <Rocket className="h-4 w-4" />
-                    Disparar Campanha
+                    Send Campaign
                 </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-[500px] bg-[#1a1a1a] border-white/10 text-white">
                 <DialogHeader>
-                    <DialogTitle>Disparar Campanha</DialogTitle>
+                    <DialogTitle>Send Campaign</DialogTitle>
                     <DialogDescription className="text-gray-400">
-                        {step === 1 && "Selecione o modelo de mensagem (Template)."}
-                        {step === 2 && "Selecione a lista de contatos alvo."}
-                        {step === 3 && "Selecione a instância de envio."}
-                        {step === 4 && "Confira os dados antes de enviar."}
+                        {step === 1 && "Select the message template."}
+                        {step === 2 && "Select the target contact list."}
+                        {step === 3 && "Select the sending instance."}
+                        {step === 4 && "Check the data before sending."}
                     </DialogDescription>
                 </DialogHeader>
 
@@ -132,10 +132,10 @@ export function TriggerCampaignDialog({ campaigns, lists, instances }: TriggerCa
                     {step === 1 && (
                         <div className="space-y-4">
                             <div className="space-y-2">
-                                <Label>Template (Campanha)</Label>
+                                <Label>Template (Campaign)</Label>
                                 <Select value={selectedCampaignId} onValueChange={setSelectedCampaignId}>
                                     <SelectTrigger className="bg-[#0f0f0f] border-white/10 text-white focus:ring-[#1C73E8]">
-                                        <SelectValue placeholder="Selecione um template..." />
+                                        <SelectValue placeholder="Select a template..." />
                                     </SelectTrigger>
                                     <SelectContent className="bg-[#1a1a1a] border-white/10 text-white">
                                         {campaigns.map(camp => (
@@ -152,15 +152,15 @@ export function TriggerCampaignDialog({ campaigns, lists, instances }: TriggerCa
                     {step === 2 && (
                         <div className="space-y-4">
                             <div className="space-y-2">
-                                <Label>Lista de Contatos</Label>
+                                <Label>Contact List</Label>
                                 <Select value={selectedListId} onValueChange={setSelectedListId}>
                                     <SelectTrigger className="bg-[#0f0f0f] border-white/10 text-white focus:ring-[#1C73E8]">
-                                        <SelectValue placeholder="Selecione uma lista..." />
+                                        <SelectValue placeholder="Select a list..." />
                                     </SelectTrigger>
                                     <SelectContent className="bg-[#1a1a1a] border-white/10 text-white">
                                         {lists.map(list => (
                                             <SelectItem key={list.id} value={list.id}>
-                                                {list.nome || "Sem nome"}
+                                                {list.nome || "Unnamed"}
                                             </SelectItem>
                                         ))}
                                     </SelectContent>
@@ -172,16 +172,16 @@ export function TriggerCampaignDialog({ campaigns, lists, instances }: TriggerCa
                     {step === 3 && (
                         <div className="space-y-4">
                             <div className="space-y-2">
-                                <Label>Instância (Whatsapp)</Label>
+                                <Label>Instance (Whatsapp)</Label>
 
                                 {!rotateInstances && (
                                     <Select value={selectedInstanceId} onValueChange={setSelectedInstanceId}>
                                         <SelectTrigger className="bg-[#0f0f0f] border-white/10 text-white focus:ring-[#1C73E8]">
-                                            <SelectValue placeholder="Selecione a instância..." />
+                                            <SelectValue placeholder="Select instance..." />
                                         </SelectTrigger>
                                         <SelectContent className="bg-[#1a1a1a] border-white/10 text-white">
                                             {activeInstances.length === 0 ? (
-                                                <div className="p-2 text-sm text-gray-400 text-center">Nenhuma instância ativa</div>
+                                                <div className="p-2 text-sm text-gray-400 text-center">No active instance</div>
                                             ) : activeInstances.map(inst => (
                                                 <SelectItem key={inst.id} value={inst.id}>
                                                     {inst.name.split('_')[0]}
@@ -206,19 +206,19 @@ export function TriggerCampaignDialog({ campaigns, lists, instances }: TriggerCa
                                             htmlFor="rotate-instances"
                                             className="text-sm font-medium leading-none text-gray-300 peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
                                         >
-                                            Alternar instâncias (Rodízio)
+                                            Rotate instances (Round-robin)
                                         </label>
                                     </div>
                                 )}
 
                                 {rotateInstances && (
                                     <p className="text-xs text-gray-500 mt-1">
-                                        As {activeInstances.length} instâncias ativas serão utilizadas para o envio em modo de rodízio.
+                                        The {activeInstances.length} active instances will be used for sending in round-robin mode.
                                     </p>
                                 )}
 
                                 {activeInstances.length === 0 && (
-                                    <p className="text-xs text-red-400">Você precisa de uma instância com status WORKING para enviar.</p>
+                                    <p className="text-xs text-red-400">You need an instance with WORKING status to send.</p>
                                 )}
                             </div>
                         </div>
@@ -227,10 +227,10 @@ export function TriggerCampaignDialog({ campaigns, lists, instances }: TriggerCa
                     {step === 4 && (
                         <div className="space-y-4 bg-[#0f0f0f] p-4 rounded-lg border border-white/10">
                             <div className="grid grid-cols-3 text-sm gap-2">
-                                <span className="font-medium text-gray-400">Instância:</span>
+                                <span className="font-medium text-gray-400">Instance:</span>
                                 {rotateInstances ? (
                                     <div className="col-span-2 text-white">
-                                        <span className="font-semibold block mb-1">Alternando entre:</span>
+                                        <span className="font-semibold block mb-1">Rotating between:</span>
                                         <ul className="list-disc list-inside text-xs text-gray-400">
                                             {activeInstances.map(inst => (
                                                 <li key={inst.id}>{inst.name.split('_')[0]}</li>
@@ -244,7 +244,7 @@ export function TriggerCampaignDialog({ campaigns, lists, instances }: TriggerCa
                                 <span className="font-medium text-gray-400">Template:</span>
                                 <span className="col-span-2 text-white">{selectedCampaign?.name}</span>
 
-                                <span className="font-medium text-gray-400">Lista:</span>
+                                <span className="font-medium text-gray-400">List:</span>
                                 <span className="col-span-2 text-white">{selectedList?.nome}</span>
                             </div>
                         </div>
@@ -258,7 +258,7 @@ export function TriggerCampaignDialog({ campaigns, lists, instances }: TriggerCa
                             onClick={() => handleOpenChange(false)}
                             className="text-gray-300 hover:text-white hover:bg-white/10"
                         >
-                            Cancelar
+                            Cancel
                         </Button>
                     ) : (
                         <Button
@@ -268,7 +268,7 @@ export function TriggerCampaignDialog({ campaigns, lists, instances }: TriggerCa
                             className="text-gray-300 hover:text-white hover:bg-white/10"
                         >
                             <ArrowLeft className="mr-2 h-4 w-4" />
-                            Voltar
+                            Back
                         </Button>
                     )}
 
@@ -282,7 +282,7 @@ export function TriggerCampaignDialog({ campaigns, lists, instances }: TriggerCa
                                 (step === 3 && ((!selectedInstanceId && !rotateInstances) || activeInstances.length === 0))
                             }
                         >
-                            Próximo
+                            Next
                             <ArrowRight className="ml-2 h-4 w-4" />
                         </Button>
                     ) : (
@@ -294,11 +294,11 @@ export function TriggerCampaignDialog({ campaigns, lists, instances }: TriggerCa
                             {isSending ? (
                                 <>
                                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                    Enviando...
+                                    Sending...
                                 </>
                             ) : (
                                 <>
-                                    ENVIAR
+                                    SEND
                                     <Rocket className="ml-2 h-4 w-4" />
                                 </>
                             )}

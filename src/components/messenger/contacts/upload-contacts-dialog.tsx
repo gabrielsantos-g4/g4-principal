@@ -44,13 +44,13 @@ export function UploadContactsDialog({ children }: { children: React.ReactNode }
             if (result.error) {
                 toast.error(result.error)
             } else {
-                toast.success("Upload realizado com sucesso! O processamento pode levar alguns minutos.")
+                toast.success("Upload successful! Processing may take a few minutes.")
                 setOpen(false)
                 setFile(null)
                 setListName("")
             }
         } catch (error) {
-            toast.error("Ocorreu um erro inesperado.")
+            toast.error("Unexpected error.")
             console.error(error)
         }
 
@@ -62,18 +62,18 @@ export function UploadContactsDialog({ children }: { children: React.ReactNode }
             <DialogTrigger asChild>{children}</DialogTrigger>
             <DialogContent className="sm:max-w-[425px] bg-[#1a1a1a] border-white/10 text-white">
                 <DialogHeader>
-                    <DialogTitle>Importar Contatos</DialogTitle>
+                    <DialogTitle>Import Contacts</DialogTitle>
                     <DialogDescription className="text-gray-400">
-                        Envie um arquivo .xls ou .xlsx para importar contatos.
+                        Upload an .xls or .xlsx file to import contacts.
                     </DialogDescription>
                 </DialogHeader>
 
                 <div className="grid gap-4 py-4">
                     <div className="grid w-full items-center gap-1.5">
-                        <Label htmlFor="listName">Nome da Lista</Label>
+                        <Label htmlFor="listName">List Name</Label>
                         <Input
                             id="listName"
-                            placeholder="Ex: Lista de Setembro"
+                            placeholder="Ex: September List"
                             value={listName}
                             onChange={(e) => setListName(e.target.value)}
                             className="bg-[#0f0f0f] border-white/10 text-white placeholder:text-gray-600 focus-visible:ring-[#1C73E8]"
@@ -81,7 +81,7 @@ export function UploadContactsDialog({ children }: { children: React.ReactNode }
                     </div>
 
                     <div className="grid w-full items-center gap-1.5">
-                        <Label htmlFor="file">Arquivo de Contatos (Excel)</Label>
+                        <Label htmlFor="file">Contact File (Excel)</Label>
                         <div className="relative">
                             <Input
                                 id="file"
@@ -95,7 +95,7 @@ export function UploadContactsDialog({ children }: { children: React.ReactNode }
                                 className="flex h-10 w-full cursor-pointer rounded-md border border-white/10 bg-[#0f0f0f] px-3 py-2 text-sm items-center text-gray-400 hover:bg-white/5 hover:text-white transition-colors"
                             >
                                 <Upload className="mr-2 h-4 w-4" />
-                                {file ? "Trocar Arquivo" : "Escolher Arquivo"}
+                                {file ? "Change File" : "Choose File"}
                             </Label>
                         </div>
                     </div>
@@ -115,7 +115,7 @@ export function UploadContactsDialog({ children }: { children: React.ReactNode }
                         disabled={isLoading}
                         className="bg-transparent border-white/10 text-gray-300 hover:bg-white/5"
                     >
-                        Cancelar
+                        Cancel
                     </Button>
                     <Button
                         type="button"
@@ -126,12 +126,12 @@ export function UploadContactsDialog({ children }: { children: React.ReactNode }
                         {isLoading ? (
                             <>
                                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                Importando...
+                                Importing...
                             </>
                         ) : (
                             <>
                                 <Upload className="mr-2 h-4 w-4" />
-                                Importar
+                                Import
                             </>
                         )}
                     </Button>

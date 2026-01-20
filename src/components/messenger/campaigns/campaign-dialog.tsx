@@ -76,7 +76,7 @@ export function CampaignDialog({ children, campaign, open: controlledOpen, onOpe
             try {
                 // 1. Get Presigned URL
                 const { url, key, error } = await getPresignedUrl(mediaFile.name, mediaFile.type)
-                if (error || !url) throw new Error(error || "Erro ao gerar URL de upload")
+                if (error || !url) throw new Error(error || "Error generating upload URL")
 
                 // 2. Upload to R2
                 await fetch(url, {
@@ -89,7 +89,7 @@ export function CampaignDialog({ children, campaign, open: controlledOpen, onOpe
                 uploadedMediaUrl = `https://${process.env.NEXT_PUBLIC_R2_PUBLIC_DOMAIN}/${key}`
             } catch (err) {
                 console.error(err)
-                toast.error("Erro ao fazer upload da mídia.")
+                toast.error("Error uploading media.")
                 setIsUploading(false)
                 return
             }
@@ -119,7 +119,7 @@ export function CampaignDialog({ children, campaign, open: controlledOpen, onOpe
             if (result.error) {
                 toast.error(result.error)
             } else {
-                toast.success(campaign ? "Campanha atualizada!" : "Campanha criada com sucesso!")
+                toast.success(campaign ? "Campaign updated!" : "Campaign created successfully!")
                 setOpen(false)
                 if (!campaign) {
                     setName("")
@@ -138,15 +138,15 @@ export function CampaignDialog({ children, campaign, open: controlledOpen, onOpe
                 {children || (
                     <Button className="bg-[#1C73E8] hover:bg-[#1557b0] text-white">
                         <Plus className="mr-2 h-4 w-4" />
-                        Nova Campanha
+                        New Campaign
                     </Button>
                 )}
             </DialogTrigger>
             <DialogContent className="sm:max-w-[900px] bg-[#1a1a1a] border-white/10 text-white">
                 <DialogHeader>
-                    <DialogTitle>{campaign ? "Editar Campanha" : "Nova Campanha"}</DialogTitle>
+                    <DialogTitle>{campaign ? "Edit Campaign" : "New Campaign"}</DialogTitle>
                     <DialogDescription className="text-gray-400">
-                        {campaign ? "Edite os detalhes da sua campanha." : "Crie uma nova campanha de disparo. Configure a mensagem e veja o preview."}
+                        {campaign ? "Edit your campaign details." : "Create a new broadcast campaign. Configure the message and see the preview."}
                     </DialogDescription>
                 </DialogHeader>
 
@@ -154,10 +154,10 @@ export function CampaignDialog({ children, campaign, open: controlledOpen, onOpe
                     {/* Left Column: Inputs */}
                     <div className="space-y-4">
                         <div className="grid gap-2">
-                            <Label htmlFor="name">Nome da Campanha</Label>
+                            <Label htmlFor="name">Campaign Name</Label>
                             <Input
                                 id="name"
-                                placeholder="Ex: Promoção de Natal"
+                                placeholder="Ex: Christmas Promo"
                                 value={name}
                                 onChange={(e) => setName(e.target.value)}
                                 className="bg-[#0f0f0f] border-white/10 text-white placeholder:text-gray-600 focus-visible:ring-[#1C73E8]"
@@ -165,24 +165,24 @@ export function CampaignDialog({ children, campaign, open: controlledOpen, onOpe
                         </div>
 
                         <div className="grid gap-2">
-                            <Label>Tipo de Mensagem</Label>
+                            <Label>Message Type</Label>
                             <Select value={messageType} onValueChange={(val) => setMessageType(val as any)}>
                                 <SelectTrigger className="bg-[#0f0f0f] border-white/10 text-white focus:ring-[#1C73E8]">
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent className="bg-[#1a1a1a] border-white/10 text-white z-[99999]">
-                                    <SelectItem value="text">Apenas Texto</SelectItem>
-                                    <SelectItem value="image">Imagem</SelectItem>
-                                    <SelectItem value="video">Vídeo</SelectItem>
-                                    <SelectItem value="audio">Áudio</SelectItem>
-                                    <SelectItem value="document">Documento</SelectItem>
+                                    <SelectItem value="text">Text Only</SelectItem>
+                                    <SelectItem value="image">Image</SelectItem>
+                                    <SelectItem value="video">Video</SelectItem>
+                                    <SelectItem value="audio">Audio</SelectItem>
+                                    <SelectItem value="document">Document</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
 
                         {messageType !== 'text' && (
                             <div className="grid gap-2">
-                                <Label>Arquivo de Mídia</Label>
+                                <Label>Media File</Label>
                                 <Input
                                     type="file"
                                     onChange={handleFileChange}
@@ -196,22 +196,22 @@ export function CampaignDialog({ children, campaign, open: controlledOpen, onOpe
                                     className="bg-[#0f0f0f] border-white/10 text-white file:text-white file:bg-[#1C73E8] file:border-0 file:rounded-sm hover:file:bg-[#1557b0]"
                                 />
                                 {mediaPreview && !mediaFile && (
-                                    <p className="text-xs text-green-400 truncate">Mídia atual: ...{mediaPreview.slice(-15)}</p>
+                                    <p className="text-xs text-green-400 truncate">Current media: ...{mediaPreview.slice(-15)}</p>
                                 )}
                             </div>
                         )}
 
                         <div className="grid gap-2">
-                            <Label htmlFor="message">Mensagem</Label>
+                            <Label htmlFor="message">Message</Label>
                             <Textarea
                                 id="message"
-                                placeholder="Digite sua mensagem aqui..."
+                                placeholder="Type your message here..."
                                 className="h-[200px] resize-none bg-[#0f0f0f] border-white/10 text-white placeholder:text-gray-600 focus-visible:ring-[#1C73E8]"
                                 value={message}
                                 onChange={(e) => setMessage(e.target.value)}
                             />
                             <p className="text-xs text-gray-400">
-                                Você pode usar variáveis como {`{{name}}`} para personalizar.
+                                You can use variables like {`{{name}}`} to personalize.
                             </p>
                         </div>
                     </div>
@@ -228,7 +228,7 @@ export function CampaignDialog({ children, campaign, open: controlledOpen, onOpe
                                 {/* WhatsApp Header */}
                                 <div className="bg-[#008069] h-16 pt-6 px-4 flex items-center text-white">
                                     <div className="w-8 h-8 rounded-full bg-slate-200 mr-2"></div>
-                                    <div className="text-sm font-medium">Nome do Contato</div>
+                                    <div className="text-sm font-medium">Contact Name</div>
                                 </div>
 
                                 {/* Chat Area */}
@@ -257,7 +257,7 @@ export function CampaignDialog({ children, campaign, open: controlledOpen, onOpe
                                         )}
 
                                         <div className="whitespace-pre-wrap">
-                                            {message || "Sua mensagem aparecerá aqui..."}
+                                            {message || "Your message will appear here..."}
                                         </div>
                                         <div className="text-[10px] text-gray-500 text-right mt-1">
                                             15:30
@@ -282,7 +282,7 @@ export function CampaignDialog({ children, campaign, open: controlledOpen, onOpe
                         disabled={isPending || isUploading}
                         className="text-gray-300 hover:text-white hover:bg-white/10"
                     >
-                        Cancelar
+                        Cancel
                     </Button>
                     <Button
                         onClick={handleSubmit}
@@ -292,10 +292,10 @@ export function CampaignDialog({ children, campaign, open: controlledOpen, onOpe
                         {(isPending || isUploading) ? (
                             <>
                                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                {isUploading ? "Enviando Mídia..." : "Criando..."}
+                                {isUploading ? "Uploading Media..." : "Creating..."}
                             </>
                         ) : (
-                            campaign ? "Salvar Alterações" : "Criar Campanha"
+                            campaign ? "Save Changes" : "Create Campaign"
                         )}
                     </Button>
                 </DialogFooter>

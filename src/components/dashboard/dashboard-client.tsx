@@ -287,7 +287,7 @@ export function DashboardClient({ initialData }: { initialData?: AdsReportData |
     if (!reportData && view === 'current') {
         return (
             <div className="h-full bg-black text-white p-6 md:p-8 flex flex-col">
-                <div className="flex justify-center mb-8">
+                <div className="flex justify-start mb-8 pl-1">
                     <div className="flex bg-white/5 p-1 rounded-lg border border-white/10">
                         <button
                             onClick={() => setView('current')}
@@ -306,16 +306,7 @@ export function DashboardClient({ initialData }: { initialData?: AdsReportData |
 
                 <div className="max-w-7xl mx-auto space-y-8 w-full flex-1 flex flex-col justify-center">
 
-                    <motion.div
-                        initial={{ opacity: 0, y: -20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="mb-8"
-                    >
-                        <h1 className="text-4xl font-bold mb-2 bg-gradient-to-r from-orange-400 to-red-500 bg-clip-text text-transparent">
-                            Ads Performance Dashboard
-                        </h1>
-                        <p className="text-slate-400 text-lg">Import data to view report</p>
-                    </motion.div>
+
                     {loading ? (
                         <div className="flex flex-col items-center justify-center h-64 border-2 border-dashed border-white/10 rounded-lg bg-white/5">
                             <Loader2 className="w-10 h-10 text-[#1C73E8] animate-spin mb-4" />
@@ -335,7 +326,7 @@ export function DashboardClient({ initialData }: { initialData?: AdsReportData |
     if (view === 'history') {
         return (
             <div className="min-h-screen bg-black text-white p-6 md:p-8">
-                <div className="flex justify-center mb-8">
+                <div className="flex justify-start mb-8 pl-1">
                     <div className="flex bg-white/5 p-1 rounded-lg border border-white/10">
                         <button
                             onClick={() => setView('current')}
@@ -352,7 +343,7 @@ export function DashboardClient({ initialData }: { initialData?: AdsReportData |
                     </div>
                 </div>
 
-                <div className="max-w-7xl mx-auto">
+                <div className="w-full pl-1">
                     <ReportsList onSelectReport={handleReportSelect} />
                 </div>
             </div>
@@ -477,13 +468,13 @@ export function DashboardClient({ initialData }: { initialData?: AdsReportData |
 
     return (
         <div className="w-full text-white pb-8">
-            <div className="flex justify-center mb-8">
+            <div className="flex justify-start mb-8 pl-1">
                 <div className="flex bg-white/5 p-1 rounded-lg border border-white/10">
                     <button
                         onClick={() => setView('current')}
                         className="px-6 py-2 rounded-md text-sm font-medium transition-all bg-[#1C73E8] hover:bg-[#1557b0] text-white shadow-lg"
                     >
-                        Current Analysis
+                        New Analysis
                     </button>
                     <button
                         onClick={() => setView('history')}

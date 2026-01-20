@@ -1,8 +1,10 @@
-'use client'
-
 import { useState } from 'react'
-
+import { createClient } from '@/lib/supabase'
 import { MultiSelect } from '@/components/ui/multi-select'
+import { createDesignRequest } from '@/actions/design-actions'
+import { DesignRequestList } from './design-request-list'
+import { toast } from 'sonner'
+import { Loader2 } from 'lucide-react'
 
 export function DesignRequestForm() {
     const [formData, setFormData] = useState({
@@ -23,6 +25,8 @@ export function DesignRequestForm() {
     })
 
     const [activeTab, setActiveTab] = useState<'design' | 'video'>('design')
+    const [isSubmitting, setIsSubmitting] = useState(false)
+    const [refreshTrigger, setRefreshTrigger] = useState(0)
 
     const [videoFormData, setVideoFormData] = useState({
         materialName: '',
@@ -40,7 +44,7 @@ export function DesignRequestForm() {
     const handleVideoSubmit = (e: React.FormEvent) => {
         e.preventDefault()
         console.log('Video request submitted:', videoFormData)
-        // TODO: Implement submission logic
+        // TODO: Implement video submission logic
     }
 
     const aspectRatioOptions = [
@@ -60,14 +64,64 @@ export function DesignRequestForm() {
         { value: 'pdf', label: 'PDF' }
     ]
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
-        console.log('Design request submitted:', formData)
-        // TODO: Implement submission logic
+        setIsSubmitting(true)
+
+        try {
+            const data = new FormData()
+            data.append('material_name', formData.materialName)
+            data.append('objective', formData.objective)
+            formData.aspectRatio.forEach(val => data.append('aspect_ratio', val))
+            formData.fileFormat.forEach(val => data.append('file_format', val))
+            data.append('variations', formData.variations)
+            data.append('headline', formData.headline)
+            data.append('subheadline', formData.subheadline)
+            data.append('call_to_action', formData.callToAction)
+            data.append('required_info', formData.requiredInfo)
+            // Splitting links by newline or comma if multiple are pasted
+            // Ideally we'd loop over them. For now treating as single string or list strings on server?
+            // Server expects array. Let's send raw string if server parses or split here.
+            // Server code: `formData.getAll('images')`. It expects multiple entries.
+            // If user pastes "link1\nlink2", we should split.
+            if (formData.imageLinks) {
+                formData.imageLinks.split(/[\n,]+/).map(s => s.trim()).filter(Boolean).forEach(link => {
+                    data.append('images', link)
+                })
+            }
+            if (formData.referenceLinks) {
+                formData.referenceLinks.split(/[\n,]+/).map(s => s.trim()).filter(Boolean).forEach(link => {
+                    data.append('reference_files', link)
+                })
+            }
+
+            data.append('notes', formData.notes)
+
+            // Combine Date and Time for deadline
+            if (formData.deadlineDate && formData.deadlineTime) {
+                data.append('deadline', `${formData.deadlineDate} ${formData.deadlineTime}`)
+            } else if (formData.deadlineDate) {
+                data.append('deadline', formData.deadlineDate)
+            }
+
+            const result = await createDesignRequest(data)
+
+            if (result.error) {
+                toast.error(result.error)
+            } else {
+                toast.success('Design request sent successfully!')
+                handleCancel() // Reset form
+                setRefreshTrigger(prev => prev + 1) // Reload list
+            }
+        } catch (error) {
+            console.error(error)
+            toast.error('Failed to submit request')
+        } finally {
+            setIsSubmitting(false)
+        }
     }
 
     const handleCancel = () => {
-        // Reset form or navigate away
         setFormData({
             materialName: '',
             objective: '',
@@ -116,8 +170,6 @@ export function DesignRequestForm() {
                 <div className="space-y-12">
                     {/* Request Form Section */}
                     <div>
-
-
                         <form onSubmit={handleSubmit} className="space-y-6">
                             {/* First Row - 5 Fields */}
                             <div className="grid grid-cols-5 gap-4">
@@ -132,6 +184,7 @@ export function DesignRequestForm() {
 
                                     <input
                                         type="text"
+                                        required
                                         value={formData.materialName}
                                         onChange={(e) => setFormData({ ...formData, materialName: e.target.value })}
                                         placeholder="e.g., Holiday Campaign, Week X Promotion"
@@ -399,8 +452,10 @@ export function DesignRequestForm() {
                                 </button>
                                 <button
                                     type="submit"
-                                    className="px-6 py-2 text-sm font-bold text-white bg-[#1C73E8] rounded-lg hover:bg-[#1557b0] transition-colors"
+                                    disabled={isSubmitting}
+                                    className="px-6 py-2 text-sm font-bold text-white bg-[#1C73E8] rounded-lg hover:bg-[#1557b0] transition-colors flex items-center gap-2"
                                 >
+                                    {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" />}
                                     Request Design
                                 </button>
                             </div>
@@ -408,58 +463,7 @@ export function DesignRequestForm() {
                     </div>
 
                     {/* Deliverables List */}
-                    <div className="bg-white/5 border border-white/10 rounded-lg p-6">
-                        <div className="flex items-center justify-between mb-6">
-                            <h2 className="text-xl font-bold text-white">Deliverables List - Design</h2>
-                            <button className="bg-[#1C73E8] text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-[#1557b0] transition-colors">
-                                Schedule a quick call
-                            </button>
-                        </div>
-
-                        {/* Table */}
-                        <div className="overflow-x-auto">
-                            <table className="w-full">
-                                <thead>
-                                    <tr className="border-b border-white/10">
-                                        <th className="text-left py-3 px-4 text-xs font-medium text-gray-400 uppercase tracking-wider">Name</th>
-                                        <th className="text-left py-3 px-4 text-xs font-medium text-gray-400 uppercase tracking-wider">Created</th>
-                                        <th className="text-left py-3 px-4 text-xs font-medium text-gray-400 uppercase tracking-wider">Status</th>
-                                        <th className="text-left py-3 px-4 text-xs font-medium text-gray-400 uppercase tracking-wider">Deadline</th>
-                                        <th className="text-left py-3 px-4 text-xs font-medium text-gray-400 uppercase tracking-wider">Link</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-white/5">
-                                    {/* Example rows - replace with real data */}
-                                    <tr className="hover:bg-white/5 transition-colors">
-                                        <td className="py-4 px-4 text-sm text-white font-medium">name design</td>
-                                        <td className="py-4 px-4 text-sm text-gray-400">23/Dec/25, 12:51</td>
-                                        <td className="py-4 px-4">
-                                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-[#1C73E8]/10 text-[#1C73E8]">
-                                                In progress
-                                            </span>
-                                        </td>
-                                        <td className="py-4 px-4 text-sm text-gray-400">25/Dec/25, 20:00</td>
-                                        <td className="py-4 px-4 text-sm">
-                                            <span className="text-gray-600">-</span>
-                                        </td>
-                                    </tr>
-                                    <tr className="hover:bg-white/5 transition-colors">
-                                        <td className="py-4 px-4 text-sm text-white font-medium">efg</td>
-                                        <td className="py-4 px-4 text-sm text-gray-400">23/Dec/25, 17:58</td>
-                                        <td className="py-4 px-4">
-                                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-[#1C73E8]/10 text-[#1C73E8]">
-                                                In progress
-                                            </span>
-                                        </td>
-                                        <td className="py-4 px-4 text-sm text-gray-400">25/Dec/25, 17:57</td>
-                                        <td className="py-4 px-4 text-sm">
-                                            <span className="text-gray-600">-</span>
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
+                    <DesignRequestList refreshTrigger={refreshTrigger} />
                 </div>
             )}
 

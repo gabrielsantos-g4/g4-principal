@@ -1,8 +1,8 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { getUserReports, getReportById, deleteReport } from '@/actions/report-actions'
-import { FileText, Calendar, DollarSign, Loader2, Trash2 } from 'lucide-react'
+import { getUserReports, getReportById, deleteReport, updateReportTitle } from '@/actions/report-actions'
+import { FileText, Calendar, DollarSign, Loader2, Trash2, Clock, Pencil, Check, X } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
     AlertDialog,
@@ -28,6 +28,7 @@ interface ReportSummary {
     created_at: string
     total_spent: number
     currency: string
+    payload?: AdsReportData // Added payload
 }
 
 export function ReportsList({ onSelectReport }: ReportsListProps) {
@@ -35,7 +36,12 @@ export function ReportsList({ onSelectReport }: ReportsListProps) {
     const [loading, setLoading] = useState(true)
     const [deleteId, setDeleteId] = useState<string | null>(null)
     const [isDeleting, setIsDeleting] = useState(false)
-    const [loadingId, setLoadingId] = useState<string | null>(null) // Added loadingId state
+    const [loadingId, setLoadingId] = useState<string | null>(null)
+
+    // Editing state
+    const [editingId, setEditingId] = useState<string | null>(null)
+    const [editTitle, setEditTitle] = useState('')
+    const [isSaving, setIsSaving] = useState(false)
 
     useEffect(() => {
         loadReports()
@@ -44,7 +50,9 @@ export function ReportsList({ onSelectReport }: ReportsListProps) {
     const loadReports = async () => {
         try {
             const data = await getUserReports()
-            setReports(data || [])
+            // Cast the data to include payload as it's now fetched but not strictly typed in the return of getUserReports (which infers from select string potentially)
+            // Ideally we'd update the return type of getUserReports, but casting here works for quick UI fix.
+            setReports(data as unknown as ReportSummary[] || [])
         } catch (error) {
             console.error(error)
             toast.error('Failed to load history.')
@@ -74,33 +82,66 @@ export function ReportsList({ onSelectReport }: ReportsListProps) {
         }
     }
 
+    const startEditing = (e: React.MouseEvent, report: ReportSummary) => {
+        e.stopPropagation()
+        setEditingId(report.id)
+        setEditTitle(report.title)
+    }
+
+    const cancelEditing = (e: React.MouseEvent) => {
+        e.stopPropagation()
+        setEditingId(null)
+        setEditTitle('')
+    }
+
+    const saveTitle = async (e: React.MouseEvent | React.FormEvent, reportId: string) => {
+        e.stopPropagation()
+        if (!editTitle.trim()) {
+            toast.error('O título não pode estar vazio')
+            return
+        }
+
+        setIsSaving(true)
+        try {
+            const { error } = await updateReportTitle(reportId, editTitle)
+            if (error) {
+                toast.error(error)
+            } else {
+                toast.success('Report renamed successfully')
+                setReports(prev => prev.map(r => r.id === reportId ? { ...r, title: editTitle } : r))
+                setEditingId(null)
+            }
+        } catch (err) {
+            console.error(err)
+            toast.error('Failed to rename report')
+        } finally {
+            setIsSaving(false)
+        }
+    }
+
     const handleCardClick = async (reportId: string) => {
-        console.log('Clicked report:', reportId)
+        // Prevent click if editing
+        if (editingId === reportId) return
+
         setLoadingId(reportId)
         try {
-            console.log('Calling getReportById...')
             const fullReport = await getReportById(reportId)
-            console.log('getReportById returned:', fullReport ? 'Found' : 'Null')
 
             if (fullReport && fullReport.payload) {
-                console.log('Selecting report...')
                 onSelectReport(fullReport.payload)
                 toast.success('Report loaded successfully!')
             } else {
-                console.error('Report missing payload or not found')
                 toast.error('Could not load report details.')
             }
         } catch (error) {
             console.error('Error in handleCardClick:', error)
             toast.error('Error loading report.')
         } finally {
-            console.log('Stopping loading spinner')
             setLoadingId(null)
         }
     }
 
     if (loading) {
-        // ... existing loading state
         return (
             <div className="flex justify-center items-center h-64">
                 <Loader2 className="w-8 h-8 text-orange-500 animate-spin" />
@@ -110,73 +151,111 @@ export function ReportsList({ onSelectReport }: ReportsListProps) {
 
     return (
         <div className="space-y-6">
-            <h2 className="text-2xl font-bold text-gradient bg-clip-text text-transparent bg-gradient-to-r from-orange-400 to-red-500">
-                My Reports
-            </h2>
-            <p className="text-gray-400 -mt-4">History of saved analyses.</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                {reports.map((report) => {
+                    const startDate = report.payload?.meta?.start_date ? new Date(report.payload.meta.start_date).toLocaleDateString() : 'N/A'
+                    const endDate = report.payload?.meta?.end_date ? new Date(report.payload.meta.end_date).toLocaleDateString() : 'N/A'
+                    const dateGenerated = new Date(report.created_at).toLocaleDateString()
+                    // Infer channel or logic. For now static or simple check
+                    const channel = "LinkedIn Ads"
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {reports.map((report) => (
-                    <div
-                        key={report.id}
-                        onClick={() => handleCardClick(report.id)}
-                        className={`relative group cursor-pointer rounded-xl bg-[#0f1115] border border-white/5 hover:border-orange-500/50 transition-all duration-300 overflow-hidden ${loadingId === report.id ? 'opacity-70 pointer-events-none' : ''}`}
-                    >
-                        {/* Status Badge */}
-                        <div className="absolute top-4 right-4 flex gap-2">
-                            <span className="px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
-                                {report.status || 'Completed'}
-                            </span>
-                        </div>
+                    const isEditing = editingId === report.id
 
-                        {/* Delete Button (stopPropagatoin to avoid opening card) */}
-                        <button
-                            onClick={(e) => {
-                                e.stopPropagation()
-                                setDeleteId(report.id)
-                            }}
-                            className="absolute bottom-4 right-4 p-2 text-gray-500 hover:text-red-500 hover:bg-red-500/10 rounded-full transition-colors z-10"
-                            title="Delete Report"
+                    return (
+                        <div
+                            key={report.id}
+                            onClick={() => !isEditing && handleCardClick(report.id)}
+                            className={`relative group cursor-pointer rounded-lg bg-[#0f1115] border border-white/5 hover:border-orange-500/50 transition-all duration-300 overflow-hidden ${loadingId === report.id ? 'opacity-70 pointer-events-none' : ''} p-4`}
                         >
-                            <Trash2 className="w-4 h-4" />
-                        </button>
+                            {/* Delete Button */}
+                            {!isEditing && (
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation()
+                                        setDeleteId(report.id)
+                                    }}
+                                    className="absolute bottom-3 right-3 p-1.5 text-gray-600 hover:text-red-500 hover:bg-red-500/10 rounded-full transition-colors z-10"
+                                    title="Delete Report"
+                                >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                            )}
 
-                        <div className="p-6 space-y-4">
-                            {/* Icon & Title */}
-                            <div className="space-y-2">
-                                <div className={`w-10 h-10 rounded-full flex items-center justify-center overflow-hidden border border-white/10 ${loadingId === report.id ? 'bg-orange-500/10' : ''}`}>
-                                    {loadingId === report.id ? (
-                                        <Loader2 className="w-5 h-5 text-orange-500 animate-spin" />
+                            <div className="space-y-3">
+                                {/* Title and Channel (Edit Mode vs View Mode) */}
+                                <div>
+                                    {isEditing ? (
+                                        <div className="flex items-center gap-2 mb-1" onClick={e => e.stopPropagation()}>
+                                            <input
+                                                type="text"
+                                                value={editTitle}
+                                                onChange={(e) => setEditTitle(e.target.value)}
+                                                className="bg-black/50 border border-white/20 rounded px-2 py-0.5 text-white text-base font-bold w-full focus:outline-none focus:border-orange-500"
+                                                autoFocus
+                                                onKeyDown={(e) => {
+                                                    if (e.key === 'Enter') saveTitle(e, report.id)
+                                                    if (e.key === 'Escape') cancelEditing(e as any)
+                                                }}
+                                            />
+                                            <button
+                                                onClick={(e) => saveTitle(e, report.id)}
+                                                disabled={isSaving}
+                                                className="text-emerald-400 hover:text-emerald-300 p-1"
+                                            >
+                                                {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                                            </button>
+                                            <button
+                                                onClick={cancelEditing}
+                                                disabled={isSaving}
+                                                className="text-red-400 hover:text-red-300 p-1"
+                                            >
+                                                <X className="w-4 h-4" />
+                                            </button>
+                                        </div>
                                     ) : (
-                                        <img
-                                            src="https://i.pinimg.com/736x/30/66/80/30668098a6571721adaccd7de8b0e4df.jpg"
-                                            alt="Report Avatar"
-                                            className="w-full h-full object-cover"
-                                        />
+                                        <div className="flex items-start justify-between gap-2 group/title">
+                                            <h3 className="font-bold text-white text-base truncate group-hover:text-orange-400 transition-colors flex-1" title={report.title}>
+                                                {report.title || 'Untitled Report'}
+                                            </h3>
+                                            <button
+                                                onClick={(e) => startEditing(e, report)}
+                                                className="text-gray-600 hover:text-white transition-colors p-0.5"
+                                                title="Edit Name"
+                                            >
+                                                <Pencil className="w-3.5 h-3.5" />
+                                            </button>
+                                        </div>
                                     )}
-                                </div>
-                                <h3 className="font-bold text-white text-lg truncate pr-12 group-hover:text-orange-400 transition-colors">
-                                    {report.title || 'Untitled Report'}
-                                </h3>
-                            </div>
 
-                            {/* Divider */}
-                            <div className="h-px bg-white/5 w-full" />
-
-                            {/* Details */}
-                            <div className="space-y-2">
-                                <div className="flex items-center gap-2 text-xs text-gray-500">
-                                    <Calendar className="w-3.5 h-3.5" />
-                                    <span>{new Date(report.created_at).toLocaleDateString()}</span>
+                                    <div className="flex items-center gap-2 mt-1">
+                                        {/* Simple Channel Badge/Text */}
+                                        <span className="text-xs text-slate-400 bg-white/5 px-2 py-0.5 rounded border border-white/5">
+                                            {channel}
+                                        </span>
+                                    </div>
                                 </div>
-                                <div className="flex items-center gap-2 text-sm font-mono text-gray-300">
-                                    <span className="text-gray-500">$</span>
-                                    <span>{report.currency} {(report.total_spent || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+
+                                {/* Divider */}
+                                <div className="h-px bg-white/5 w-full" />
+
+                                {/* Meta Details */}
+                                <div className="space-y-1.5">
+                                    {/* Period */}
+                                    <div className="flex items-center gap-2 text-xs text-gray-500" title="Analysis Period">
+                                        <Calendar className="w-3.5 h-3.5 text-slate-600" />
+                                        <span>Period: {startDate} - {endDate}</span>
+                                    </div>
+
+                                    {/* Generated Date */}
+                                    <div className="flex items-center gap-2 text-xs text-gray-500" title="Date Generated">
+                                        <Clock className="w-3.5 h-3.5 text-slate-600" />
+                                        <span>Generated: {dateGenerated}</span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
-                ))}
+                    )
+                })}
             </div>
 
             <AlertDialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>

@@ -46,11 +46,39 @@ export function ManualProspectUpload({ empresaId }: ManualProspectUploadProps) {
                     return
                 }
 
-                // Basic validation: check if at least one expected column exists or just map roughly
-                // Expected: company_name, decisor_name, email_1, etc.
-                // We'll trust the mapping for now or add a mapping step later if needed.
-                // For now, let's assume the excel headers match the DB columns or close enough.
-                setParsedData(json)
+                // Map and sanitize the data
+                const sanitizedData = json.map((row: any) => {
+                    const findValue = (...keys: string[]) => {
+                        for (const k of keys) {
+                            if (row[k] !== undefined && row[k] !== null && row[k] !== "") return String(row[k]).trim()
+                        }
+                        return null
+                    }
+
+                    return {
+                        company_name: findValue('company_name', 'Company Name', 'Empresa', 'Nome da Empresa'),
+                        decisor_name: findValue('decisor_name', 'Decisor Name', 'Decisor', 'Nome do Decisor', 'Name', 'Nome'),
+                        role: findValue('role', 'Role', 'Cargo'),
+                        phone_1: findValue('phone_1', 'Phone 1', 'Phone', 'Telefone 1', 'Telefone', 'Mobile', 'Celular'),
+                        phone_2: findValue('phone_2', 'Phone 2', 'Telefone 2'),
+                        email_1: findValue('email_1', 'Email 1', 'Email', 'E-mail'),
+                        email_2: findValue('email_2', 'Email 2'),
+                        linkedin_profile: findValue('linkedin_profile', 'LinkedIn Profile', 'LinkedIn', 'Perfil LinkedIn', 'Url', 'URL'),
+                        status: 'Pending'
+                    }
+                })
+
+                // Filter out completely empty rows
+                const validRows = sanitizedData.filter(row =>
+                    row.company_name || row.decisor_name || row.email_1 || row.linkedin_profile
+                )
+
+                if (validRows.length === 0) {
+                    setError("No valid rows found. Please check your column headers.")
+                    return
+                }
+
+                setParsedData(validRows)
             } catch (err) {
                 console.error(err)
                 setError("Failed to parse file. Make sure it's a valid Excel or CSV.")
@@ -103,7 +131,7 @@ export function ManualProspectUpload({ empresaId }: ManualProspectUploadProps) {
                     Supported formats: .xlsx, .xls, .csv. First row must be headers.
                 </p>
                 <p className="text-xs text-gray-500 font-mono">
-                    Expected Headers: company_name, decisor_name, role, email_1, phone_1, linkedin_profile
+                    Expected Headers: company_name, decisor_name, role, email_1, email_2, phone_1, phone_2, linkedin_profile
                 </p>
             </div>
 

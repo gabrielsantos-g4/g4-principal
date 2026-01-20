@@ -37,9 +37,9 @@ export default async function CampaignsPage() {
         <div className="flex-1 space-y-4 p-8 pt-6">
             <div className="flex items-center justify-between space-y-2">
                 <div>
-                    <h2 className="text-3xl font-bold tracking-tight text-white">Campanhas e Disparos</h2>
+                    <h2 className="text-3xl font-bold tracking-tight text-white">Campaigns and Broadcasts</h2>
                     <p className="text-muted-foreground text-gray-400">
-                        Crie modelos de mensagens e dispare campanhas.
+                        Create message templates and broadcast campaigns.
                     </p>
                 </div>
                 <div className="flex gap-2">
@@ -52,19 +52,19 @@ export default async function CampaignsPage() {
                 <Table>
                     <TableHeader>
                         <TableRow className="border-white/10 hover:bg-white/5">
-                            <TableHead className="text-gray-400">Tipo</TableHead>
-                            <TableHead className="text-gray-400">Nome</TableHead>
-                            <TableHead className="text-gray-400">Mensagem (Preview)</TableHead>
-                            <TableHead className="text-gray-400">Mídia</TableHead>
-                            <TableHead className="text-gray-400">Criado em</TableHead>
-                            <TableHead className="text-right text-gray-400">Ações</TableHead>
+                            <TableHead className="text-gray-400">Type</TableHead>
+                            <TableHead className="text-gray-400">Name</TableHead>
+                            <TableHead className="text-gray-400">Message (Preview)</TableHead>
+                            <TableHead className="text-gray-400">Media</TableHead>
+                            <TableHead className="text-gray-400">Created at</TableHead>
+                            <TableHead className="text-right text-gray-400">Actions</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
                         {campaigns.length === 0 ? (
                             <TableRow>
                                 <TableCell colSpan={6} className="h-24 text-center text-gray-500">
-                                    Nenhuma campanha criada.
+                                    No campaigns created.
                                 </TableCell>
                             </TableRow>
                         ) : (
@@ -82,7 +82,7 @@ export default async function CampaignsPage() {
                                     <TableCell>
                                         {camp.message_url ? (
                                             <Badge variant="secondary" className="bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 border-0">
-                                                Com Mídia
+                                                With Media
                                             </Badge>
                                         ) : (
                                             <span className="text-gray-600 text-xs">-</span>

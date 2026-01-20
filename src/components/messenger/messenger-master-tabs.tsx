@@ -14,7 +14,7 @@ export function MessengerMasterTabs({ children }: MessengerMasterTabsProps) {
     return (
         <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col h-full">
             <div className="px-8 pt-6 pb-2">
-                <TabsList className="bg-[#1a1a1a] border border-white/10 p-1 rounded-lg">
+                <TabsList className="bg-[#1a1a1a] border border-white/10 p-1 rounded-md">
                     <TabsTrigger
                         value="email"
                         className="data-[state=active]:bg-[#0066FF] data-[state=active]:text-white px-6 transition-all"

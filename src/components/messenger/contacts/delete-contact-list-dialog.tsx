@@ -28,10 +28,10 @@ export function DeleteContactListDialog({ listId, children }: DeleteContactListD
             if (result.error) {
                 toast.error(result.error)
             } else {
-                toast.success("Lista excluída com sucesso!")
+                toast.success("List deleted successfully!")
             }
         } catch (error) {
-            toast.error("Erro ao excluir lista.")
+            toast.error("Error deleting list.")
         }
     }
 
@@ -42,20 +42,20 @@ export function DeleteContactListDialog({ listId, children }: DeleteContactListD
             </AlertDialogTrigger>
             <AlertDialogContent className="bg-[#1a1a1a] border-white/10 text-white">
                 <AlertDialogHeader>
-                    <AlertDialogTitle>Excluir lista de contatos?</AlertDialogTitle>
+                    <AlertDialogTitle>Delete contact list?</AlertDialogTitle>
                     <AlertDialogDescription className="text-gray-400">
-                        Esta ação não pode ser desfeita. A lista e todos os seus contatos serão removidos permanentemente.
+                        This action cannot be undone. The list and all its contacts will be permanently removed.
                     </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
                     <AlertDialogCancel className="bg-transparent border-white/10 text-white hover:bg-white/5 hover:text-white">
-                        Cancelar
+                        Cancel
                     </AlertDialogCancel>
                     <AlertDialogAction
                         onClick={handleDelete}
                         className="bg-red-600 hover:bg-red-700 text-white border-none"
                     >
-                        Excluir
+                        Delete
                     </AlertDialogAction>
                 </AlertDialogFooter>
             </AlertDialogContent>

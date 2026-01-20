@@ -11,15 +11,15 @@ export default async function ContactsPage() {
         <div className="flex-1 space-y-4 p-8 pt-6">
             <div className="flex items-center justify-between space-y-2">
                 <div>
-                    <h2 className="text-3xl font-bold tracking-tight text-white">Listas de Contatos</h2>
+                    <h2 className="text-3xl font-bold tracking-tight text-white">Contact Lists</h2>
                     <p className="text-muted-foreground text-gray-400">
-                        Gerencie suas listas de contatos importadas.
+                        Manage your imported contact lists.
                     </p>
                 </div>
                 <UploadContactsDialog>
                     <Button className="bg-[#1C73E8] hover:bg-[#1557b0] text-white">
                         <Upload className="mr-2 h-4 w-4" />
-                        Importar Contatos
+                        Import Contacts
                     </Button>
                 </UploadContactsDialog>
             </div>

@@ -1,8 +1,9 @@
 'use client'
 
 import { Prospect } from "@/actions/outreach-actions"
-import { Users, Plus, Loader2, ChevronLeft, ChevronRight } from "lucide-react"
+import { Users, Plus, Loader2, ChevronLeft, ChevronRight, Search } from "lucide-react"
 import { useState, useTransition } from "react"
+
 
 interface ProspectsGridProps {
     data: Prospect[]
@@ -12,8 +13,9 @@ interface ProspectsGridProps {
 
 export function ProspectsGrid({ data }: ProspectsGridProps) {
     const [statusFilter, setStatusFilter] = useState('All')
+    const [searchTerm, setSearchTerm] = useState('')
     const [currentPage, setCurrentPage] = useState(1)
-    const itemsPerPage = 10
+    const itemsPerPage = 50
 
     if (!data || data.length === 0) {
         // ... empty state (unchanged)
@@ -35,9 +37,19 @@ export function ProspectsGrid({ data }: ProspectsGridProps) {
     }
 
     // Filter Logic
-    const filteredData = data.filter(item =>
-        statusFilter === 'All' ? true : item.status === statusFilter
-    )
+    const filteredData = data.filter(item => {
+        const matchesStatus = statusFilter === 'All' ? true : item.status === statusFilter
+        const matchesSearch = searchTerm === '' ? true : (
+            (item.company_name?.toLowerCase().includes(searchTerm.toLowerCase()) || false) ||
+            (item.decisor_name?.toLowerCase().includes(searchTerm.toLowerCase()) || false) ||
+            (item.role?.toLowerCase().includes(searchTerm.toLowerCase()) || false) ||
+            (item.email_1?.toLowerCase().includes(searchTerm.toLowerCase()) || false) ||
+            (item.email_2?.toLowerCase().includes(searchTerm.toLowerCase()) || false) ||
+            (item.phone_1?.toLowerCase().includes(searchTerm.toLowerCase()) || false) ||
+            (item.phone_2?.toLowerCase().includes(searchTerm.toLowerCase()) || false)
+        )
+        return matchesStatus && matchesSearch
+    })
 
     // Pagination Logic
     const totalPages = Math.ceil(filteredData.length / itemsPerPage)
@@ -49,24 +61,42 @@ export function ProspectsGrid({ data }: ProspectsGridProps) {
         setCurrentPage(1) // Reset to first page
     }
 
+    const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setSearchTerm(e.target.value)
+        setCurrentPage(1) // Reset to first page
+    }
+
     return (
         <div className="w-full flex flex-col gap-4">
             {/* Header / Filter */}
             <div className="flex justify-between items-center bg-black/40 border border-white/10 rounded-xl p-4">
                 <h3 className="text-white font-bold text-lg">Prospects ({filteredData.length})</h3>
-                <div className="flex items-center gap-2">
-                    <label className="text-xs font-bold text-gray-500 uppercase">Filter Status:</label>
-                    <select
-                        value={statusFilter}
-                        onChange={handleFilterChange}
-                        className="bg-zinc-900 border border-white/10 text-white text-sm rounded-lg px-3 py-2 outline-none focus:ring-1 focus:ring-blue-500"
-                    >
-                        <option value="All">All</option>
-                        <option value="Pending">Pending</option>
-                        <option value="Needs Review">Needs Review</option>
-                        <option value="Approved">Approved</option>
-                        <option value="Rejected">Rejected</option>
-                    </select>
+                <div className="flex items-center gap-4">
+                    <div className="relative">
+                        <Search className="w-4 h-4 text-gray-500 absolute left-3 top-1/2 -translate-y-1/2" />
+                        <input
+                            type="text"
+                            placeholder="Search prospects..."
+                            value={searchTerm}
+                            onChange={handleSearchChange}
+                            className="bg-zinc-900 border border-white/10 text-white text-sm rounded-lg pl-9 pr-4 py-2 outline-none focus:ring-1 focus:ring-blue-500 w-64"
+                        />
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                        <label className="text-xs font-bold text-gray-500 uppercase">Filter Status:</label>
+                        <select
+                            value={statusFilter}
+                            onChange={handleFilterChange}
+                            className="bg-zinc-900 border border-white/10 text-white text-sm rounded-lg px-3 py-2 outline-none focus:ring-1 focus:ring-blue-500"
+                        >
+                            <option value="All">All</option>
+                            <option value="Pending">Pending</option>
+                            <option value="Needs Review">Needs Review</option>
+                            <option value="Approved">Approved</option>
+                            <option value="Rejected">Rejected</option>
+                        </select>
+                    </div>
                 </div>
             </div>
 
@@ -90,13 +120,14 @@ export function ProspectsGrid({ data }: ProspectsGridProps) {
                         <tbody className="divide-y divide-white/5">
                             {paginatedData.map((prospect) => (
                                 <tr key={prospect.id} className="hover:bg-white/5 transition-colors">
-                                    <td className="px-6 py-3 font-medium text-white">{prospect.company_name || '-'}</td>
-                                    <td className="px-6 py-3 text-gray-300">{prospect.decisor_name || '-'}</td>
-                                    <td className="px-6 py-3 text-gray-300">{prospect.role || '-'}</td>
-                                    <td className="px-6 py-3 text-gray-400">{prospect.phone_1 || '-'}</td>
-                                    <td className="px-6 py-3 text-gray-400">{prospect.phone_2 || '-'}</td>
-                                    <td className="px-6 py-3 text-gray-400">{prospect.email_1 || '-'}</td>
-                                    <td className="px-6 py-3 text-gray-400">{prospect.email_2 || '-'}</td>
+                                    <td className="px-6 py-3 font-medium text-white select-text cursor-text">{prospect.company_name || '-'}</td>
+                                    <td className="px-6 py-3 text-gray-300 select-text cursor-text">{prospect.decisor_name || '-'}</td>
+                                    <td className="px-6 py-3 text-gray-300 select-text cursor-text">{prospect.role || '-'}</td>
+                                    <td className="px-6 py-3 text-gray-400 select-text cursor-text">{prospect.phone_1 || '-'}</td>
+                                    <td className="px-6 py-3 text-gray-400 select-text cursor-text">{prospect.phone_2 || '-'}</td>
+                                    <td className="px-6 py-3 text-gray-400 select-text cursor-text">{prospect.email_1 || '-'}</td>
+                                    <td className="px-6 py-3 text-gray-400 select-text cursor-text">{prospect.email_2 || '-'}</td>
+
                                     <td className="px-6 py-3">
                                         {prospect.linkedin_profile ? (
                                             <a
@@ -213,3 +244,4 @@ function StatusSelect({ id, currentStatus }: { id: string, currentStatus: string
         </div>
     )
 }
+

@@ -154,7 +154,7 @@ export async function getUserReports() {
     // 3. List Reports
     const { data: reports, error } = await supabase
         .from('ads_reports')
-        .select('id, title, status, created_at, total_spent, currency')
+        .select('id, title, status, created_at, total_spent, currency, payload')
         .eq('empresa_id', profile.empresa_id)
         .order('created_at', { ascending: false })
 
@@ -212,6 +212,25 @@ export async function deleteReport(reportId: string) {
     if (error) {
         console.error('Error deleting report:', error)
         return { error: 'Failed to delete report' }
+    }
+
+    return { success: true }
+}
+
+export async function updateReportTitle(reportId: string, newTitle: string) {
+    const supabase = await createClient()
+
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return { error: 'Unauthorized' }
+
+    const { error } = await supabase
+        .from('ads_reports')
+        .update({ title: newTitle })
+        .eq('id', reportId)
+
+    if (error) {
+        console.error('Error updating report title:', error)
+        return { error: 'Failed to update report title' }
     }
 
     return { success: true }
