@@ -14,15 +14,18 @@ export interface Prospect {
     linkedin_profile: string | null
     status: string
     created_at: string
+    empresa_id?: string
+    active?: boolean
 }
 
 export async function getProspects(): Promise<Prospect[]> {
     const supabase = await createClient()
 
-    // Assuming user is authenticated and RLS policies filter by empresa_id automatically
+    // Fetch only active prospects
     const { data, error } = await supabase
         .from('outreach_prospects')
         .select('*')
+        .eq('active', true)
         .order('created_at', { ascending: false })
 
     if (error) {
@@ -64,6 +67,7 @@ export async function createPendingLeads(count: number) {
         email_2: null,
         linkedin_profile: null,
         empresa_id: profile.empresa_id,
+        active: true,
         // user_id: user.id // Optional, normally RLS handles this or it's not needed if we have empresa_id. Try without first or check schema if possible. 
         // Safer to likely assume empresa_id is the main tenant key.
     }))

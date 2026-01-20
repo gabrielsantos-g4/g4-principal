@@ -35,7 +35,6 @@ interface RightSidebarProps {
 }
 
 export function RightSidebar({ agent, userId, companyId, userName = 'there', initialChatId, chatTitle }: RightSidebarProps) {
-    console.log('RightSidebar mounted/updated. ChatTitle:', chatTitle, 'InitialChatId:', initialChatId)
     const { isRightSidebarCollapsed, toggleRightSidebar } = useSidebar()
     const [messages, setMessages] = useState<Message[]>([])
     const [isTyping, setIsTyping] = useState(false)

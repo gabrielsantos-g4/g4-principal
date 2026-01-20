@@ -7,6 +7,7 @@ export interface TagItem {
     label: string;
     bg: string;
     text: string;
+    email?: string;
 }
 
 export interface CrmSettings {

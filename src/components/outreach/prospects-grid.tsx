@@ -2,7 +2,8 @@
 
 import { Prospect } from "@/actions/outreach-actions"
 import { Users, Plus, Loader2, ChevronLeft, ChevronRight, Search } from "lucide-react"
-import { useState, useTransition } from "react"
+import { useState, useTransition, useEffect } from "react"
+import { useRouter } from "next/navigation"
 
 
 interface ProspectsGridProps {
@@ -12,12 +13,31 @@ interface ProspectsGridProps {
 // ... ProspectsGridProps
 
 export function ProspectsGrid({ data }: ProspectsGridProps) {
+    const router = useRouter()
+    const [prospects, setProspects] = useState<Prospect[]>(data)
     const [statusFilter, setStatusFilter] = useState('All')
     const [searchTerm, setSearchTerm] = useState('')
     const [currentPage, setCurrentPage] = useState(1)
     const itemsPerPage = 50
 
-    if (!data || data.length === 0) {
+    // Sync with server data changes
+    useEffect(() => {
+        setProspects(data)
+    }, [data])
+
+    // 1. Polling: Atualização a cada 5 segundos
+    // Como o Realtime não funcionou no ambiente, usamos polling curto para manter o grid atualizado.
+    useEffect(() => {
+        const interval = setInterval(() => {
+            // console.log('🔄 Polling: Checking for updates...')
+            router.refresh()
+        }, 5000)
+
+        return () => clearInterval(interval)
+    }, [router])
+
+
+    if (!prospects || prospects.length === 0) {
         // ... empty state (unchanged)
         return (
             <div className="w-full h-[600px] flex flex-col items-center justify-center bg-black/40 border border-white/10 rounded-xl p-8 text-center animate-in fade-in duration-500">
@@ -37,7 +57,7 @@ export function ProspectsGrid({ data }: ProspectsGridProps) {
     }
 
     // Filter Logic
-    const filteredData = data.filter(item => {
+    const filteredData = prospects.filter(item => {
         const matchesStatus = statusFilter === 'All' ? true : item.status === statusFilter
         const matchesSearch = searchTerm === '' ? true : (
             (item.company_name?.toLowerCase().includes(searchTerm.toLowerCase()) || false) ||

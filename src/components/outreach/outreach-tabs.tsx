@@ -12,7 +12,7 @@ interface OutreachTabsProps {
 }
 
 export function OutreachTabs({ initialIcp, initialProspects, initialDemands = [] }: OutreachTabsProps) {
-    const [activeTab, setActiveTab] = useState<"targeting" | "leads">("targeting")
+    const [activeTab, setActiveTab] = useState<"targeting" | "leads">(initialIcp ? "leads" : "targeting")
     const hasICP = !!initialIcp
 
     return (

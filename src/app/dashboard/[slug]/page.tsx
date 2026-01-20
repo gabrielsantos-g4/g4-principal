@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic'
+
 import { AGENTS } from '@/lib/agents'
 import { DashboardHeader } from '@/components/dashboard-header'
 import { RightSidebar } from '@/components/right-sidebar'
