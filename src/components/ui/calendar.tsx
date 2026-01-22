@@ -22,12 +22,8 @@ function Calendar({
             classNames={{
                 months: "flex flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0",
                 month: "space-y-4",
-
-                // Caption Layout
-                caption: "flex justify-center pt-1 relative items-center w-full",
+                caption: "flex justify-center pt-1 relative items-center",
                 caption_label: "text-sm font-medium text-white",
-
-                // Navigation Layout
                 nav: "space-x-1 flex items-center",
                 nav_button: cn(
                     buttonVariants({ variant: "outline" }),
@@ -35,19 +31,12 @@ function Calendar({
                 ),
                 nav_button_previous: "absolute left-1",
                 nav_button_next: "absolute right-1",
-
-                // Grid Layout Implementation
-                table: "w-full border-collapse space-y-1 block", // block is important for the rows to be grids
-
-                // Header Row as Grid
-                head_row: "grid grid-cols-7 w-full",
+                table: "w-full border-collapse space-y-1",
+                head_row: "", // Default to table-row
                 head_cell:
-                    "text-muted-foreground rounded-md w-9 font-normal text-[0.8rem] text-gray-400 m-auto", // m-auto centers it in the grid cell
-
-                // Data Row as Grid
-                row: "grid grid-cols-7 w-full mt-2",
-                cell: "h-9 w-9 text-center text-sm p-0 relative m-auto first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md focus-within:relative focus-within:z-20", // m-auto centers content
-
+                    "text-muted-foreground rounded-md w-9 font-normal text-[0.8rem] text-gray-400",
+                row: "w-full mt-2", // Default to table-row
+                cell: "h-9 w-9 text-center text-sm p-0 relative [&:has([aria-selected].day-range-end)]:rounded-r-md [&:has([aria-selected].day-outside)]:bg-accent/50 [&:has([aria-selected])]:bg-accent first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md focus-within:relative focus-within:z-20",
                 day: cn(
                     buttonVariants({ variant: "ghost" }),
                     "h-9 w-9 p-0 font-normal aria-selected:opacity-100 hover:bg-white/10 hover:text-white text-gray-300"

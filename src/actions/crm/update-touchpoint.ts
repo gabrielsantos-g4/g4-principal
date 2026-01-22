@@ -17,14 +17,15 @@ export async function updateTouchpoint(leadId: number, progress: number) {
         return { success: false, error: fetchError.message };
     }
 
-    const currentNextStep = current?.next_step || { date: 'Pending', total: 5 };
+    const currentNextStep = current?.next_step || { date: 'Pending', total: 6 };
 
     // 2. Update progress
     const updatedNextStep = {
         ...currentNextStep,
         progress: progress,
+        total: 6, // Ensure total is 6
         // Optional: Update current_touchpoint label for clarity
-        current_touchpoint: progress === 5 ? 'msg_saida' : `tp${progress}`
+        current_touchpoint: progress === 5 ? 'msg_saida' : (progress === 6 ? 'conversation_established' : `tp${progress}`)
     };
 
     const { error: updateError } = await supabase

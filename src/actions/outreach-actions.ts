@@ -20,12 +20,24 @@ export interface Prospect {
 
 export async function getProspects(): Promise<Prospect[]> {
     const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
 
-    // Fetch only active prospects
+    if (!user) return []
+
+    const { data: profile } = await supabase
+        .from('main_profiles')
+        .select('empresa_id')
+        .eq('id', user.id)
+        .single()
+
+    if (!profile?.empresa_id) return []
+
+    // Fetch only active prospects for this company
     const { data, error } = await supabase
         .from('outreach_prospects')
         .select('*')
         .eq('active', true)
+        .eq('empresa_id', profile.empresa_id)
         .order('created_at', { ascending: false })
 
     if (error) {

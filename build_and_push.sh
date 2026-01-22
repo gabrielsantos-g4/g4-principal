@@ -2,7 +2,7 @@
 
 # Configuration
 IMAGE_NAME="gabrielsantosg4/g4-principal"
-TAG="v0.12"
+TAG="0.1.14"
 
 echo "Using image: $IMAGE_NAME:$TAG"
 

@@ -49,18 +49,27 @@ export function ICPForm({ initialData, initialDemands = [] }: ICPFormProps) {
     const [isPending, startTransition] = useTransition()
     const [isRequesting, startRequestTransition] = useTransition()
 
-    // Helper to ensure array to prevent "crazy count" bug
+    // Helper to ensure array and unique values to prevent duplication bugs
     const toArray = (val: any): string[] => {
         if (!val) return []
-        if (Array.isArray(val)) return val
+        if (Array.isArray(val)) return Array.from(new Set(val.map(v => String(v).trim())))
+
         if (typeof val === 'string') {
-            if (val.startsWith('[')) {
+            const trimmed = val.trim()
+            if (!trimmed) return []
+
+            // Handle JSON arrays
+            if (trimmed.startsWith('[')) {
                 try {
-                    const parsed = JSON.parse(val)
-                    if (Array.isArray(parsed)) return parsed
+                    const parsed = JSON.parse(trimmed)
+                    if (Array.isArray(parsed)) {
+                        return Array.from(new Set(parsed.map(v => String(v).trim())))
+                    }
                 } catch (e) { }
             }
-            return [val]
+
+            // Handle comma-separated strings
+            return Array.from(new Set(trimmed.split(',').map(s => s.trim()).filter(Boolean)))
         }
         return []
     }
@@ -76,6 +85,20 @@ export function ICPForm({ initialData, initialDemands = [] }: ICPFormProps) {
     const [companyType, setCompanyType] = useState<string[]>(toArray(initialData?.company_type))
     const [functionArea, setFunctionArea] = useState<string[]>(toArray(initialData?.function_or_area))
     const [seniority, setSeniority] = useState<string[]>(toArray(initialData?.seniority_level))
+
+    // Reset state when initialData changes (after save/load)
+    useEffect(() => {
+        if (initialData) {
+            setTextExamples(initialData.example_ideal_companies || "")
+            setTextLocation(initialData.company_headquarter_location || "")
+            setTextJobTitle(initialData.job_title || "")
+            setTextInstructions(initialData.additional_instruction || "")
+            setHeadcount(toArray(initialData.company_headcount))
+            setCompanyType(toArray(initialData.company_type))
+            setFunctionArea(toArray(initialData.function_or_area))
+            setSeniority(toArray(initialData.seniority_level))
+        }
+    }, [initialData])
 
     // Sync to LocalStorage for Chat Agent Access
     useEffect(() => {
@@ -104,8 +127,19 @@ export function ICPForm({ initialData, initialDemands = [] }: ICPFormProps) {
     }
 
     const handleRequestResearch = () => {
+        const currentData = {
+            company_headcount: headcount,
+            example_ideal_companies: textExamples,
+            company_type: companyType,
+            company_headquarter_location: textLocation,
+            function_or_area: functionArea,
+            job_title: textJobTitle,
+            seniority_level: seniority,
+            additional_instruction: textInstructions
+        }
+
         startRequestTransition(async () => {
-            const result = await requestResearch()
+            const result = await requestResearch(currentData)
             if (result.error) {
                 toast.error(result.error)
             } else {

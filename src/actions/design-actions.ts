@@ -4,7 +4,11 @@ import { createClient } from '@/lib/supabase'
 import { Resend } from 'resend'
 import { revalidatePath } from 'next/cache'
 
-const resend = new Resend(process.env.RESEND_API_KEY)
+const getResendClient = () => {
+    const key = process.env.RESEND_API_KEY
+    if (!key) return null
+    return new Resend(key)
+}
 
 export async function createDesignRequest(formData: FormData) {
     const supabase = await createClient()
@@ -79,25 +83,28 @@ export async function createDesignRequest(formData: FormData) {
     }
 
     // Send Email
-    try {
-        await resend.emails.send({
-            from: 'G4 Agents <onboarding@resend.dev>', // Update if they have a domain
-            to: ['jgcarnaibapro@gmail.com'],
-            subject: `New Design Request: ${material_name}`,
-            html: `
-                <h1>New Design Request</h1>
-                <p><strong>User:</strong> ${user.email}</p>
-                <p><strong>Material Name:</strong> ${material_name}</p>
-                <p><strong>Objective:</strong> ${objective}</p>
-                <p><strong>Deadline:</strong> ${deadline}</p>
-                <p><strong>Notes:</strong> ${notes}</p>
-                <hr />
-                <p>Check the dashboard for full details.</p>
-            `
-        })
-    } catch (emailError) {
-        console.error('Error sending email:', emailError)
-        // Don't fail the request if email fails, but log it.
+    const resend = getResendClient()
+    if (resend) {
+        try {
+            await resend.emails.send({
+                from: 'G4 Agents <onboarding@resend.dev>', // Update if they have a domain
+                to: ['jgcarnaibapro@gmail.com'],
+                subject: `New Design Request: ${material_name}`,
+                html: `
+                    <h1>New Design Request</h1>
+                    <p><strong>User:</strong> ${user.email}</p>
+                    <p><strong>Material Name:</strong> ${material_name}</p>
+                    <p><strong>Objective:</strong> ${objective}</p>
+                    <p><strong>Deadline:</strong> ${deadline}</p>
+                    <p><strong>Notes:</strong> ${notes}</p>
+                    <hr />
+                    <p>Check the dashboard for full details.</p>
+                `
+            })
+        } catch (emailError) {
+            console.error('Error sending email:', emailError)
+            // Don't fail the request if email fails, but log it.
+        }
     }
 
     revalidatePath('/dashboard') // Adjust path as needed

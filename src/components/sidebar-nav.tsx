@@ -157,26 +157,26 @@ export function SidebarNav({ agents, user }: SidebarNavProps) {
                 ))}
             </div>
 
-            {/* MARKETING */}
+            {/* EXECUTION */}
             <div className="space-y-2">
                 {!isCollapsed && (
                     <div className="px-4 text-[10px] font-medium text-slate-500 uppercase tracking-wider">
-                        Marketing
+                        Execution
                     </div>
                 )}
-                {agents.filter(a => a.category === 'marketing').map(agent => (
+                {agents.filter(a => a.category === 'execution').map(agent => (
                     <AgentLink key={agent.id} agent={agent} pathname={pathname} isCollapsed={isCollapsed} />
                 ))}
             </div>
 
-            {/* SALES */}
+            {/* THE GOLD MINE */}
             <div className="space-y-2">
                 {!isCollapsed && (
                     <div className="px-4 text-[10px] font-medium text-slate-500 uppercase tracking-wider">
-                        Sales
+                        The Gold Mine
                     </div>
                 )}
-                {agents.filter(a => a.category === 'sales').map(agent => (
+                {agents.filter(a => a.category === 'the-gold-mine').map(agent => (
                     <AgentLink key={agent.id} agent={agent} pathname={pathname} isCollapsed={isCollapsed} />
                 ))}
             </div>
@@ -226,7 +226,7 @@ export function SidebarNav({ agents, user }: SidebarNavProps) {
                     </div>
                     {!isCollapsed && (
                         <div className="text-[10px] text-slate-600 font-medium">
-                            G4 AI Agents v1.2.0
+                            g4 AI Agents v0.1.13
                         </div>
                     )}
                 </div>

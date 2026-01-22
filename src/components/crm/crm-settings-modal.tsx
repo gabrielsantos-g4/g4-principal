@@ -585,61 +585,68 @@ export function CrmSettingsModal({ isOpen, onClose, settings }: CrmSettingsModal
                             <div className="space-y-4">
                                 <h3 className="text-lg font-semibold border-b border-white/10 pb-2">Custom Field</h3>
                                 <div className="space-y-3">
-                                    <div className="flex flex-col gap-1">
-                                        <Label className="text-xs text-gray-500">Field Name</Label>
-                                        <div className="flex gap-2">
-                                            <Input
-                                                value={customFieldName}
-                                                onChange={(e) => setCustomFieldName(e.target.value)}
-                                                className="bg-black/50 border-white/20 text-white h-8 w-full"
-                                                onKeyDown={(e) => handleKeyDown(e, () => saveSettings())}
-                                            />
-                                            <Button
-                                                onClick={() => saveSettings()}
-                                                disabled={loading || !customFieldName}
-                                                className="bg-white/10 hover:bg-white/20 text-white px-3"
-                                            >
-                                                <Save className="h-4 w-4" />
-                                            </Button>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        {/* Col 1: Field Name */}
+                                        <div className="flex flex-col gap-1">
+                                            <Label className="text-xs text-gray-500">Field Name</Label>
+                                            <div className="flex gap-2">
+                                                <Input
+                                                    value={customFieldName}
+                                                    onChange={(e) => setCustomFieldName(e.target.value)}
+                                                    className="bg-black/50 border-white/20 text-white h-8 w-full"
+                                                    onKeyDown={(e) => handleKeyDown(e, () => saveSettings())}
+                                                />
+                                                <Button
+                                                    onClick={() => saveSettings()}
+                                                    disabled={loading || !customFieldName}
+                                                    className="bg-white/10 hover:bg-white/20 text-white px-3"
+                                                >
+                                                    <Save className="h-4 w-4" />
+                                                </Button>
+                                            </div>
+                                        </div>
+
+                                        {/* Col 2: Field Options */}
+                                        <div className="flex flex-col gap-1">
+                                            <Label className="text-xs text-gray-500">Field Options</Label>
+                                            <div className="flex gap-2">
+                                                <Input
+                                                    placeholder="New Option"
+                                                    value={newCustomOption}
+                                                    onChange={(e) => setNewCustomOption(e.target.value)}
+                                                    className="bg-black/50 border-white/20 text-white"
+                                                    onKeyDown={(e) => handleKeyDown(e, addCustomOption)}
+                                                />
+                                                <Button onClick={addCustomOption} disabled={loading || !newCustomOption} className="bg-white/10 hover:bg-white/20 text-white">
+                                                    <Plus className="h-4 w-4" />
+                                                </Button>
+                                            </div>
                                         </div>
                                     </div>
-                                    <div className="flex flex-col gap-1">
-                                        <Label className="text-xs text-gray-500">Field Options</Label>
-                                        <div className="flex gap-2">
-                                            <Input
-                                                placeholder="New Option"
-                                                value={newCustomOption}
-                                                onChange={(e) => setNewCustomOption(e.target.value)}
-                                                className="bg-black/50 border-white/20 text-white"
-                                                onKeyDown={(e) => handleKeyDown(e, addCustomOption)}
-                                            />
-                                            <Button onClick={addCustomOption} disabled={loading || !newCustomOption} className="bg-white/10 hover:bg-white/20 text-white">
-                                                <Plus className="h-4 w-4" />
-                                            </Button>
-                                        </div>
-                                        <div className="flex flex-wrap gap-2 mt-2">
-                                            {customOptions.map((opt, index) => (
-                                                <Popover key={index}>
-                                                    <PopoverTrigger asChild>
-                                                        <div className={`flex items-center gap-1 px-2 py-1 rounded text-xs border border-white/10 ${typeof opt === 'string' ? 'bg-white/10 text-gray-200' : `${opt.bg} ${opt.text}`} cursor-pointer hover:opacity-80 transition-opacity`}>
-                                                            {typeof opt === 'string' ? opt : opt.label}
-                                                            <button
-                                                                onClick={(e) => { e.stopPropagation(); removeCustomOption(index); }}
-                                                                className="hover:text-white ml-1 opacity-70 hover:opacity-100"
-                                                            >
-                                                                <X className="h-3 w-3" />
-                                                            </button>
-                                                        </div>
-                                                    </PopoverTrigger>
-                                                    <PopoverContent className="w-auto p-0 bg-[#1a1a1a] border-white/10">
-                                                        <ColorPicker
-                                                            currentColor={typeof opt === 'string' ? 'bg-slate-800' : opt.bg}
-                                                            onSelect={(bg, text) => updateCustomOptionColor(index, bg, text)}
-                                                        />
-                                                    </PopoverContent>
-                                                </Popover>
-                                            ))}
-                                        </div>
+
+                                    {/* Options List (Full Width or below options input) */}
+                                    <div className="flex flex-wrap gap-2 mt-2">
+                                        {customOptions.map((opt, index) => (
+                                            <Popover key={index}>
+                                                <PopoverTrigger asChild>
+                                                    <div className={`flex items-center gap-1 px-2 py-1 rounded text-xs border border-white/10 ${typeof opt === 'string' ? 'bg-white/10 text-gray-200' : `${opt.bg} ${opt.text}`} cursor-pointer hover:opacity-80 transition-opacity`}>
+                                                        {typeof opt === 'string' ? opt : opt.label}
+                                                        <button
+                                                            onClick={(e) => { e.stopPropagation(); removeCustomOption(index); }}
+                                                            className="hover:text-white ml-1 opacity-70 hover:opacity-100"
+                                                        >
+                                                            <X className="h-3 w-3" />
+                                                        </button>
+                                                    </div>
+                                                </PopoverTrigger>
+                                                <PopoverContent className="w-auto p-0 bg-[#1a1a1a] border-white/10">
+                                                    <ColorPicker
+                                                        currentColor={typeof opt === 'string' ? 'bg-slate-800' : opt.bg}
+                                                        onSelect={(bg, text) => updateCustomOptionColor(index, bg, text)}
+                                                    />
+                                                </PopoverContent>
+                                            </Popover>
+                                        ))}
                                     </div>
                                 </div>
                             </div>

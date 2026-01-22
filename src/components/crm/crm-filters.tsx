@@ -2,8 +2,10 @@
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ChevronDown, Settings, Plus, Calendar as CalendarIcon, X } from "lucide-react";
+import { ChevronDown, Settings, Plus, Calendar as CalendarIcon, X, RefreshCw } from "lucide-react";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { NewOpportunityModal } from "./new-opportunity-modal";
 import { CrmSettingsModal } from "./crm-settings-modal";
 import {
@@ -37,6 +39,7 @@ interface CrmFiltersProps {
 }
 
 export function CrmFilters({ settings, filters, setFilters }: CrmFiltersProps) {
+    const router = useRouter();
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
@@ -68,8 +71,8 @@ export function CrmFilters({ settings, filters, setFilters }: CrmFiltersProps) {
 
     return (
         <div className="bg-[#111] p-3 rounded-lg border border-white/5 mb-4">
-            <div className="flex flex-wrap items-center justify-between mb-3 gap-3">
-                <div className="flex items-center gap-1 bg-[#0c0c0c] p-1 rounded-lg border border-white/5 overflow-x-auto max-w-full">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-3">
+                <div className="flex items-center gap-1 bg-[#0c0c0c] p-1 rounded-lg border border-white/5 overflow-x-auto">
                     {(['active', 'earned', 'lost'] as const).map((tab) => (
                         <Button
                             key={tab}
@@ -83,9 +86,9 @@ export function CrmFilters({ settings, filters, setFilters }: CrmFiltersProps) {
                 </div>
 
                 {/* Right Toolbar */}
-                <div className="flex items-center gap-4 ml-auto">
+                <div className="flex items-center gap-2">
                     <TooltipProvider>
-                        <div className="flex items-center gap-1">
+                        <div className="flex items-center gap-1 bg-[#0c0c0c] p-1 rounded-lg border border-white/5">
                             <Tooltip>
                                 <TooltipTrigger asChild>
                                     <Button
@@ -101,8 +104,33 @@ export function CrmFilters({ settings, filters, setFilters }: CrmFiltersProps) {
                                     <p>New opportunity</p>
                                 </TooltipContent>
                             </Tooltip>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Button
+                                        size="icon"
+                                        variant="ghost"
+                                        className="h-7 w-7 text-gray-400 hover:text-white hover:bg-white/10 flex-shrink-0"
+                                        onClick={() => {
+                                            toast.promise(new Promise((resolve) => {
+                                                router.refresh();
+                                                setTimeout(resolve, 1000); // Fake delay for UX perception
+                                            }), {
+                                                loading: 'Refreshing...',
+                                                success: 'List updated',
+                                                error: 'Failed to refresh'
+                                            });
+                                        }}
+                                    >
+                                        <RefreshCw size={16} />
+                                    </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                    <p>Refresh list</p>
+                                </TooltipContent>
+                            </Tooltip>
 
                             <Tooltip>
+
                                 <TooltipTrigger asChild>
                                     <Button
                                         size="icon"
@@ -119,34 +147,42 @@ export function CrmFilters({ settings, filters, setFilters }: CrmFiltersProps) {
                             </Tooltip>
                         </div>
                     </TooltipProvider>
+
+                    <Button
+                        variant="ghost"
+                        onClick={clearFilters}
+                        className="bg-[#1C73E8]/10 text-[#1C73E8] hover:bg-[#1C73E8]/20 h-7 px-4 text-[10px] font-medium rounded-md whitespace-nowrap"
+                    >
+                        Clean Filters
+                    </Button>
                 </div>
             </div>
 
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-8 gap-2">
                 <Input
                     placeholder="Search name"
                     value={filters.searchName}
                     onChange={(e) => updateFilter('searchName', e.target.value)}
-                    className="bg-[#1A1A1A] border-white/10 text-white placeholder:text-gray-500 h-9 text-xs min-w-[150px] flex-1 rounded-md focus:border-white/20 transition-colors"
+                    className="bg-[#1A1A1A] border-white/10 text-white placeholder:text-gray-500 h-9 text-xs w-full rounded-md focus:border-white/20 transition-colors"
                 />
                 <Input
                     placeholder="Search company"
                     value={filters.searchCompany}
                     onChange={(e) => updateFilter('searchCompany', e.target.value)}
-                    className="bg-[#1A1A1A] border-white/10 text-white placeholder:text-gray-500 h-9 text-xs min-w-[150px] flex-1 rounded-md focus:border-white/20 transition-colors"
+                    className="bg-[#1A1A1A] border-white/10 text-white placeholder:text-gray-500 h-9 text-xs w-full rounded-md focus:border-white/20 transition-colors"
                 />
                 <Input
                     placeholder="Search phone"
                     value={filters.searchPhone}
                     onChange={(e) => updateFilter('searchPhone', e.target.value)}
-                    className="bg-[#1A1A1A] border-white/10 text-white placeholder:text-gray-500 h-9 text-xs min-w-[150px] flex-1 rounded-md focus:border-white/20 transition-colors"
+                    className="bg-[#1A1A1A] border-white/10 text-white placeholder:text-gray-500 h-9 text-xs w-full rounded-md focus:border-white/20 transition-colors"
                 />
 
                 {/* Date Picker */}
                 <Popover>
                     <PopoverTrigger asChild>
                         <button className={cn(
-                            "h-9 px-3 rounded-md bg-[#1A1A1A] border border-white/10 flex items-center text-xs min-w-[150px] flex-1 justify-center hover:border-white/20 transition-colors cursor-pointer whitespace-nowrap gap-2",
+                            "h-9 px-3 rounded-md bg-[#1A1A1A] border border-white/10 flex items-center text-xs w-full justify-center hover:border-white/20 transition-colors cursor-pointer whitespace-nowrap gap-2",
                             !filters.date && "text-gray-400",
                             filters.date && "text-white"
                         )}>
@@ -178,11 +214,11 @@ export function CrmFilters({ settings, filters, setFilters }: CrmFiltersProps) {
                 {/* Product Dropdown */}
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                        <div className="h-9 px-3 rounded-md bg-[#1A1A1A] border border-white/10 flex items-center text-xs text-gray-400 min-w-[150px] flex-1 justify-between hover:border-white/20 transition-colors cursor-pointer whitespace-nowrap">
-                            <span className={filters.product ? "text-white" : ""}>
-                                {filters.product || "Select Product"}
+                        <div className="h-9 px-3 rounded-md bg-[#1A1A1A] border border-white/10 flex items-center text-xs text-gray-400 w-full justify-between hover:border-white/20 transition-colors cursor-pointer whitespace-nowrap">
+                            <span className={filters.product ? "text-white" : "truncate"}>
+                                {filters.product || "Product"}
                             </span>
-                            <ChevronDown size={12} className="opacity-50" />
+                            <ChevronDown size={12} className="opacity-50 shrink-0 ml-1" />
                         </div>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent className="w-[200px] p-1 bg-[#1A1A1A] border-white/10 text-white">
@@ -211,11 +247,11 @@ export function CrmFilters({ settings, filters, setFilters }: CrmFiltersProps) {
                 {/* Custom Field Dropdown */}
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                        <div className="h-9 px-3 rounded-md bg-[#1A1A1A] border border-white/10 flex items-center text-xs text-gray-400 min-w-[150px] flex-1 justify-between hover:border-white/20 transition-colors cursor-pointer whitespace-nowrap">
-                            <span className={filters.customField ? "text-white" : ""}>
-                                {filters.customField || `Select ${customFieldName}`}
+                        <div className="h-9 px-3 rounded-md bg-[#1A1A1A] border border-white/10 flex items-center text-xs text-gray-400 w-full justify-between hover:border-white/20 transition-colors cursor-pointer whitespace-nowrap">
+                            <span className={filters.customField ? "text-white" : "truncate"}>
+                                {filters.customField || `${customFieldName}`}
                             </span>
-                            <ChevronDown size={12} className="opacity-50" />
+                            <ChevronDown size={12} className="opacity-50 shrink-0 ml-1" />
                         </div>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent className="w-[200px] p-1 bg-[#1A1A1A] border-white/10 text-white">
@@ -244,11 +280,11 @@ export function CrmFilters({ settings, filters, setFilters }: CrmFiltersProps) {
                 {/* Source Dropdown */}
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                        <div className="h-9 px-3 rounded-md bg-[#1A1A1A] border border-white/10 flex items-center text-xs text-gray-400 min-w-[150px] flex-1 justify-between hover:border-white/20 transition-colors cursor-pointer whitespace-nowrap">
-                            <span className={filters.source ? "text-white" : ""}>
-                                {filters.source || "Select Source"}
+                        <div className="h-9 px-3 rounded-md bg-[#1A1A1A] border border-white/10 flex items-center text-xs text-gray-400 w-full justify-between hover:border-white/20 transition-colors cursor-pointer whitespace-nowrap">
+                            <span className={filters.source ? "text-white" : "truncate"}>
+                                {filters.source || "Source"}
                             </span>
-                            <ChevronDown size={12} className="opacity-50" />
+                            <ChevronDown size={12} className="opacity-50 shrink-0 ml-1" />
                         </div>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent className="w-[200px] p-1 bg-[#1A1A1A] border-white/10 text-white">
@@ -277,11 +313,11 @@ export function CrmFilters({ settings, filters, setFilters }: CrmFiltersProps) {
                 {/* Status Dropdown */}
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                        <div className="h-9 px-3 rounded-md bg-[#1A1A1A] border border-white/10 flex items-center text-xs text-gray-400 min-w-[150px] flex-1 justify-between hover:border-white/20 transition-colors cursor-pointer whitespace-nowrap">
-                            <span className={filters.status ? "text-white" : ""}>
-                                {filters.status || "Select Status"}
+                        <div className="h-9 px-3 rounded-md bg-[#1A1A1A] border border-white/10 flex items-center text-xs text-gray-400 w-full justify-between hover:border-white/20 transition-colors cursor-pointer whitespace-nowrap">
+                            <span className={filters.status ? "text-white" : "truncate"}>
+                                {filters.status || "Status"}
                             </span>
-                            <ChevronDown size={12} className="opacity-50" />
+                            <ChevronDown size={12} className="opacity-50 shrink-0 ml-1" />
                         </div>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent className="w-[200px] p-1 bg-[#1A1A1A] border-white/10 text-white">
@@ -307,11 +343,11 @@ export function CrmFilters({ settings, filters, setFilters }: CrmFiltersProps) {
                 {/* Responsible Dropdown */}
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                        <div className="h-9 px-3 rounded-md bg-[#1A1A1A] border border-white/10 flex items-center text-xs text-gray-400 min-w-[150px] flex-1 justify-between hover:border-white/20 transition-colors cursor-pointer whitespace-nowrap">
-                            <span className={filters.responsible ? "text-white" : ""}>
-                                {filters.responsible || "Select Responsible"}
+                        <div className="h-9 px-3 rounded-md bg-[#1A1A1A] border border-white/10 flex items-center text-xs text-gray-400 w-full justify-between hover:border-white/20 transition-colors cursor-pointer whitespace-nowrap">
+                            <span className={filters.responsible ? "text-white" : "truncate"}>
+                                {filters.responsible || "Responsible"}
                             </span>
-                            <ChevronDown size={12} className="opacity-50" />
+                            <ChevronDown size={12} className="opacity-50 shrink-0 ml-1" />
                         </div>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent className="w-[200px] p-1 bg-[#1A1A1A] border-white/10 text-white">
@@ -337,13 +373,6 @@ export function CrmFilters({ settings, filters, setFilters }: CrmFiltersProps) {
                     </DropdownMenuContent>
                 </DropdownMenu>
 
-                <Button
-                    variant="ghost"
-                    onClick={clearFilters}
-                    className="bg-[#1C73E8]/10 text-[#1C73E8] hover:bg-[#1C73E8]/20 h-9 px-6 ml-auto text-xs font-medium rounded-md whitespace-nowrap"
-                >
-                    Clean
-                </Button>
             </div>
 
             <NewOpportunityModal
