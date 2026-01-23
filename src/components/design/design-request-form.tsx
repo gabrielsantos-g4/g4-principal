@@ -171,8 +171,8 @@ export function DesignRequestForm() {
                     {/* Request Form Section */}
                     <div>
                         <form onSubmit={handleSubmit} className="space-y-6">
-                            {/* First Row - 5 Fields */}
-                            <div className="grid grid-cols-5 gap-4">
+                            {/* Section 1: Core Information */}
+                            <div className="grid grid-cols-2 gap-6">
                                 {/* Material Name */}
                                 <div className="space-y-2">
                                     <label className="flex items-center gap-2 text-sm font-medium text-white">
@@ -212,7 +212,10 @@ export function DesignRequestForm() {
                                         className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-[#1C73E8] transition-colors"
                                     />
                                 </div>
+                            </div>
 
+                            {/* Section 2: Technical Specs */}
+                            <div className="grid grid-cols-3 gap-6">
                                 {/* Aspect Ratio */}
                                 <div className="space-y-2">
                                     <label className="flex items-center gap-2 text-sm font-medium text-white">
@@ -262,7 +265,7 @@ export function DesignRequestForm() {
                                     <select
                                         value={formData.variations}
                                         onChange={(e) => setFormData({ ...formData, variations: e.target.value })}
-                                        className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-[#1C73E8] transition-colors"
+                                        className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-[#1C73E8] transition-colors appearance-none"
                                     >
                                         <option value="">Select</option>
                                         <option value="1">1</option>
@@ -274,8 +277,8 @@ export function DesignRequestForm() {
                                 </div>
                             </div>
 
-                            {/* Second Row - 4 Fields */}
-                            <div className="grid grid-cols-4 gap-4">
+                            {/* Section 3: Content Details */}
+                            <div className="grid grid-cols-2 gap-6">
                                 {/* Headline */}
                                 <div className="space-y-2">
                                     <label className="flex items-center gap-2 text-sm font-medium text-white">
@@ -353,8 +356,8 @@ export function DesignRequestForm() {
                                 </div>
                             </div>
 
-                            {/* Third Row - 4 Fields */}
-                            <div className="grid grid-cols-4 gap-4">
+                            {/* Section 4: Assets & Additional Info */}
+                            <div className="grid grid-cols-2 gap-6">
                                 {/* Images */}
                                 <div className="space-y-2">
                                     <label className="flex items-center gap-2 text-sm font-medium text-white">
@@ -396,7 +399,10 @@ export function DesignRequestForm() {
                                         className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-[#1C73E8] transition-colors"
                                     />
                                 </div>
+                            </div>
 
+                            {/* Notes & Deadline Group */}
+                            <div className="grid grid-cols-2 gap-6">
                                 {/* Notes & Comments */}
                                 <div className="space-y-2">
                                     <label className="flex items-center gap-2 text-sm font-medium text-white">
@@ -411,7 +417,7 @@ export function DesignRequestForm() {
                                         onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
                                         placeholder="Field for general or additional instructions"
                                         rows={4}
-                                        className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-[#1C73E8] transition-colors resize-none"
+                                        className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-[#1C73E8] transition-colors resize-none h-[110px]"
                                     />
                                 </div>
 
@@ -424,7 +430,7 @@ export function DesignRequestForm() {
                                         Deadline
                                     </label>
 
-                                    <div className="space-y-2">
+                                    <div className="grid grid-cols-2 gap-4">
                                         <input
                                             type="date"
                                             value={formData.deadlineDate}

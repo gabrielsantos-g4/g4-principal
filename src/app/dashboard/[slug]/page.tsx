@@ -25,6 +25,7 @@ import { CompetitorForm } from '@/components/competitors/competitor-form'
 
 import { getCompetitors, getCompetitor } from '@/actions/competitor-actions'
 import { getTrainings } from '@/actions/training-actions'
+import { getDesignRequests } from '@/actions/design-actions'
 import { BiDashboard } from '@/components/bi/bi-dashboard'
 
 import { MobileDashboardLayout } from '@/components/mobile-dashboard-layout'
@@ -291,6 +292,8 @@ export default async function AgentPage({ params, searchParams }: AgentPageProps
     }
 
     if (isDesign) {
+        const designRequests = await getDesignRequests()
+
         return (
             <div className="h-screen bg-black text-white font-sans flex flex-col overflow-hidden">
                 <DashboardHeader />
@@ -313,7 +316,7 @@ export default async function AgentPage({ params, searchParams }: AgentPageProps
                     }
                 >
                     <div className="flex-1 min-w-0 overflow-y-auto bg-black p-6">
-                        <DesignVideoTabs />
+                        <DesignVideoTabs initialRequests={designRequests} />
                     </div>
                 </MobileDashboardLayout>
             </div>

@@ -95,3 +95,47 @@ export async function createPendingLeads(count: number) {
 
     return { success: true }
 }
+
+export async function deleteProspect(id: string) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) throw new Error('User not authenticated')
+
+    // Optional: Verify ownership via empresa_id logic if strict RLS isn't enough, 
+    // but assuming RLS is set up or we rely on session.
+
+    const { error } = await supabase
+        .from('outreach_prospects')
+        .delete()
+        .eq('id', id)
+
+    if (error) {
+        console.error('Error deleting prospect:', error)
+        return { success: false, error: error.message }
+    }
+
+    return { success: true }
+}
+
+export async function updateProspect(id: string, data: Partial<Prospect>) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) throw new Error('User not authenticated')
+
+    // Filter out fields that shouldn't be updated directly if any, e.g. id, created_at
+    const { id: _, created_at: __, ...updateData } = data
+
+    const { error } = await supabase
+        .from('outreach_prospects')
+        .update(updateData)
+        .eq('id', id)
+
+    if (error) {
+        console.error('Error updating prospect:', error)
+        return { success: false, error: error.message }
+    }
+
+    return { success: true }
+}

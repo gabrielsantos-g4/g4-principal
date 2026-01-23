@@ -19,7 +19,7 @@ export function OutreachTabs({ initialIcp, initialProspects, initialDemands = []
     const hasICP = !!initialIcp
 
     return (
-        <div className="w-full max-w-[1400px] mx-auto flex flex-col gap-8">
+        <div className="w-full mx-auto flex flex-col gap-8">
             <div className="flex items-center justify-between">
                 {/* Tabs Header */}
                 <div className="flex items-center gap-1 bg-[#171717] p-1 rounded-lg border border-white/10 w-fit">

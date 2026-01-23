@@ -6,8 +6,9 @@ import { DesignForm } from "./design-form"
 import { DesignDeliverables } from "./design-deliverables"
 import { VideoForm } from "./video-form"
 import { VideoDeliverables } from "./video-deliverables"
+import { DesignHistoryList } from "./design-history-list"
 
-export function DesignVideoTabs() {
+export function DesignVideoTabs({ initialRequests = [] }: { initialRequests?: any[] }) {
     const [activeTab, setActiveTab] = useState<"design-request" | "design-deliverables" | "video-request" | "video-deliverables">("design-request")
 
     return (
@@ -17,8 +18,8 @@ export function DesignVideoTabs() {
                 <button
                     onClick={() => setActiveTab("design-request")}
                     className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-all ${activeTab === "design-request"
-                            ? "bg-[#2a2a2a] text-white shadow-sm"
-                            : "text-gray-400 hover:text-white hover:bg-white/5"
+                        ? "bg-[#2a2a2a] text-white shadow-sm"
+                        : "text-gray-400 hover:text-white hover:bg-white/5"
                         }`}
                 >
                     <Palette size={16} />
@@ -27,8 +28,8 @@ export function DesignVideoTabs() {
                 <button
                     onClick={() => setActiveTab("design-deliverables")}
                     className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-all ${activeTab === "design-deliverables"
-                            ? "bg-[#2a2a2a] text-white shadow-sm"
-                            : "text-gray-400 hover:text-white hover:bg-white/5"
+                        ? "bg-[#2a2a2a] text-white shadow-sm"
+                        : "text-gray-400 hover:text-white hover:bg-white/5"
                         }`}
                 >
                     <Layers size={16} />
@@ -37,8 +38,8 @@ export function DesignVideoTabs() {
                 <button
                     onClick={() => setActiveTab("video-request")}
                     className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-all ${activeTab === "video-request"
-                            ? "bg-[#2a2a2a] text-white shadow-sm"
-                            : "text-gray-400 hover:text-white hover:bg-white/5"
+                        ? "bg-[#2a2a2a] text-white shadow-sm"
+                        : "text-gray-400 hover:text-white hover:bg-white/5"
                         }`}
                 >
                     <Video size={16} />
@@ -47,8 +48,8 @@ export function DesignVideoTabs() {
                 <button
                     onClick={() => setActiveTab("video-deliverables")}
                     className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-all ${activeTab === "video-deliverables"
-                            ? "bg-[#2a2a2a] text-white shadow-sm"
-                            : "text-gray-400 hover:text-white hover:bg-white/5"
+                        ? "bg-[#2a2a2a] text-white shadow-sm"
+                        : "text-gray-400 hover:text-white hover:bg-white/5"
                         }`}
                 >
                     <Clapperboard size={16} />
@@ -58,8 +59,12 @@ export function DesignVideoTabs() {
 
             {/* Tab Content */}
             <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
-                {activeTab === "design-request" && <DesignForm />}
-                {activeTab === "design-deliverables" && <DesignDeliverables />}
+                {activeTab === "design-request" && (
+                    <div className="space-y-12">
+                        <DesignForm />
+                    </div>
+                )}
+                {activeTab === "design-deliverables" && <DesignDeliverables requests={initialRequests} />}
                 {activeTab === "video-request" && <VideoForm />}
                 {activeTab === "video-deliverables" && <VideoDeliverables />}
             </div>

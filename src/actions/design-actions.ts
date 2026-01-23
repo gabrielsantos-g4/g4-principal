@@ -3,6 +3,27 @@
 import { createClient } from '@/lib/supabase'
 import { Resend } from 'resend'
 import { revalidatePath } from 'next/cache'
+import { createClient as createSupabaseClient } from '@supabase/supabase-js'
+
+export interface DesignRequest {
+    id: string
+    created_at: string
+    material_name: string
+    objective: string
+    deadline: string | null
+    status: string
+    notes: string | null
+    delivery_link?: string | null
+    aspect_ratio?: string[] | null
+    file_format?: string[] | null
+    variations?: string | null
+    headline?: string | null
+    subheadline?: string | null
+    call_to_action?: string | null
+    required_info?: string | null
+    images?: string[] | null
+    reference_files?: string[] | null
+}
 
 const getResendClient = () => {
     const key = process.env.RESEND_API_KEY
@@ -137,4 +158,92 @@ export async function getDesignRequests() {
     }
 
     return data
+}
+
+export async function updateDesignRequest(id: string, updates: { status?: string; delivery_link?: string; notes?: string }) {
+    const supabase = await createClient()
+
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return { error: 'Unauthorized' }
+
+    // Verify ownership via company (optional but safer, though RLS handles it)
+    // For update, we rely on RLS policy. 
+    // Wait, I only added INSERT and SELECT policies. 
+    // I need to check UPDATE policy. 
+    // If I didn't add UPDATE policy, this will fail.
+    // I should check policies first or just add it if I'm sure it's missing.
+    // I'll assume I need to add it or the previous task boundary check showed only insert/select.
+    // Yes, previous check showed NO policies, then I added INSERT/SELECT.
+    // I need to add UPDATE policy too. 
+
+    // Changing plan: I will add update action code here, but I also need to run SQL to add UPDATE policy.
+    // I'll do that in the next step.
+
+    const { error } = await supabase
+        .from('main_design')
+        .update(updates)
+        .eq('id', id)
+
+    if (error) {
+        console.error('Error updating request:', error)
+        return { error: 'Failed to update request' }
+    }
+
+    revalidatePath('/dashboard')
+    return { success: true }
+}
+
+export async function getDesignRequestsByCompany(empresaId: string) {
+    // Admin action - bypass RLS
+    const adminSupabase = createSupabaseClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!,
+        {
+            auth: {
+                autoRefreshToken: false,
+                persistSession: false
+            }
+        }
+    )
+
+    const { data, error } = await adminSupabase
+        .from('main_design')
+        .select('*')
+        .eq('empresa_id', empresaId)
+        .order('created_at', { ascending: false })
+
+    if (error) {
+        console.error('Error fetching company requests:', error)
+        return []
+    }
+
+    return data
+}
+
+export async function updateDesignRequestAdmin(id: string, updates: Partial<DesignRequest>) {
+    // Admin action - bypass RLS
+    const adminSupabase = createSupabaseClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!,
+        {
+            auth: {
+                autoRefreshToken: false,
+                persistSession: false
+            }
+        }
+    )
+
+    const { error } = await adminSupabase
+        .from('main_design')
+        .update(updates)
+        .eq('id', id)
+
+    if (error) {
+        console.error('Error updating request (Admin):', error)
+        return { error: 'Failed to update request' }
+    }
+
+    revalidatePath('/dashboard')
+    revalidatePath('/admin/design-fulfillment')
+    return { success: true }
 }
