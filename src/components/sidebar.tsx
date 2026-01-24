@@ -25,6 +25,7 @@ export async function Sidebar() {
             name,
             role,
             avatar_url,
+            active_agents,
             main_empresas (
                 name
             )
@@ -40,12 +41,14 @@ export async function Sidebar() {
     const userName = profile?.name || 'User'
     const userRole = profile?.role || 'User'
     const userAvatar = '/gabriel-santos.png'
+    const activeAgents = profile?.active_agents || null
 
     return (
         <SidebarWrapper>
             {/* Navigation (Client Component) */}
             <SidebarNav
                 agents={AGENTS}
+                activeAgents={activeAgents}
                 user={{
                     name: userName,
                     role: userRole,

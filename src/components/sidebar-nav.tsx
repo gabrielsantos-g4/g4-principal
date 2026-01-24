@@ -1,11 +1,12 @@
 'use client'
 
-import { LogOut, User, CreditCard, Ban, ArrowUpRight, LayoutDashboard, BadgeDollarSign, MoreHorizontal } from 'lucide-react'
+import { LogOut, User, CreditCard, Ban, ArrowUpRight, LayoutDashboard, BadgeDollarSign, MoreHorizontal, Plus } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Agent } from '@/lib/agents'
 import { GabrielExpertiseDialog } from '@/components/gabriel-expertise-dialog'
 import { PricingModal } from '@/components/pricing-modal'
+import { AgentsOverviewDialog } from '@/components/dashboard/agents-overview-dialog'
 import { useState } from 'react'
 import {
     DropdownMenu,
@@ -21,6 +22,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 
 interface SidebarNavProps {
     agents: Agent[]
+    activeAgents: string[] | null
     user: {
         name: string
         role: string
@@ -30,10 +32,14 @@ interface SidebarNavProps {
     }
 }
 
-export function SidebarNav({ agents, user }: SidebarNavProps) {
+export function SidebarNav({ agents, activeAgents, user }: SidebarNavProps) {
     const pathname = usePathname()
     const [isPricingOpen, setIsPricingOpen] = useState(false)
     const { isCollapsed } = useSidebar()
+
+    const visibleAgents = activeAgents
+        ? agents.filter(a => activeAgents.includes(a.id))
+        : agents
 
     return (
         <nav className={`flex-1 min-h-0 p-4 space-y-4 overflow-y-auto custom-scrollbar ${isCollapsed ? 'px-2' : ''}`}>
@@ -78,7 +84,7 @@ export function SidebarNav({ agents, user }: SidebarNavProps) {
                 </div>
 
                 {
-                    agents.filter(a => a.category === 'orchestration').map(agent => (
+                    visibleAgents.filter(a => a.category === 'orchestration').map(agent => (
                         <AgentLink key={agent.id} agent={agent} pathname={pathname} isCollapsed={isCollapsed} />
                     ))
                 }
@@ -93,7 +99,7 @@ export function SidebarNav({ agents, user }: SidebarNavProps) {
                     </div>
                 )}
                 {
-                    agents.filter(a => a.category === 'strategy').map(agent => (
+                    visibleAgents.filter(a => a.category === 'strategy').map(agent => (
                         <AgentLink key={agent.id} agent={agent} pathname={pathname} isCollapsed={isCollapsed} />
                     ))
                 }
@@ -107,7 +113,7 @@ export function SidebarNav({ agents, user }: SidebarNavProps) {
                     </div>
                 )}
                 {
-                    agents.filter(a => a.category === 'execution').map(agent => (
+                    visibleAgents.filter(a => a.category === 'execution').map(agent => (
                         <AgentLink key={agent.id} agent={agent} pathname={pathname} isCollapsed={isCollapsed} />
                     ))
                 }
@@ -121,7 +127,7 @@ export function SidebarNav({ agents, user }: SidebarNavProps) {
                     </div>
                 )}
                 {
-                    agents.filter(a => a.category === 'the-gold-mine').map(agent => (
+                    visibleAgents.filter(a => a.category === 'the-gold-mine').map(agent => (
                         <AgentLink key={agent.id} agent={agent} pathname={pathname} isCollapsed={isCollapsed} />
                     ))
                 }
@@ -159,8 +165,17 @@ export function SidebarNav({ agents, user }: SidebarNavProps) {
                 </GabrielExpertiseDialog>
             </div>
 
+            <div className="px-1 py-1">
+                <AgentsOverviewDialog initialActiveAgents={activeAgents}>
+                    <button className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium text-slate-500 hover:text-white hover:bg-white/5 transition-colors ${isCollapsed ? 'justify-center' : ''}`}>
+                        <Plus size={14} />
+                        {!isCollapsed && "Manage Agents"}
+                    </button>
+                </AgentsOverviewDialog>
+            </div>
+
             {/* FOOTER */}
-            <div className="pt-6 mt-6 border-t border-white/5 px-2 pb-8">
+            <div className="pt-4 mt-2 border-t border-white/5 px-2 pb-8">
                 <div className={`flex flex-col gap-2 opacity-50 hover:opacity-100 transition-opacity ${isCollapsed ? 'items-center' : ''}`}>
                     <div className="flex items-center gap-2">
                         <div className="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.4)]" />
