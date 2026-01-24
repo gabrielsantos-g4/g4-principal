@@ -12,6 +12,8 @@ import { createClient } from '@/lib/supabase'
 import { getICP } from '@/actions/outreach-icp-actions'
 import { ICPForm } from '@/components/outreach/icp-form'
 import { OutreachTabs } from '@/components/outreach/outreach-tabs'
+import { getCompanyDNA } from '@/actions/company-actions'
+import { OrchestratorTabs } from '@/components/orchestrator/orchestrator-tabs'
 
 import { getChats } from '@/actions/audience-actions'
 import { ChatList } from '@/components/audience/chat-list'
@@ -69,12 +71,13 @@ export default async function AgentPage({ params, searchParams }: AgentPageProps
     const companyId = profile?.empresa_id
 
     if (isOrchestrator) {
+        const company = await getCompanyDNA()
+
         return (
             <div className="h-screen bg-black text-white font-sans flex flex-col overflow-hidden">
                 <DashboardHeader />
-                <div className="flex-1 bg-black w-full h-full flex items-center justify-center text-zinc-900">
-                    {/* Empty Black Screen */}
-                    Orchestrator
+                <div className="flex-1 w-full h-full overflow-y-auto bg-black p-8">
+                    <OrchestratorTabs company={company} />
                 </div>
             </div>
         )

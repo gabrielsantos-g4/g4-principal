@@ -1,5 +1,11 @@
-import { redirect } from 'next/navigation'
+import { AgentsOverview } from "@/components/dashboard/agents-overview"
+import { DashboardHeader } from "@/components/dashboard-header"
 
 export default function DashboardPage() {
-    redirect('/dashboard/bi-data-analysis')
+    return (
+        <div className="flex flex-col h-full bg-[#09090b]">
+            <DashboardHeader />
+            <AgentsOverview />
+        </div>
+    )
 }

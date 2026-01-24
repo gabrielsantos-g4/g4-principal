@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { Sidebar as SidebarIcon, X, PanelLeftClose, PanelLeftOpen } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useSidebar } from '@/components/providers/sidebar-provider'
+import Link from 'next/link'
 
 import { usePathname } from 'next/navigation'
 
@@ -39,12 +40,15 @@ export function SidebarWrapper({ children }: { children: React.ReactNode }) {
                 {/* Desktop Collapse Toggle */}
                 <div className={`hidden md:flex items-center h-16 px-4 border-b border-[#1F1F1F] ${isCollapsed ? 'justify-center' : 'justify-between'}`}>
                     {!isCollapsed && (
-                        <div className="flex items-center gap-2 overflow-hidden whitespace-nowrap">
+                        <Link
+                            href="/dashboard"
+                            className="flex items-center gap-2 overflow-hidden whitespace-nowrap hover:opacity-80 transition-opacity"
+                        >
                             <span className="font-bold text-lg tracking-tight">g4</span>
                             <span className="text-[9px] leading-tight text-gray-400 font-medium uppercase tracking-wider">
                                 MULTI-B2B AI AGENT PLATFORM
                             </span>
-                        </div>
+                        </Link>
                     )}
 
                     <button

@@ -1,6 +1,6 @@
 'use client'
 
-import { LogOut, User, CreditCard, Ban, ArrowUpRight, LayoutDashboard, BadgeDollarSign } from 'lucide-react'
+import { LogOut, User, CreditCard, Ban, ArrowUpRight, LayoutDashboard, BadgeDollarSign, MoreHorizontal } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Agent } from '@/lib/agents'
@@ -48,101 +48,41 @@ export function SidebarNav({ agents, user }: SidebarNavProps) {
                 )}
 
                 {/* User Profile (Orchestrator) */}
-                <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                        <button
-                            className={`w-full flex items-center gap-3 py-3 rounded-lg transition-all duration-200 group text-left outline-none ${pathname === '/dashboard/orchestrator'
-                                ? 'bg-white/10 text-white shadow-[0_0_15px_rgba(28,115,232,0.1)] border border-white/5'
-                                : 'text-slate-300 hover:text-white hover:bg-white/5 border border-transparent'
-                                } ${isCollapsed ? 'justify-center px-0' : 'px-4'}`}
-                        >
-                            <div className={`w-10 h-10 rounded-full overflow-hidden border transition-all shrink-0 ${pathname === '/dashboard/orchestrator'
-                                ? 'border-[#1C73E8]'
-                                : 'border-white/10 group-hover:border-[#1C73E8]'
-                                }`}>
-                                <img
-                                    src={user.avatar}
-                                    alt={user.name}
-                                    className="w-full h-full object-cover"
-                                />
-                            </div>
-
-                            {!isCollapsed && (
-                                <div className="flex flex-col overflow-hidden">
-                                    <span className={`text-sm font-bold truncate transition-colors leading-tight ${pathname === '/dashboard/orchestrator' ? 'text-white' : 'text-slate-300 group-hover:text-white'
-                                        }`}>{user.name}</span>
-                                    <span className="text-xs text-slate-400 truncate leading-tight">{user.companyName}</span>
-
-                                </div>
-                            )}
-                        </button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent
-                        className="w-64 bg-[#111] border-white/10 text-white mb-2 ml-4"
-                        align="start"
-                        side="right"
-                        sideOffset={10}
-                        style={{ zIndex: 99999 }}
+                <div className="relative group">
+                    <Link
+                        href="/dashboard/orchestrator"
+                        className={`w-full flex items-center gap-3 py-3 rounded-lg transition-all duration-200 text-left outline-none ${pathname === '/dashboard/orchestrator'
+                            ? 'bg-white/10 text-white shadow-[0_0_15px_rgba(28,115,232,0.1)] border border-white/5'
+                            : 'text-slate-300 hover:text-white hover:bg-white/5 border border-transparent'
+                            } ${isCollapsed ? 'justify-center px-0' : 'px-4'}`}
                     >
-                        <DropdownMenuLabel className="font-normal p-3">
-                            <div className="flex flex-col space-y-1">
-                                <p className="text-sm font-medium leading-none text-white">{user.name}</p>
-                                <p className="text-xs leading-none text-gray-500">{user.email}</p>
-                                <p className="text-xs leading-none text-gray-500">{user.companyName}</p>
+                        <div className={`w-10 h-10 rounded-full overflow-hidden border transition-all shrink-0 ${pathname === '/dashboard/orchestrator'
+                            ? 'border-[#1C73E8]'
+                            : 'border-white/10 group-hover:border-[#1C73E8]'
+                            }`}>
+                            <img
+                                src={user.avatar}
+                                alt={user.name}
+                                className="w-full h-full object-cover"
+                            />
+                        </div>
+
+                        {!isCollapsed && (
+                            <div className="flex flex-col overflow-hidden">
+                                <span className={`text-sm font-bold truncate transition-colors leading-tight ${pathname === '/dashboard/orchestrator' ? 'text-white' : 'text-slate-300 group-hover:text-white'
+                                    }`}>{user.name}</span>
+                                <span className="text-xs text-slate-400 truncate leading-tight">Orchestrator, Principal</span>
                             </div>
-                        </DropdownMenuLabel>
-                        <DropdownMenuSeparator className="bg-white/10" />
+                        )}
+                    </Link>
+                </div>
 
-                        <DropdownMenuItem asChild className="cursor-pointer focus:bg-white/10 focus:text-white group p-2 rounded-md">
-                            <Link href="/dashboard/orchestrator" className="flex items-center w-full">
-                                <User className="mr-2 h-4 w-4 text-gray-400 group-hover:text-white" />
-                                <span>Profile</span>
-                            </Link>
-                        </DropdownMenuItem>
+                {
+                    agents.filter(a => a.category === 'orchestration').map(agent => (
+                        <AgentLink key={agent.id} agent={agent} pathname={pathname} isCollapsed={isCollapsed} />
+                    ))
+                }
 
-                        <DropdownMenuItem
-                            className="cursor-pointer focus:bg-white/10 focus:text-white group p-2 rounded-md"
-                            onSelect={() => {
-                                setIsPricingOpen(true)
-                            }}
-                        >
-                            <BadgeDollarSign className="mr-2 h-4 w-4 text-gray-400 group-hover:text-white" />
-                            <span>Pricing</span>
-                        </DropdownMenuItem>
-
-                        <DropdownMenuItem className="cursor-pointer focus:bg-white/10 focus:text-white group p-2 rounded-md">
-                            <CreditCard className="mr-2 h-4 w-4 text-gray-400 group-hover:text-white" />
-                            <span>Billing</span>
-                        </DropdownMenuItem>
-
-                        <DropdownMenuItem asChild className="cursor-pointer focus:bg-white/10 focus:text-white group p-2 rounded-md">
-                            <a href={`mailto:${user.name.toLowerCase().replace(' ', '.')}.g4@example.com`} className="w-full flex items-center">
-                                <ArrowUpRight className="mr-2 h-4 w-4 text-gray-400 group-hover:text-white" />
-                                <span>Support</span>
-                            </a>
-                        </DropdownMenuItem>
-
-                        <DropdownMenuSeparator className="bg-white/10" />
-
-                        <DropdownMenuItem asChild className="cursor-pointer focus:bg-white/10 focus:text-white group text-red-400 focus:text-red-400 p-2 rounded-md">
-                            <form action={signout} className="w-full flex items-center">
-                                <button type="submit" className="flex items-center w-full">
-                                    <LogOut className="mr-2 h-4 w-4" />
-                                    <span>Logout</span>
-                                </button>
-                            </form>
-                        </DropdownMenuItem>
-
-                        <DropdownMenuItem className="cursor-pointer focus:bg-white/10 focus:text-white group text-red-500 focus:text-red-500 p-2 rounded-md">
-                            <Ban className="mr-2 h-4 w-4" />
-                            <span>Deactivate account</span>
-                        </DropdownMenuItem>
-                    </DropdownMenuContent>
-                </DropdownMenu>
-
-                {agents.filter(a => a.category === 'orchestration').map(agent => (
-                    <AgentLink key={agent.id} agent={agent} pathname={pathname} isCollapsed={isCollapsed} />
-                ))}
             </div>
 
             {/* STRATEGY */}
@@ -152,9 +92,11 @@ export function SidebarNav({ agents, user }: SidebarNavProps) {
                         Strategy
                     </div>
                 )}
-                {agents.filter(a => a.category === 'strategy').map(agent => (
-                    <AgentLink key={agent.id} agent={agent} pathname={pathname} isCollapsed={isCollapsed} />
-                ))}
+                {
+                    agents.filter(a => a.category === 'strategy').map(agent => (
+                        <AgentLink key={agent.id} agent={agent} pathname={pathname} isCollapsed={isCollapsed} />
+                    ))
+                }
             </div>
 
             {/* EXECUTION */}
@@ -164,9 +106,11 @@ export function SidebarNav({ agents, user }: SidebarNavProps) {
                         Execution
                     </div>
                 )}
-                {agents.filter(a => a.category === 'execution').map(agent => (
-                    <AgentLink key={agent.id} agent={agent} pathname={pathname} isCollapsed={isCollapsed} />
-                ))}
+                {
+                    agents.filter(a => a.category === 'execution').map(agent => (
+                        <AgentLink key={agent.id} agent={agent} pathname={pathname} isCollapsed={isCollapsed} />
+                    ))
+                }
             </div>
 
             {/* THE GOLD MINE */}
@@ -176,9 +120,11 @@ export function SidebarNav({ agents, user }: SidebarNavProps) {
                         The Gold Mine
                     </div>
                 )}
-                {agents.filter(a => a.category === 'the-gold-mine').map(agent => (
-                    <AgentLink key={agent.id} agent={agent} pathname={pathname} isCollapsed={isCollapsed} />
-                ))}
+                {
+                    agents.filter(a => a.category === 'the-gold-mine').map(agent => (
+                        <AgentLink key={agent.id} agent={agent} pathname={pathname} isCollapsed={isCollapsed} />
+                    ))
+                }
             </div>
 
             {/* PROFESSIONAL SERVICES */}

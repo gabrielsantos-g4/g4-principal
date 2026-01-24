@@ -9,7 +9,7 @@ export default function DashboardLayout({
 }) {
     return (
         <DashboardShell>
-            <div className="min-h-screen bg-slate-950">
+            <div className="min-h-screen bg-[#09090b]">
                 <Sidebar />
                 <MainContent>
                     {children}

@@ -90,6 +90,17 @@ export function GabrielExpertiseDialog({ children }: { children: React.ReactNode
                         </div>
                     ))}
                 </div>
+
+                <div className="mt-8 flex justify-end pt-8 border-t border-white/5">
+                    <a
+                        href="https://calendly.com/gabriel_santos/30-min"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="bg-[#1C73E8] text-white px-6 py-3 rounded hover:bg-[#1557b0] transition-colors font-medium text-sm flex items-center gap-2"
+                    >
+                        Schedule Meeting
+                    </a>
+                </div>
             </DialogContent>
         </Dialog>
     )
