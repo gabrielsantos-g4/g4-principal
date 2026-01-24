@@ -92,46 +92,52 @@ export function SidebarNav({ agents, activeAgents, user }: SidebarNavProps) {
             </div>
 
             {/* STRATEGY */}
-            <div className="space-y-2">
-                {!isCollapsed && (
-                    <div className="px-4 text-[10px] font-medium text-slate-500 uppercase tracking-wider">
-                        Strategy
-                    </div>
-                )}
-                {
-                    visibleAgents.filter(a => a.category === 'strategy').map(agent => (
-                        <AgentLink key={agent.id} agent={agent} pathname={pathname} isCollapsed={isCollapsed} />
-                    ))
-                }
-            </div>
+            {visibleAgents.some(a => a.category === 'strategy') && (
+                <div className="space-y-2">
+                    {!isCollapsed && (
+                        <div className="px-4 text-[10px] font-medium text-slate-500 uppercase tracking-wider">
+                            Strategy
+                        </div>
+                    )}
+                    {
+                        visibleAgents.filter(a => a.category === 'strategy').map(agent => (
+                            <AgentLink key={agent.id} agent={agent} pathname={pathname} isCollapsed={isCollapsed} />
+                        ))
+                    }
+                </div>
+            )}
 
             {/* EXECUTION */}
-            <div className="space-y-2">
-                {!isCollapsed && (
-                    <div className="px-4 text-[10px] font-medium text-slate-500 uppercase tracking-wider">
-                        Execution
-                    </div>
-                )}
-                {
-                    visibleAgents.filter(a => a.category === 'execution').map(agent => (
-                        <AgentLink key={agent.id} agent={agent} pathname={pathname} isCollapsed={isCollapsed} />
-                    ))
-                }
-            </div>
+            {visibleAgents.some(a => a.category === 'execution') && (
+                <div className="space-y-2">
+                    {!isCollapsed && (
+                        <div className="px-4 text-[10px] font-medium text-slate-500 uppercase tracking-wider">
+                            Execution
+                        </div>
+                    )}
+                    {
+                        visibleAgents.filter(a => a.category === 'execution').map(agent => (
+                            <AgentLink key={agent.id} agent={agent} pathname={pathname} isCollapsed={isCollapsed} />
+                        ))
+                    }
+                </div>
+            )}
 
             {/* THE GOLD MINE */}
-            <div className="space-y-2">
-                {!isCollapsed && (
-                    <div className="px-4 text-[10px] font-medium text-slate-500 uppercase tracking-wider">
-                        The Gold Mine
-                    </div>
-                )}
-                {
-                    visibleAgents.filter(a => a.category === 'the-gold-mine').map(agent => (
-                        <AgentLink key={agent.id} agent={agent} pathname={pathname} isCollapsed={isCollapsed} />
-                    ))
-                }
-            </div>
+            {visibleAgents.some(a => a.category === 'the-gold-mine') && (
+                <div className="space-y-2">
+                    {!isCollapsed && (
+                        <div className="px-4 text-[10px] font-medium text-slate-500 uppercase tracking-wider">
+                            The Gold Mine
+                        </div>
+                    )}
+                    {
+                        visibleAgents.filter(a => a.category === 'the-gold-mine').map(agent => (
+                            <AgentLink key={agent.id} agent={agent} pathname={pathname} isCollapsed={isCollapsed} />
+                        ))
+                    }
+                </div>
+            )}
 
             {/* PROFESSIONAL SERVICES */}
             <div className="space-y-2">
@@ -163,15 +169,6 @@ export function SidebarNav({ agents, activeAgents, user }: SidebarNavProps) {
                         )}
                     </button>
                 </GabrielExpertiseDialog>
-            </div>
-
-            <div className="px-1 py-1">
-                <AgentsOverviewDialog initialActiveAgents={activeAgents}>
-                    <button className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium text-slate-500 hover:text-white hover:bg-white/5 transition-colors ${isCollapsed ? 'justify-center' : ''}`}>
-                        <Plus size={14} />
-                        {!isCollapsed && "Manage Agents"}
-                    </button>
-                </AgentsOverviewDialog>
             </div>
 
             {/* FOOTER */}

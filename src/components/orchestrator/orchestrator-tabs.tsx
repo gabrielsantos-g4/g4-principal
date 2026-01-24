@@ -4,13 +4,15 @@ import { useState } from "react"
 import { CompanyDNAForm } from "@/components/company-dna-form"
 import { PricingContent } from "@/components/pricing-content"
 import { signout } from '@/app/login/actions'
-import { User, BadgeDollarSign, CreditCard, ArrowUpRight, LogOut, Ban } from "lucide-react"
+import { User, BadgeDollarSign, CreditCard, ArrowUpRight, LogOut, Ban, Plus } from "lucide-react"
+import { AgentsOverviewDialog } from '@/components/dashboard/agents-overview-dialog'
 
 interface OrchestratorTabsProps {
     company: any
+    activeAgents?: string[] | null
 }
 
-export function OrchestratorTabs({ company }: OrchestratorTabsProps) {
+export function OrchestratorTabs({ company, activeAgents }: OrchestratorTabsProps) {
     const [activeTab, setActiveTab] = useState<"profile" | "pricing" | "billing" | "support">("profile")
     // State
     const [currency, setCurrency] = useState<'USD' | 'BRL'>('USD')
@@ -30,6 +32,16 @@ export function OrchestratorTabs({ company }: OrchestratorTabsProps) {
                         <User size={16} />
                         Profile (Context)
                     </button>
+
+                    <AgentsOverviewDialog initialActiveAgents={activeAgents}>
+                        <button
+                            className="flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium text-gray-400 hover:text-white hover:bg-white/5 transition-all outline-none"
+                        >
+                            <Plus size={16} />
+                            Manage Agents
+                        </button>
+                    </AgentsOverviewDialog>
+
                     <button
                         onClick={() => setActiveTab("pricing")}
                         className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${activeTab === "pricing"
@@ -148,6 +160,14 @@ export function OrchestratorTabs({ company }: OrchestratorTabsProps) {
                                 className="bg-[#1C73E8] text-white px-6 py-2 rounded-lg hover:bg-[#1557b0] transition-colors font-medium"
                             >
                                 Email Support
+                            </a>
+                            <a
+                                href="https://calendly.com/gabriel_santos/30-min"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="bg-white/10 text-white px-6 py-2 rounded-lg hover:bg-white/20 transition-colors font-medium border border-white/5"
+                            >
+                                Schedule a call
                             </a>
                         </div>
                     </div>

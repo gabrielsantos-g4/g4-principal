@@ -1,19 +1,20 @@
 'use client'
 
 import { useState } from 'react'
+import * as DialogPrimitive from "@radix-ui/react-dialog"
 import {
     Dialog,
-    DialogContent,
-    DialogHeader,
-    DialogTitle,
     DialogTrigger,
+    DialogTitle,
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
-import { Plus, Check, Search } from 'lucide-react'
+import { Plus, Check, MinusCircle, PlusCircle, X } from 'lucide-react'
 import { Agent, AGENTS } from '@/lib/agents'
 import { updateActiveAgents } from '@/actions/agent-actions'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
+
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 
 interface AgentsOverviewDialogProps {
     children?: React.ReactNode
@@ -28,59 +29,43 @@ export function AgentsOverviewDialog({ children, initialActiveAgents }: AgentsOv
 
     const [open, setOpen] = useState(false)
     const [selectedAgents, setSelectedAgents] = useState<string[]>(defaultSelection)
-    const [saving, setSaving] = useState(false)
-    const [searchQuery, setSearchQuery] = useState('')
 
-    const toggleAgent = (agentId: string) => {
-        setSelectedAgents(prev =>
-            prev.includes(agentId)
-                ? prev.filter(id => id !== agentId)
-                : [...prev, agentId]
-        )
-    }
+    const toggleAgent = async (agentId: string) => {
+        const isSelected = selectedAgents.includes(agentId)
+        const newSelection = isSelected
+            ? selectedAgents.filter(id => id !== agentId)
+            : [...selectedAgents, agentId]
 
-    const handleSave = async () => {
-        setSaving(true)
+        // Optimistic update
+        setSelectedAgents(newSelection)
+
+        // Auto-save
         try {
-            const result = await updateActiveAgents(selectedAgents)
+            const result = await updateActiveAgents(newSelection)
             if (result.error) {
-                toast.error('Failed to update agents')
+                toast.error('Failed to save changes')
+                // Revert to previous state if error
+                setSelectedAgents(selectedAgents)
             } else {
-                toast.success('Agents updated successfully')
-                setOpen(false)
+                toast.success('Team updated successfully')
             }
         } catch (error) {
-            toast.error('An unexpected error occurred')
-        } finally {
-            setSaving(false)
+            toast.error('Failed to save changes')
+            setSelectedAgents(selectedAgents)
         }
     }
 
-    const filteredAgents = AGENTS.filter(agent =>
-        agent.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        agent.role.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        agent.category.toLowerCase().includes(searchQuery.toLowerCase())
-    )
-
     // Group by category for cleaner display
     const groupedAgents: Record<string, Agent[]> = {}
-    filteredAgents.forEach(agent => {
+    AGENTS.forEach(agent => {
         if (!groupedAgents[agent.category]) groupedAgents[agent.category] = []
         groupedAgents[agent.category].push(agent)
     })
 
     const categories = ['orchestration', 'strategy', 'execution', 'the-gold-mine', 'professional-services']
 
-    // Always map 'orchestration' category agents? Or is Orchestrator mandatory?
-    // User implied "ligar e desligar um funcionário". Orchestrator seems like the user themselves / main view.
-    // Usually Orchestrator (Gabriel) is fixed, but let's see. The user requirement is generic.
-    // Let's assume Orchestrator is fixed/always active or just treated like others.
-    // I will treat them all as toggleable EXCEPT maybe the Orchestrator profile link itself? 
-    // The previous sidebar code hardcodes the user profile link at the top. The agent list is below.
-    // So the toggles apply to the `AGENTS` list.
-
     return (
-        <Dialog open={open} onOpenChange={setOpen}>
+        <Dialog open={open} onOpenChange={setOpen} modal={false}>
             <DialogTrigger asChild>
                 {children ?? (
                     <Button variant="ghost" size="sm" className="w-full justify-start text-xs text-slate-500 hover:text-white">
@@ -88,92 +73,122 @@ export function AgentsOverviewDialog({ children, initialActiveAgents }: AgentsOv
                     </Button>
                 )}
             </DialogTrigger>
-            <DialogContent className="w-screen h-screen max-w-none rounded-none border-none bg-[#0c0c0c] p-0 flex flex-col overflow-hidden">
-                <div className="p-8 border-b border-white/10 flex justify-between items-center shrink-0">
-                    <div>
-                        <DialogTitle className="text-2xl font-bold text-white tracking-tight">
-                            Manage Your AI Team
-                        </DialogTitle>
-                        <p className="text-slate-400 mt-2">
-                            Select the agents you want to work with. Active agents will appear in your sidebar.
-                        </p>
-                    </div>
-                    <div className="flex items-center gap-4">
-                        <div className="relative w-64">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-                            <input
-                                placeholder="Search agents..."
-                                className="w-full bg-white/5 border border-white/10 rounded-full py-2 pl-10 pr-4 text-sm text-white focus:outline-none focus:border-[#1C73E8]"
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                            />
+
+            <DialogPrimitive.Portal>
+                <DialogPrimitive.Content
+                    className={cn(
+                        "fixed z-[9999] bg-[#0c0c0c] p-0 flex flex-col overflow-hidden outline-none shadow-2xl",
+                        "top-4 bottom-4 right-4 left-[264px] rounded-2xl border border-white/10",
+                        "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 duration-200"
+                    )}
+                >
+                    <DialogPrimitive.Close className="absolute right-6 top-6 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground z-50">
+                        <X className="h-5 w-5 text-slate-400 hover:text-white" />
+                        <span className="sr-only">Close</span>
+                    </DialogPrimitive.Close>
+
+                    <div className="p-8 border-b border-white/10 shrink-0">
+                        <div>
+                            <DialogTitle className="text-2xl font-bold text-white tracking-tight">
+                                Build your team
+                            </DialogTitle>
+                            <p className="text-slate-400 mt-2">
+                                Activate or deactivate an agent to customize your menu and keep only the agents you want. You can change this at any time.
+                            </p>
                         </div>
-                        <Button
-                            onClick={handleSave}
-                            disabled={saving}
-                            className="bg-[#1C73E8] hover:bg-[#1557b0] text-white rounded-full px-8"
-                        >
-                            {saving ? 'Saving...' : 'Save Changes'}
-                        </Button>
                     </div>
-                </div>
 
-                <div className="flex-1 overflow-y-auto p-8 md:p-12 custom-scrollbar">
-                    <div className="space-y-12 pb-20 max-w-[1920px] mx-auto">
-                        {categories.map(category => {
-                            const categoryAgents = groupedAgents[category]
-                            if (!categoryAgents || categoryAgents.length === 0) return null
+                    <div className="flex-1 overflow-y-auto p-8 md:p-12 custom-scrollbar">
+                        <div className="space-y-12 pb-20 max-w-[1920px] mx-auto">
+                            {categories.map(category => {
+                                const categoryAgents = groupedAgents[category]
+                                if (!categoryAgents || categoryAgents.length === 0) return null
 
-                            return (
-                                <div key={category} className="space-y-6">
-                                    <h3 className="text-sm font-bold text-slate-500 uppercase tracking-widest border-b border-white/5 pb-2">
-                                        {category.replace(/-/g, ' ')}
-                                    </h3>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
-                                        {categoryAgents.map(agent => {
-                                            const isActive = selectedAgents.includes(agent.id)
-                                            return (
-                                                <div
-                                                    key={agent.id}
-                                                    onClick={() => toggleAgent(agent.id)}
-                                                    className={cn(
-                                                        "relative group p-4 rounded-xl border transition-all duration-200 cursor-pointer flex items-center gap-4",
-                                                        isActive
-                                                            ? "bg-white/5 border-[#1C73E8]/50 ring-1 ring-[#1C73E8]/20"
-                                                            : "bg-transparent border-white/10 hover:bg-white/5 hover:border-white/20"
-                                                    )}
-                                                >
-                                                    <div className={cn(
-                                                        "w-12 h-12 rounded-full overflow-hidden border shrink-0 transition-all",
-                                                        isActive ? "border-[#1C73E8]" : "border-white/10"
-                                                    )}>
-                                                        <img src={agent.avatar} alt={agent.name} className="w-full h-full object-cover grayscale-0" />
-                                                    </div>
-                                                    <div className="flex-1 min-w-0">
-                                                        <h4 className={cn("font-bold text-sm truncate", isActive ? "text-white" : "text-slate-300")}>
-                                                            {agent.name}
-                                                        </h4>
-                                                        <p className="text-xs text-slate-500 truncate">{agent.role}</p>
-                                                    </div>
+                                return (
+                                    <div key={category} className="space-y-6">
+                                        <h3 className="text-sm font-bold text-slate-500 uppercase tracking-widest border-b border-white/5 pb-2">
+                                            {category.replace(/-/g, ' ')}
+                                        </h3>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                                            {categoryAgents.map(agent => {
+                                                const isActive = selectedAgents.includes(agent.id)
+                                                return (
+                                                    <TooltipProvider key={agent.id}>
+                                                        <Tooltip delayDuration={200}>
+                                                            <TooltipTrigger asChild>
+                                                                <div
+                                                                    className={cn(
+                                                                        "relative group p-5 rounded-2xl border transition-all duration-200 flex flex-col gap-4",
+                                                                        isActive
+                                                                            ? "bg-white/5 border-[#1C73E8]/50 ring-1 ring-[#1C73E8]/20"
+                                                                            : "bg-transparent border-white/10"
+                                                                    )}
+                                                                >
+                                                                    <div className="flex items-start gap-4">
+                                                                        <div className={cn(
+                                                                            "w-12 h-12 rounded-full overflow-hidden border shrink-0 transition-all",
+                                                                            isActive ? "border-[#1C73E8]" : "border-white/10"
+                                                                        )}>
+                                                                            <img src={agent.avatar} alt={agent.name} className="w-full h-full object-cover grayscale-0" />
+                                                                        </div>
+                                                                        <div className="flex-1 min-w-0 pt-1">
+                                                                            <h4 className={cn("font-bold text-base truncate", isActive ? "text-white" : "text-slate-300")}>
+                                                                                {agent.name}
+                                                                            </h4>
+                                                                            <p className="text-xs text-slate-500 truncate">{agent.role}</p>
+                                                                        </div>
+                                                                    </div>
 
-                                                    <div className={cn(
-                                                        "w-6 h-6 rounded-full border flex items-center justify-center transition-colors",
-                                                        isActive
-                                                            ? "bg-[#1C73E8] border-[#1C73E8] text-white"
-                                                            : "bg-transparent border-slate-600 text-transparent group-hover:border-slate-400"
-                                                    )}>
-                                                        <Check size={14} strokeWidth={3} />
-                                                    </div>
-                                                </div>
-                                            )
-                                        })}
+                                                                    <div className="grid grid-cols-2 gap-3 pt-2">
+                                                                        <button
+                                                                            onClick={(e) => {
+                                                                                e.stopPropagation()
+                                                                                if (!isActive) toggleAgent(agent.id)
+                                                                            }}
+                                                                            className={cn(
+                                                                                "flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-bold transition-all border",
+                                                                                isActive
+                                                                                    ? "bg-[#1C73E8] text-white border-[#1C73E8] shadow-lg shadow-[#1C73E8]/20"
+                                                                                    : "bg-transparent text-slate-600 border-white/5 hover:bg-[#1C73E8] hover:text-white hover:border-[#1C73E8] hover:shadow-lg hover:shadow-[#1C73E8]/20 opacity-60 hover:opacity-100"
+                                                                            )}
+                                                                        >
+                                                                            <PlusCircle size={14} strokeWidth={2.5} />
+                                                                            On Team
+                                                                        </button>
+
+                                                                        <button
+                                                                            onClick={(e) => {
+                                                                                e.stopPropagation()
+                                                                                if (isActive) toggleAgent(agent.id)
+                                                                            }}
+                                                                            className={cn(
+                                                                                "flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-bold transition-all border",
+                                                                                !isActive
+                                                                                    ? "bg-white/10 text-slate-300 border-white/10"
+                                                                                    : "bg-transparent text-slate-600 border-white/5 hover:bg-white/5 hover:text-red-400 hover:border-red-500/20 opacity-60 hover:opacity-100"
+                                                                            )}
+                                                                        >
+                                                                            <MinusCircle size={14} strokeWidth={2.5} />
+                                                                            Step Back
+                                                                        </button>
+                                                                    </div>
+                                                                </div>
+                                                            </TooltipTrigger>
+                                                            <TooltipContent className="bg-[#111] border-white/10 text-white z-[10002]">
+                                                                <p>{agent.description}</p>
+                                                            </TooltipContent>
+                                                        </Tooltip>
+                                                    </TooltipProvider>
+                                                )
+                                            })}
+                                        </div>
                                     </div>
-                                </div>
-                            )
-                        })}
+                                )
+                            })}
+                        </div>
                     </div>
-                </div>
-            </DialogContent>
+                </DialogPrimitive.Content>
+            </DialogPrimitive.Portal>
         </Dialog>
     )
 }

@@ -64,7 +64,7 @@ export default async function AgentPage({ params, searchParams }: AgentPageProps
     // Get company_id (Needed for all agents)
     const { data: profile } = await supabase
         .from('main_profiles')
-        .select('empresa_id')
+        .select('empresa_id, active_agents')
         .eq('id', user?.id)
         .single()
 
@@ -77,7 +77,7 @@ export default async function AgentPage({ params, searchParams }: AgentPageProps
             <div className="h-screen bg-black text-white font-sans flex flex-col overflow-hidden">
                 <DashboardHeader />
                 <div className="flex-1 w-full h-full overflow-y-auto bg-black p-8">
-                    <OrchestratorTabs company={company} />
+                    <OrchestratorTabs company={company} activeAgents={profile?.active_agents || null} />
                 </div>
             </div>
         )

@@ -13,15 +13,6 @@ export async function DashboardHeader() {
             </div>
             <div className="flex items-center gap-6">
                 <div className="flex gap-3 text-xs font-bold tracking-wider items-center">
-                    <a
-                        href="https://calendly.com/gabriel_santos/30-min"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="p-2 border border-white/20 rounded text-gray-400 hover:text-white hover:bg-white/5 transition-colors flex items-center justify-center h-9 w-9"
-                        title="Schedule a meeting"
-                    >
-                        <Calendar size={16} />
-                    </a>
                     <HeaderWorkflows />
                     <HeaderTools />
                 </div>
