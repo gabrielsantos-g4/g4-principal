@@ -18,6 +18,7 @@ export interface CrmSettings {
     responsibles: (string | TagItem)[];
     sources: (string | TagItem)[];
     custom_fields: { name: string; options: (string | TagItem)[] };
+    qualification_questions?: { field: string; criteria: string; }[];
 }
 
 const DEFAULT_SETTINGS: CrmSettings = {
@@ -54,7 +55,8 @@ const DEFAULT_SETTINGS: CrmSettings = {
             { label: "Project B", bg: "bg-slate-800", text: "text-slate-100" },
             { label: "Internal", bg: "bg-slate-800", text: "text-slate-100" }
         ]
-    }
+    },
+    qualification_questions: []
 };
 
 export async function getCrmSettings(): Promise<CrmSettings> {
@@ -84,7 +86,8 @@ export async function getCrmSettings(): Promise<CrmSettings> {
             custom_fields: {
                 ...data.custom_fields,
                 options: migrateTags(data.custom_fields?.options)
-            }
+            },
+            qualification_questions: data.qualification_questions || []
         };
     }
 

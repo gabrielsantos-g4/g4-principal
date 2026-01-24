@@ -1,12 +1,13 @@
 "use client"
 
 import { useState } from "react"
-import { GraduationCap, Waypoints, BarChart3, Database } from "lucide-react"
+import { GraduationCap, Waypoints, BarChart3, Database, ListChecks } from "lucide-react"
 import { KnowledgeBaseUpload } from "./knowledge-base-upload"
 import { TrainingsList } from "./trainings-list"
 import { FineTuneForm } from "./fine-tune-form"
 import { ChannelsConfig } from "./channels-config"
 import { Training } from "@/actions/training-actions"
+import { QualificationParametersForm } from "./qualification-parameters-form"
 
 interface SupportTabsProps {
     trainings: Training[]
@@ -14,7 +15,7 @@ interface SupportTabsProps {
 }
 
 export function SupportTabs({ trainings, companyId }: SupportTabsProps) {
-    const [activeTab, setActiveTab] = useState<"training" | "connectors" | "reports">("training")
+    const [activeTab, setActiveTab] = useState<"training" | "connectors" | "reports" | "parameters">("training")
 
     return (
         <div className="w-full flex flex-col gap-8">
@@ -29,6 +30,16 @@ export function SupportTabs({ trainings, companyId }: SupportTabsProps) {
                 >
                     <GraduationCap size={16} />
                     Trainings
+                </button>
+                <button
+                    onClick={() => setActiveTab("parameters")}
+                    className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-all ${activeTab === "parameters"
+                        ? "bg-[#2a2a2a] text-white shadow-sm"
+                        : "text-gray-400 hover:text-white hover:bg-white/5"
+                        }`}
+                >
+                    <ListChecks size={16} />
+                    Parameters
                 </button>
                 <button
                     onClick={() => setActiveTab("connectors")}
@@ -59,6 +70,12 @@ export function SupportTabs({ trainings, companyId }: SupportTabsProps) {
                         <KnowledgeBaseUpload companyId={companyId} />
                         <TrainingsList trainings={trainings} />
                         <FineTuneForm companyId={companyId} />
+                    </div>
+                )}
+
+                {activeTab === "parameters" && (
+                    <div className="flex flex-col gap-6 max-w-5xl mx-auto">
+                        <QualificationParametersForm />
                     </div>
                 )}
 
