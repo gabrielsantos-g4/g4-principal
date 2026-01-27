@@ -1,6 +1,6 @@
 "use server"
 
-import { createClient } from "@/lib/supabase-client"
+import { createClient } from "@/lib/supabase"
 import { revalidatePath } from "next/cache"
 import { getEmpresaId } from "@/lib/get-empresa-id"
 
@@ -26,7 +26,10 @@ export async function getContactLists() {
     const supabase = await createClient()
     const empresaId = await getEmpresaId()
 
+    console.log('DEBUG: getContactLists called. EmpresaId:', empresaId)
+
     if (!empresaId) {
+        console.log('DEBUG: No empresa_id found for contact lists.')
         return []
     }
 
@@ -41,6 +44,7 @@ export async function getContactLists() {
         return []
     }
 
+    console.log(`DEBUG: Found ${data?.length} contact lists for empresa ${empresaId}`)
     return data as ContactList[]
 }
 

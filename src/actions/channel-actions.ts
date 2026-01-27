@@ -12,6 +12,7 @@ export interface ChannelOption {
     category_id: string
     name: string
     is_custom?: boolean
+    end_date?: string | null
 }
 
 export async function getChannelCategories(): Promise<ChannelCategory[]> {
@@ -59,9 +60,10 @@ export async function getChannels(): Promise<ChannelOption[]> {
     const supabase = await createClient()
 
     try {
-        const { data, error } = await supabase
+        const { data: dbChannels, error } = await supabase
             .from('strategy_channels')
-            .select('*')
+            .select('*, strategy_channel_categories!inner(name)')
+            .neq('strategy_channel_categories.name', 'Campaigns')
             .order('name')
 
         if (error) {
@@ -69,13 +71,21 @@ export async function getChannels(): Promise<ChannelOption[]> {
             return DEFAULT_CHANNELS
         }
 
-        if (!data || data.length === 0) {
-            console.log('No channels found in DB, using defaults')
-            return DEFAULT_CHANNELS
-        }
+        const dbData = dbChannels || []
 
-        console.log('Fetched channels count:', data?.length)
-        return data
+        // Merge defaults with DB data (DB takes precedence if duplicate names exist, though unlikely for custom)
+        // We want to keep all defaults visible + any custom channels user added.
+
+        // Create a map of existing names in DB to avoid duplicates
+        const dbChannelNames = new Set(dbData.map(c => c.name.toLowerCase()))
+
+        const missingDefaults = DEFAULT_CHANNELS.filter(dc => !dbChannelNames.has(dc.name.toLowerCase()))
+
+        // Combine: Defaults (that aren't in DB) + DB Channels
+        const combined = [...missingDefaults, ...dbData].sort((a, b) => a.name.localeCompare(b.name))
+
+        console.log('Fetched channels count (merged):', combined.length)
+        return combined
     } catch (error) {
         console.error('Exception fetching channels:', error)
         return DEFAULT_CHANNELS

@@ -19,9 +19,12 @@ export async function signup(formData: FormData) {
 
     // 1. Create User using Admin Client (Force Creation & Confirm)
     // This bypasses "fake success" states from public signUp and allows immediate login
+    const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL!
+    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
+
     const adminAuthClient = createSupabaseClient(
-        process.env.SUPABASE_URL!,
-        process.env.SUPABASE_SERVICE_ROLE_KEY!,
+        supabaseUrl,
+        supabaseKey,
         {
             auth: {
                 autoRefreshToken: false,
@@ -83,15 +86,20 @@ export async function signup(formData: FormData) {
         return { error: `Falha na configuração do perfil: ${profileError.message}` }
     }
 
-    // 4. Trigger Webhook (Async, non-blocking for user UX but logged)
+    // 4. Trigger Webhook (with 3s timeout to avoid hanging)
     try {
+        const controller = new AbortController()
+        const timeoutId = setTimeout(() => controller.abort(), 3000)
+
         await fetch('https://hook.startg4.com/webhook/6f6a4cea-825a-4da8-b501-104c708bb7b8', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ empresa_id: companyData.id })
+            body: JSON.stringify({ empresa_id: companyData.id }),
+            signal: controller.signal
         })
+        clearTimeout(timeoutId)
     } catch (whError) {
-        console.error('Webhook trigger failed:', whError)
+        console.error('Webhook trigger failed or timed out:', whError)
         // We do not fail the signup because of webhook failure, just log it.
     }
 

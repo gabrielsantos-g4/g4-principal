@@ -172,18 +172,31 @@ export function ChannelsConfig({ companyId, showWebChat = true }: ChannelsConfig
             });
 
             if (response.ok) {
-                const data = await response.json();
+                const text = await response.text();
 
-                // If backend returns QR code directly, update state immediately
-                if (data.status === 'qrcode' && data.qrcode) {
-                    setInstances(prev => prev.map(inst =>
-                        inst.uid === instanceIdentifier
-                            ? { ...inst, status: 'qrcode', qr_code: data.qrcode }
-                            : inst
-                    ));
+                // If response is empty, it means the request was accepted but no immediate data
+                if (!text) {
+                    toast.success("QR Code request sent! Waiting for update...");
+                    return;
                 }
 
-                toast.success("QR Code request sent!");
+                try {
+                    const data = JSON.parse(text);
+
+                    // If backend returns QR code directly, update state immediately
+                    if (data.status === 'qrcode' && data.qrcode) {
+                        setInstances(prev => prev.map(inst =>
+                            inst.uid === instanceIdentifier
+                                ? { ...inst, status: 'qrcode', qr_code: data.qrcode }
+                                : inst
+                        ));
+                    }
+                    toast.success("QR Code request sent!");
+                } catch (e) {
+                    console.error("Failed to parse JSON response:", text);
+                    // It was a 200 OK, so we assume it worked but the response format was unexpected
+                    toast.success("Request sent (Response format warning)");
+                }
             } else {
                 toast.error("Failed to request QR Code.");
             }

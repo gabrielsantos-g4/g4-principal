@@ -25,7 +25,10 @@ export async function getCampaigns() {
     const supabase = await createClient()
     const empresaId = await getEmpresaId()
 
+    console.log('DEBUG: getCampaigns called. EmpresaId:', empresaId)
+
     if (!empresaId) {
+        console.log('DEBUG: No empresa_id found.')
         return []
     }
 
@@ -40,6 +43,7 @@ export async function getCampaigns() {
         return []
     }
 
+    console.log(`DEBUG: Found ${data?.length} campaigns for empresa ${empresaId}`)
     return data as Campaign[]
 }
 

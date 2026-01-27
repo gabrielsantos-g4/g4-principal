@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Agent } from '@/lib/agents'
 import { Card, CardContent } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -38,6 +38,7 @@ interface StrategyCardData {
     link?: string
     responsibleImage?: string | null
     channels?: string[]
+    campaign?: string
 }
 
 const INITIAL_CARDS: StrategyCardData[] = [
@@ -122,7 +123,8 @@ export function StrategyOverviewDashboard({ agent, initialCards = [] }: Strategy
         link: c.link,
         image: c.image_url,
         responsibleImage: c.responsible_image_url,
-        channels: c.channels // Map new column
+        channels: c.channels, // Map new column
+        campaign: c.campaign // Map campaign column
     }))
 
     const [cards, setCards] = useState<StrategyCardData[]>([...dbCards, ...INITIAL_CARDS])
@@ -137,6 +139,7 @@ export function StrategyOverviewDashboard({ agent, initialCards = [] }: Strategy
             link: data.link,
             responsibleImage: data.responsibleImage,
             channels: data.channels,
+            campaign: data.campaign,
         }
         setCards([...cards, newCard])
     }
@@ -151,6 +154,7 @@ export function StrategyOverviewDashboard({ agent, initialCards = [] }: Strategy
             link: data.link,
             responsibleImage: data.responsibleImage,
             channels: data.channels,
+            campaign: data.campaign,
         } : c))
     }
 
@@ -466,92 +470,107 @@ function StrategyCard({ id, title, description, icon, image, placeholderIcon, li
     )
 }
 
+
+import { getCampaigns } from '@/actions/campaign-actions'
+
 function CampaignsView({ cards, onAdd, onUpdate, onDelete }: {
     cards: StrategyCardData[],
     onAdd: (data: NewCardData) => void,
     onUpdate: (data: NewCardData) => void,
     onDelete: (id: string) => void
 }) {
-    const [inputValue, setInputValue] = useState('')
-    const [isSubmitting, setIsSubmitting] = useState(false)
+    const [allCampaigns, setAllCampaigns] = useState<{ label: string, value: string, endDate?: string | null }[]>([])
 
-    const handleQuickAdd = async () => {
-        if (!inputValue.trim()) return
-        setIsSubmitting(true)
-
-        // Default values for Quick Add
-        const defaultStage: FunnelStage = 'ToFu'
-        const defaultChannel: Channel = 'Organic'
-
-        try {
-            const formData = new FormData()
-            formData.append('title', inputValue)
-            formData.append('funnelStage', defaultStage)
-            formData.append('channel', defaultChannel)
-
-            await createInitiative(formData)
-
-            // Optimistic update
-            onAdd({
-                funnelStage: defaultStage,
-                channel: defaultChannel,
-                title: inputValue,
-            })
-            setInputValue('')
-        } catch (error) {
-            console.error(error)
-        } finally {
-            setIsSubmitting(false)
+    // Fetch campaigns on mount
+    useEffect(() => {
+        const loadCampaigns = async () => {
+            const camps = await getCampaigns()
+            setAllCampaigns(camps.map(c => ({ label: c.name, value: c.name, endDate: c.end_date })))
         }
-    }
+        loadCampaigns()
+    }, [])
 
-    const handleKeyDown = (e: React.KeyboardEvent) => {
-        if (e.key === 'Enter') {
-            handleQuickAdd()
-        }
-    }
+    // Grouping Logic
+    // 1. Get all unique campaign names from DB (allCampaigns) + any in use in cards
+    const usedCampaigns = new Set(cards.map(c => c.campaign).filter(Boolean) as string[])
+    const knownCampaigns = new Set(allCampaigns.map(c => c.value))
+
+    // Combine both sets
+    const activeCampaignNames = Array.from(new Set([...knownCampaigns, ...usedCampaigns])).sort()
+
+    const unassignedCards = cards.filter(card => !card.campaign)
 
     return (
         <div className="flex flex-col h-full bg-black/20 rounded-lg border border-white/5 overflow-hidden">
-            {/* Hero Input Section */}
-            <div className="p-12 flex flex-col items-center justify-center border-b border-white/10 bg-gradient-to-b from-white/5 to-transparent">
-                <div className="w-full max-w-2xl flex flex-col gap-4">
-                    <h2 className="text-2xl font-light text-center text-slate-300">Create a New Campaign</h2>
-                    <div className="flex gap-2 relative">
-                        <input
-                            type="text"
-                            placeholder="Type campaign name and press Enter..."
-                            value={inputValue}
-                            onChange={(e) => setInputValue(e.target.value)}
-                            onKeyDown={handleKeyDown}
-                            disabled={isSubmitting}
-                            className="w-full h-14 bg-zinc-900 border border-zinc-800 rounded-lg px-6 text-lg text-white placeholder:text-zinc-600 focus:outline-none focus:border-zinc-700 transition-all shadow-xl"
-                        />
-                        <Button
-                            onClick={handleQuickAdd}
-                            disabled={!inputValue.trim() || isSubmitting}
-                            className="absolute right-2 top-2 h-10 bg-[#1C73E8] hover:bg-[#1560bd] text-white px-6"
-                        >
-                            {isSubmitting ? 'Save' : 'Save'}
-                        </Button>
-                    </div>
-                </div>
-            </div>
 
             {/* Grid List */}
             <div className="flex-1 p-8 overflow-y-auto custom-scrollbar">
-                <div className="flex flex-wrap gap-6 justify-center content-start pb-20">
-                    {cards.length === 0 ? (
-                        <div className="text-slate-600 mt-20 text-center">No campaigns yet. Create one above!</div>
-                    ) : (
-                        cards.map(card => (
-                            <StrategyCard
-                                key={card.id}
-                                {...card}
-                                onUpdate={onUpdate}
-                                onDelete={onDelete}
-                            />
-                        ))
+                <div className="flex flex-col gap-12 max-w-[1600px] mx-auto mb-20">
+
+                    {/* Empty State */}
+                    {activeCampaignNames.length === 0 && unassignedCards.length === 0 && (
+                        <div className="text-slate-600 mt-20 text-center">No campaigns or initiatives found.</div>
+                    )}
+
+                    {/* Render Grouped Campaigns */}
+                    {activeCampaignNames.map(campaignName => {
+                        const campaignCards = cards.filter(card => card.campaign === campaignName)
+                        const campaignData = allCampaigns.find(c => c.value === campaignName)
+
+                        // Show header even if empty? user request implies showing grouped. 
+                        // If we show empty campaigns, it might be nice. 
+
+                        return (
+                            <div key={campaignName} className="flex flex-col gap-4">
+                                <div className="flex items-center gap-4 border-b border-white/10 pb-2">
+                                    <h3 className="text-lg font-medium text-white">{campaignName}</h3>
+                                    {campaignData?.endDate && (
+                                        <span className="text-xs font-mono text-slate-400 bg-white/5 px-2 py-0.5 rounded border border-white/10">
+                                            Ends: {new Date(campaignData.endDate).toLocaleDateString()}
+                                        </span>
+                                    )}
+                                    <span className="text-xs font-mono text-slate-500 bg-white/5 px-2 py-0.5 rounded-full">
+                                        {campaignCards.length}
+                                    </span>
+                                </div>
+                                <div className="flex flex-wrap gap-4">
+                                    {campaignCards.length === 0 ? (
+                                        <div className="text-sm text-slate-600 italic py-2">No initiatives in this campaign yet.</div>
+                                    ) : (
+                                        campaignCards.map(card => (
+                                            <StrategyCard
+                                                key={`${campaignName}-${card.id}`}
+                                                {...card}
+                                                onUpdate={onUpdate}
+                                                onDelete={onDelete}
+                                            />
+                                        ))
+                                    )}
+                                </div>
+                            </div>
+                        )
+                    })}
+
+                    {/* Unassigned Cards */}
+                    {unassignedCards.length > 0 && (
+                        <div className="flex flex-col gap-4 opacity-70 hover:opacity-100 transition-opacity">
+                            <div className="flex items-center gap-4 border-b border-white/10 pb-2">
+                                <h3 className="text-lg font-medium text-slate-400">Unassigned / General</h3>
+                                <span className="text-xs font-mono text-slate-500 bg-white/5 px-2 py-0.5 rounded-full">
+                                    {unassignedCards.length}
+                                </span>
+                            </div>
+                            <div className="flex flex-wrap gap-4">
+                                {unassignedCards.map(card => (
+                                    <StrategyCard
+                                        key={`unassigned-${card.id}`}
+                                        {...card}
+                                        onUpdate={onUpdate}
+                                        onDelete={onDelete}
+                                    />
+                                ))}
+                            </div>
+                        </div>
                     )}
                 </div>
             </div>

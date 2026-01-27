@@ -132,17 +132,21 @@ export function TriggerCampaignDialog({ campaigns, lists, instances }: TriggerCa
                     {step === 1 && (
                         <div className="space-y-4">
                             <div className="space-y-2">
-                                <Label>Template (Campaign)</Label>
+                                <Label>Template (Campaign) - {campaigns.length} available</Label>
                                 <Select value={selectedCampaignId} onValueChange={setSelectedCampaignId}>
                                     <SelectTrigger className="bg-[#0f0f0f] border-white/10 text-white focus:ring-[#1C73E8]">
                                         <SelectValue placeholder="Select a template..." />
                                     </SelectTrigger>
-                                    <SelectContent className="bg-[#1a1a1a] border-white/10 text-white">
-                                        {campaigns.map(camp => (
-                                            <SelectItem key={camp.id} value={camp.id}>
-                                                {camp.name}
-                                            </SelectItem>
-                                        ))}
+                                    <SelectContent className="bg-[#1a1a1a] border-white/10 text-white z-[9999]">
+                                        {campaigns && campaigns.length > 0 ? (
+                                            campaigns.map(camp => (
+                                                <SelectItem key={camp.id} value={camp.id}>
+                                                    {camp.name}
+                                                </SelectItem>
+                                            ))
+                                        ) : (
+                                            <div className="p-2 text-sm text-gray-500 text-center">No templates found</div>
+                                        )}
                                     </SelectContent>
                                 </Select>
                             </div>
@@ -152,12 +156,12 @@ export function TriggerCampaignDialog({ campaigns, lists, instances }: TriggerCa
                     {step === 2 && (
                         <div className="space-y-4">
                             <div className="space-y-2">
-                                <Label>Contact List</Label>
+                                <Label>Contact List - {lists.length} available</Label>
                                 <Select value={selectedListId} onValueChange={setSelectedListId}>
                                     <SelectTrigger className="bg-[#0f0f0f] border-white/10 text-white focus:ring-[#1C73E8]">
                                         <SelectValue placeholder="Select a list..." />
                                     </SelectTrigger>
-                                    <SelectContent className="bg-[#1a1a1a] border-white/10 text-white">
+                                    <SelectContent className="bg-[#1a1a1a] border-white/10 text-white z-[9999]">
                                         {lists.map(list => (
                                             <SelectItem key={list.id} value={list.id}>
                                                 {list.nome || "Unnamed"}

@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { Check, ChevronsUpDown, X } from "lucide-react"
+import { Check, ChevronsUpDown, X, Pencil } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -25,6 +25,7 @@ export interface Option {
     label: string
     value: string
     isCustom?: boolean
+    single?: boolean
 }
 
 interface SearchableMultiSelectProps {
@@ -33,7 +34,9 @@ interface SearchableMultiSelectProps {
     onChange: (value: string[]) => void
     onCreateOption?: (value: string) => Promise<void> | void
     onDeleteOption?: (value: string) => Promise<void> | void
+    onEditOption?: (value: string) => Promise<void> | void
     placeholder?: string
+    single?: boolean
 }
 
 export function SearchableMultiSelect({
@@ -42,7 +45,9 @@ export function SearchableMultiSelect({
     onChange,
     onCreateOption,
     onDeleteOption,
+    onEditOption,
     placeholder = "Select options...",
+    single = false,
 }: SearchableMultiSelectProps) {
     const [open, setOpen] = React.useState(false)
     const [inputValue, setInputValue] = React.useState("")
@@ -56,6 +61,7 @@ export function SearchableMultiSelect({
             await onCreateOption(inputValue.trim())
             // Option should be added to options prop by parent
             setInputValue("")
+            if (single) setOpen(false)
         }
     }
 
@@ -73,41 +79,45 @@ export function SearchableMultiSelect({
                 >
                     <div className="flex flex-wrap gap-1">
                         {value.length > 0 ? (
-                            value.map((item) => {
-                                const option = options.find((o) => o.value === item)
-                                return (
-                                    <Badge
-                                        variant="secondary"
-                                        key={item}
-                                        className="mr-1 mb-1 bg-zinc-800 text-zinc-300 hover:bg-zinc-700 border-zinc-700"
-                                        onClick={(e) => {
-                                            e.stopPropagation()
-                                            handleUnselect(item)
-                                        }}
-                                    >
-                                        {option?.label || item}
-                                        <button
-                                            className="ml-1 ring-offset-background rounded-full outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
-                                            onKeyDown={(e) => {
-                                                if (e.key === "Enter") {
-                                                    handleUnselect(item)
-                                                }
-                                            }}
-                                            onMouseDown={(e) => {
-                                                e.preventDefault()
-                                                e.stopPropagation()
-                                            }}
+                            single ? (
+                                <span className="text-white font-normal">{options.find(o => o.value === value[0])?.label || value[0]}</span>
+                            ) : (
+                                value.map((item) => {
+                                    const option = options.find((o) => o.value === item)
+                                    return (
+                                        <Badge
+                                            variant="secondary"
+                                            key={item}
+                                            className="mr-1 mb-1 bg-zinc-800 text-zinc-300 hover:bg-zinc-700 border-zinc-700"
                                             onClick={(e) => {
-                                                e.preventDefault()
                                                 e.stopPropagation()
                                                 handleUnselect(item)
                                             }}
                                         >
-                                            <X className="h-3 w-3 text-zinc-500 hover:text-zinc-200" />
-                                        </button>
-                                    </Badge>
-                                )
-                            })
+                                            {option?.label || item}
+                                            <button
+                                                className="ml-1 ring-offset-background rounded-full outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                                                onKeyDown={(e) => {
+                                                    if (e.key === "Enter") {
+                                                        handleUnselect(item)
+                                                    }
+                                                }}
+                                                onMouseDown={(e) => {
+                                                    e.preventDefault()
+                                                    e.stopPropagation()
+                                                }}
+                                                onClick={(e) => {
+                                                    e.preventDefault()
+                                                    e.stopPropagation()
+                                                    handleUnselect(item)
+                                                }}
+                                            >
+                                                <X className="h-3 w-3 text-zinc-500 hover:text-zinc-200" />
+                                            </button>
+                                        </Badge>
+                                    )
+                                })
+                            )
                         ) : (
                             <span className="text-muted-foreground font-normal">{placeholder}</span>
                         )}
@@ -131,9 +141,15 @@ export function SearchableMultiSelect({
                                     key={option.value}
                                     value={option.label}
                                     onSelect={() => {
-                                        const newValue = value.includes(option.value)
-                                            ? value.filter((v) => v !== option.value)
-                                            : [...value, option.value]
+                                        let newValue: string[]
+                                        if (single) {
+                                            newValue = [option.value]
+                                            setOpen(false)
+                                        } else {
+                                            newValue = value.includes(option.value)
+                                                ? value.filter((v) => v !== option.value)
+                                                : [...value, option.value]
+                                        }
                                         onChange(newValue)
                                     }}
                                     className="cursor-pointer text-white aria-selected:bg-zinc-800 flex items-center justify-between group"
@@ -148,27 +164,36 @@ export function SearchableMultiSelect({
                                         {option.label}
                                     </div>
 
-                                    {option.isCustom && onDeleteOption && (
-                                        <button
-                                            onClick={(e) => {
-                                                e.stopPropagation()
-                                                // Identify ID? SearchableMultiSelect uses value=name usually in this app
-                                                // If value is ID, we are good. If value is Name, we need ID.
-                                                // Assuming option.value is the ID or the unique key.
-                                                // In AddStrategyCardModal, value IS the Name.
-                                                // So we pass the value (Name) or we need ID in Option?
-                                                // We should extend Option to have `id`?
-                                                // Or rely on specialized lookup.
-                                                // Simplest: pass option.value (which is "Name" in our case) to onDeleteOption,
-                                                // and let parent figure it out? No, parent has list of objects.
-                                                // Parent can lookup ID by Name.
-                                                onDeleteOption(option.value)
-                                            }}
-                                            className="opacity-0 group-hover:opacity-100 p-1 hover:bg-zinc-700 rounded-full transition-all"
-                                            title="Delete custom channel"
-                                        >
-                                            <X className="w-3 h-3 text-zinc-500 hover:text-red-400" />
-                                        </button>
+                                    {option.isCustom && (
+                                        <div className="flex items-center opacity-0 group-hover:opacity-100 transition-all">
+                                            {/* Edit Button */}
+                                            {onEditOption && (
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation()
+                                                        onEditOption(option.value)
+                                                    }}
+                                                    className="p-1 hover:bg-zinc-700 rounded-full mr-1"
+                                                    title="Edit"
+                                                >
+                                                    <Pencil className="w-3 h-3 text-zinc-500 hover:text-blue-400" />
+                                                </button>
+                                            )}
+
+                                            {/* Delete Button */}
+                                            {onDeleteOption && (
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation()
+                                                        onDeleteOption(option.value)
+                                                    }}
+                                                    className="p-1 hover:bg-zinc-700 rounded-full"
+                                                    title="Delete"
+                                                >
+                                                    <X className="w-3 h-3 text-zinc-500 hover:text-red-400" />
+                                                </button>
+                                            )}
+                                        </div>
                                     )}
                                 </CommandItem>
                             ))}
