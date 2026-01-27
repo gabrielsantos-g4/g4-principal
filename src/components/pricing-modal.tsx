@@ -6,14 +6,15 @@ import { PricingContent } from "@/components/pricing-content"
 interface PricingModalProps {
     open: boolean
     onOpenChange: (open: boolean) => void
+    currency?: 'USD' | 'BRL'
 }
 
-export function PricingModal({ open, onOpenChange }: PricingModalProps) {
+export function PricingModal({ open, onOpenChange, currency = 'USD' }: PricingModalProps) {
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-[96vw] bg-[#0A0A0A] border-white/10 text-white p-0 overflow-hidden flex flex-col h-[95vh]">
                 <div className="flex-1 overflow-y-auto custom-scrollbar p-6">
-                    <PricingContent />
+                    <PricingContent currency={currency} />
                 </div>
 
                 <div className="p-4 border-t border-white/10 bg-[#0A0A0A] flex justify-end">

@@ -1,17 +1,29 @@
 'use client'
 
-'use client'
-
 import { useState } from 'react'
 import { Agent } from '@/lib/agents'
 import { Card, CardContent } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Compass, Mail, Plus, UserCircle2, ExternalLink } from 'lucide-react'
+import { Compass, Mail, Plus, UserCircle2, ExternalLink, Pencil, Trash2 } from 'lucide-react'
 import { AddStrategyCardModal, FunnelStage, Channel, NewCardData } from './add-strategy-card-modal'
 import { Button } from "@/components/ui/button"
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
+import { deleteInitiative, createInitiative } from '@/actions/strategy-actions'
+
 
 interface StrategyOverviewDashboardProps {
     agent: Agent
+    initialCards?: any[]
 }
 
 interface StrategyCardData {
@@ -25,6 +37,7 @@ interface StrategyCardData {
     placeholderIcon?: React.ReactNode
     link?: string
     responsibleImage?: string | null
+    channels?: string[]
 }
 
 const INITIAL_CARDS: StrategyCardData[] = [
@@ -99,8 +112,20 @@ const INITIAL_CARDS: StrategyCardData[] = [
     }
 ]
 
-export function StrategyOverviewDashboard({ agent }: StrategyOverviewDashboardProps) {
-    const [cards, setCards] = useState<StrategyCardData[]>(INITIAL_CARDS)
+export function StrategyOverviewDashboard({ agent, initialCards = [] }: StrategyOverviewDashboardProps) {
+    // Merge INITIAL_CARDS with DB cards
+    const dbCards: StrategyCardData[] = initialCards.map(c => ({
+        id: c.id,
+        funnelStage: c.funnel_stage as FunnelStage,
+        channel: c.channel as Channel,
+        title: c.title,
+        link: c.link,
+        image: c.image_url,
+        responsibleImage: c.responsible_image_url,
+        channels: c.channels // Map new column
+    }))
+
+    const [cards, setCards] = useState<StrategyCardData[]>([...dbCards, ...INITIAL_CARDS])
 
     const handleAddCard = (data: NewCardData) => {
         const newCard: StrategyCardData = {
@@ -111,20 +136,63 @@ export function StrategyOverviewDashboard({ agent }: StrategyOverviewDashboardPr
             image: data.image || undefined,
             link: data.link,
             responsibleImage: data.responsibleImage,
+            channels: data.channels,
         }
         setCards([...cards, newCard])
     }
 
+    const handleUpdateCard = (data: NewCardData) => {
+        setCards(cards.map(c => c.id === data.id ? {
+            ...c,
+            funnelStage: data.funnelStage,
+            channel: data.channel,
+            title: data.title,
+            image: data.image || undefined,
+            link: data.link,
+            responsibleImage: data.responsibleImage,
+            channels: data.channels,
+        } : c))
+    }
+
+    const handleRemoveCard = (id: string) => {
+        setCards(cards.filter(c => c.id !== id))
+    }
+
     const renderCell = (stage: FunnelStage, ch: Channel) => {
         const cellCards = cards.filter(c => c.funnelStage === stage && c.channel === ch)
+
         return (
-            <div className="flex flex-wrap content-start gap-4 h-full p-2">
-                {cellCards.map(card => (
-                    <StrategyCard
-                        key={card.id}
-                        {...card}
-                    />
-                ))}
+            <div className="h-full w-full p-4 min-h-[140px] group/cell relative transition-colors duration-300 hover:bg-white/[0.02]">
+                {/* Empty State / Interactive Add Area */}
+                <div className="absolute inset-0 z-0 opacity-0 group-hover/cell:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
+                    <AddStrategyCardModal
+                        initialData={{
+                            funnelStage: stage,
+                            channel: ch,
+                            title: '',
+                        }}
+                        onAdd={handleAddCard}
+                    >
+                        <div className="w-full h-full absolute inset-0 cursor-pointer pointer-events-auto flex items-center justify-center">
+                            <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center border border-white/10 text-white/50 group-hover/cell:bg-blue-600 group-hover/cell:text-white group-hover/cell:border-blue-500 transition-all scale-90 group-hover/cell:scale-100 shadow-sm">
+                                <Plus className="w-4 h-4" />
+                            </div>
+                        </div>
+                    </AddStrategyCardModal>
+                </div>
+
+                {/* Cards Grid */}
+                <div className="relative z-10 flex flex-wrap gap-3 pointer-events-none">
+                    {cellCards.map(card => (
+                        <div key={card.id} className="pointer-events-auto">
+                            <StrategyCard
+                                {...card}
+                                onUpdate={handleUpdateCard}
+                                onDelete={handleRemoveCard}
+                            />
+                        </div>
+                    ))}
+                </div>
             </div>
         )
     }
@@ -140,34 +208,51 @@ export function StrategyOverviewDashboard({ agent }: StrategyOverviewDashboardPr
                             <TabsList className="bg-white/5 border border-white/10">
                                 <TabsTrigger value="funnel">Funnel</TabsTrigger>
                                 <TabsTrigger value="channels">Channels</TabsTrigger>
-                                <TabsTrigger value="influencers">Influencers & Media Publishers</TabsTrigger>
+                                <TabsTrigger value="campaigns">Campaigns</TabsTrigger>
                             </TabsList>
 
+
                             <AddStrategyCardModal onAdd={handleAddCard}>
-                                <Button className="bg-[#1C73E8] hover:bg-[#1560bd] text-white gap-2 font-medium">
-                                    <Plus className="w-4 h-4" /> Insert Initiative
-                                </Button>
+                                <div className="flex items-center gap-4">
+                                    <span className="text-sm text-slate-500 font-mono">{cards.length} Initiatives</span>
+                                    <Button className="w-8 h-8 p-0 rounded-full bg-[#1C73E8] hover:bg-[#1560bd] text-white flex items-center justify-center">
+                                        <Plus className="w-5 h-5" />
+                                    </Button>
+                                </div>
                             </AddStrategyCardModal>
                         </div>
 
+                        <TabsContent value="channels" className="flex-1 flex flex-col mt-0 h-full">
+                            <ChannelsView
+                                cards={cards}
+                                onUpdate={handleUpdateCard}
+                                onDelete={handleRemoveCard}
+                            />
+                        </TabsContent>
+
+
                         <TabsContent value="funnel" className="flex-1 flex flex-col mt-0 data-[state=active]:flex">
                             {/* Header Grid */}
-                            <div className="grid grid-cols-[120px_1fr_1fr_1fr] border-b border-white/20 mb-8 pb-4">
-                                <div className="font-medium text-slate-400">Funnel Level</div>
-
-                                {/* Inbound Group */}
-                                <div className="col-span-2 text-center border-r border-white/10 relative">
-                                    <div className="absolute -top-6 left-0 right-0 text-center text-xs text-slate-500 uppercase tracking-widest">Inbound</div>
-                                    <div className="grid grid-cols-2">
-                                        <div className="text-center font-medium">Organic</div>
-                                        <div className="text-center font-medium">Paid</div>
+                            <div className="border-b border-zinc-800 mb-6 bg-white/5 rounded-t-lg px-6 pt-3 pb-4">
+                                {/* Super Headers */}
+                                <div className="grid grid-cols-[240px_1fr_1fr_1fr] gap-6 mb-1">
+                                    <div></div>
+                                    <div className="col-span-2 text-center text-xs text-slate-400 uppercase tracking-widest relative">
+                                        Inbound
+                                        <div className="absolute bottom-0 left-4 right-4 h-px bg-white/10"></div>
+                                    </div>
+                                    <div className="text-center text-xs text-slate-400 uppercase tracking-widest relative">
+                                        Outbound
+                                        <div className="absolute bottom-0 left-4 right-4 h-px bg-white/10"></div>
                                     </div>
                                 </div>
 
-                                {/* Outbound Group */}
-                                <div className="text-center relative">
-                                    <div className="absolute -top-6 left-0 right-0 text-center text-xs text-slate-500 uppercase tracking-widest">Outbound</div>
-                                    <div className="font-medium">Outreach</div>
+                                {/* Main Headers */}
+                                <div className="grid grid-cols-[240px_1fr_1fr_1fr] gap-6">
+                                    <div className="font-medium text-slate-400 flex items-center justify-center text-center">Funnel Level</div>
+                                    <div className="text-center font-bold text-slate-200">Organic</div>
+                                    <div className="text-center font-bold text-slate-200">Paid</div>
+                                    <div className="text-center font-bold text-slate-200">Outreach</div>
                                 </div>
                             </div>
 
@@ -175,56 +260,53 @@ export function StrategyOverviewDashboard({ agent }: StrategyOverviewDashboardPr
                             <div className="flex-1 grid grid-rows-3 gap-8 overflow-y-auto pr-2 custom-scrollbar">
 
                                 {/* ToFu Row */}
-                                <div className="grid grid-cols-[120px_1fr_1fr_1fr] border-b border-white/10 pb-8 min-h-[160px]">
-                                    <div className="text-right pr-6 pt-4">
-                                        <div className="font-bold text-lg">ToFu</div>
-                                        <div className="text-xs text-slate-500">(Awareness)</div>
+                                <div className="grid grid-cols-[240px_1fr_1fr_1fr] gap-0 border-b border-zinc-800 min-h-[220px]">
+                                    <div className="flex flex-col items-center justify-center text-center border-r border-zinc-800 bg-black/40 p-4">
+                                        <div className="font-bold text-2xl text-white tracking-tight">ToFu</div>
+                                        <div className="text-xs text-slate-500 font-medium uppercase tracking-wider mt-1">(Awareness)</div>
                                     </div>
 
-                                    <div className="border-r border-white/10 h-full">{renderCell('ToFu', 'Organic')}</div>
-                                    <div className="border-r border-white/10 h-full">{renderCell('ToFu', 'Paid')}</div>
+                                    <div className="border-r border-zinc-800 h-full">{renderCell('ToFu', 'Organic')}</div>
+                                    <div className="border-r border-zinc-800 h-full">{renderCell('ToFu', 'Paid')}</div>
                                     <div className="h-full">{renderCell('ToFu', 'Outreach')}</div>
                                 </div>
 
 
                                 {/* MoFu Row */}
-                                <div className="grid grid-cols-[120px_1fr_1fr_1fr] border-b border-white/10 pb-8 min-h-[160px]">
-                                    <div className="text-right pr-6 pt-4">
-                                        <div className="font-bold text-lg">MoFu</div>
-                                        <div className="text-xs text-slate-500">(Nurturing)</div>
+                                <div className="grid grid-cols-[240px_1fr_1fr_1fr] gap-0 border-b border-zinc-800 min-h-[220px] bg-white/[0.01]">
+                                    <div className="flex flex-col items-center justify-center text-center border-r border-zinc-800 bg-black/40 p-4">
+                                        <div className="font-bold text-2xl text-white tracking-tight">MoFu</div>
+                                        <div className="text-xs text-slate-500 font-medium uppercase tracking-wider mt-1">(Nurturing)</div>
                                     </div>
 
-                                    <div className="border-r border-white/10 h-full">{renderCell('MoFu', 'Organic')}</div>
-                                    <div className="border-r border-white/10 h-full">{renderCell('MoFu', 'Paid')}</div>
+                                    <div className="border-r border-zinc-800 h-full">{renderCell('MoFu', 'Organic')}</div>
+                                    <div className="border-r border-zinc-800 h-full">{renderCell('MoFu', 'Paid')}</div>
                                     <div className="h-full">{renderCell('MoFu', 'Outreach')}</div>
                                 </div>
 
 
                                 {/* BoFu Row */}
-                                <div className="grid grid-cols-[120px_1fr_1fr_1fr] min-h-[160px]">
-                                    <div className="text-right pr-6 pt-4">
-                                        <div className="font-bold text-lg">BoFu</div>
-                                        <div className="text-xs text-slate-500">(Conversion)</div>
+                                <div className="grid grid-cols-[240px_1fr_1fr_1fr] gap-0 min-h-[220px]">
+                                    <div className="flex flex-col items-center justify-center text-center border-r border-zinc-800 bg-black/40 p-4">
+                                        <div className="font-bold text-2xl text-white tracking-tight">BoFu</div>
+                                        <div className="text-xs text-slate-500 font-medium uppercase tracking-wider mt-1">(Conversion)</div>
                                     </div>
 
-                                    <div className="border-r border-white/10 h-full">{renderCell('BoFu', 'Organic')}</div>
-                                    <div className="border-r border-white/10 h-full">{renderCell('BoFu', 'Paid')}</div>
+                                    <div className="border-r border-zinc-800 h-full">{renderCell('BoFu', 'Organic')}</div>
+                                    <div className="border-r border-zinc-800 h-full">{renderCell('BoFu', 'Paid')}</div>
                                     <div className="h-full">{renderCell('BoFu', 'Outreach')}</div>
                                 </div>
 
                             </div>
                         </TabsContent>
 
-                        <TabsContent value="channels">
-                            <div className="flex-1 flex items-center justify-center text-slate-500 h-[600px] border border-white/5 rounded-lg border-dashed">
-                                Channels View (Work in Progress)
-                            </div>
-                        </TabsContent>
-
-                        <TabsContent value="influencers">
-                            <div className="flex-1 flex items-center justify-center text-slate-500 h-[600px] border border-white/5 rounded-lg border-dashed">
-                                Influencers & Media Publishers View (Work in Progress)
-                            </div>
+                        <TabsContent value="campaigns" className="flex-1 flex flex-col mt-0 h-full">
+                            <CampaignsView
+                                cards={cards}
+                                onAdd={handleAddCard}
+                                onUpdate={handleUpdateCard}
+                                onDelete={handleRemoveCard}
+                            />
                         </TabsContent>
                     </Tabs>
                 </div>
@@ -233,63 +315,334 @@ export function StrategyOverviewDashboard({ agent }: StrategyOverviewDashboardPr
     )
 }
 
-function StrategyCard({ title, description, icon, image, placeholderIcon, link, responsibleImage }: StrategyCardData) {
+function StrategyCard({ id, title, description, icon, image, placeholderIcon, link, responsibleImage, funnelStage, channel, onUpdate, onDelete }: StrategyCardData & { onUpdate?: (data: NewCardData) => void, onDelete?: (id: string) => void }) {
+    const [isHovered, setIsHovered] = useState(false)
+    const [isDeleting, setIsDeleting] = useState(false)
+
+    const handleDelete = async (e: React.MouseEvent) => {
+        // e.preventDefault() // Not inside link anymore, but good to keep
+        // e.stopPropagation()
+        setIsDeleting(true)
+        try {
+            await deleteInitiative(id)
+            if (onDelete) onDelete(id) // Update UI immediately
+        } catch (error) {
+            console.error('Failed to delete:', error)
+        } finally {
+            setIsDeleting(false)
+        }
+    }
+
     return (
-        <a
-            href={link || '#'}
-            target={link ? '_blank' : undefined}
-            className={`block outline-none ${!link ? 'pointer-events-none' : ''}`}
-        >
-            <Card className="w-32 h-32 bg-white text-black border-0 shadow-lg hover:scale-105 transition-transform cursor-pointer overflow-hidden flex flex-col shrink-0 relative group">
-                <div className="bg-gray-100 py-1.5 px-2 text-center border-b border-gray-200 h-10 flex items-center justify-center">
-                    <h3 className="text-[10px] font-semibold leading-tight text-gray-800 line-clamp-2">{title}</h3>
-                </div>
-                <CardContent className="flex-1 p-2 flex flex-col items-center justify-center relative bg-white min-h-0">
-                    {description ? (
-                        <p className="text-[8px] text-gray-500 text-center leading-relaxed line-clamp-4">
-                            {description}
-                        </p>
-                    ) : (
-                        <>
-                            {icon && !image && (
-                                <div className="mb-0">
-                                    {icon}
-                                </div>
-                            )}
+        <AlertDialog>
+            <div
+                className="flex flex-col gap-2 w-32 relative group"
+                onMouseEnter={() => setIsHovered(true)}
+                onMouseLeave={() => setIsHovered(false)}
+            >
+                <Card className="w-32 h-32 bg-white text-black border-0 shadow-lg transition-transform cursor-pointer overflow-hidden flex flex-col shrink-0 relative p-0 gap-0 rounded-md group-hover:scale-105">
 
-                            {!icon && !image && placeholderIcon && (
-                                <div className="flex items-center justify-center w-full">
-                                    {placeholderIcon}
-                                </div>
-                            )}
-
-                            {/* Image Display */}
-                            {image && (
-                                <img src={image} alt={title} className="w-full h-full object-cover absolute inset-0 py-10" />
-                            )}
-
-                            {/* Fallback if nothing provided */}
-                            {!icon && !image && !description && !placeholderIcon && (
-                                <div className="w-8 h-8 bg-gray-100 rounded-full" />
-                            )}
-                        </>
+                    {/* Link Overlay - Sibling to interactions */}
+                    {link && (
+                        <a
+                            href={link}
+                            target="_blank"
+                            className="absolute inset-0 z-10"
+                            aria-label={`Open ${title}`}
+                        />
                     )}
-                </CardContent>
 
-                {/* Overlays / Decorations */}
-                {responsibleImage && (
-                    <div className="absolute bottom-1 right-1 w-5 h-5 rounded-full border border-white shadow-sm overflow-hidden z-10" title="Person in Charge">
-                        <img src={responsibleImage} alt="Responsible" className="w-full h-full object-cover" />
-                    </div>
-                )}
+                    <CardContent className="flex-1 relative bg-white min-h-0 p-0 w-full h-full pointer-events-none">
+                        {description ? (
+                            <div className="w-full h-full p-2 flex items-center justify-center">
+                                <p className="text-[8px] text-gray-500 text-center leading-relaxed line-clamp-6">
+                                    {description}
+                                </p>
+                            </div>
+                        ) : (
+                            <>
+                                {/* Icons / Placeholders Container */}
+                                {!image && (
+                                    <div className="w-full h-full p-2 flex items-center justify-center">
+                                        {icon && (
+                                            <div className="mb-0">
+                                                {icon}
+                                            </div>
+                                        )}
 
-                {link && (
-                    <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <ExternalLink className="w-3 h-3 text-slate-400" />
+                                        {!icon && placeholderIcon && (
+                                            <div className="flex items-center justify-center w-full">
+                                                {placeholderIcon}
+                                            </div>
+                                        )}
+
+                                        {!icon && !placeholderIcon && (
+                                            <div className="w-8 h-8 bg-gray-100 rounded-full" />
+                                        )}
+                                    </div>
+                                )}
+
+                                {/* Image Display - Full Bleed */}
+                                {image && (
+                                    <img
+                                        src={image}
+                                        alt={title}
+                                        className="w-full h-full object-cover absolute inset-0 z-10"
+                                    />
+                                )}
+                            </>
+                        )}
+                    </CardContent>
+
+                    {/* Overlays / Decorations */}
+                    {responsibleImage && (
+                        <div className="absolute top-1 left-1 w-6 h-6 rounded-full border border-white shadow-sm overflow-hidden z-20 pointer-events-none" title="Person in Charge">
+                            <img src={responsibleImage} alt="Responsible" className="w-full h-full object-cover" />
+                        </div>
+                    )}
+
+                    {link && (
+                        <div className="absolute bottom-1 right-1 opacity-100 transition-opacity z-20 bg-white/80 rounded-full p-1 shadow-sm backdrop-blur-sm group-hover:opacity-0 pointer-events-none">
+                            <ExternalLink className="w-3 h-3 text-slate-600" />
+                        </div>
+                    )}
+
+                    {/* Hover Actions Overlay - Top Right - Z-30 (Above Link) */}
+                    <div className="absolute top-1 right-1 z-30 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1 p-1">
+                        <AddStrategyCardModal
+                            initialData={{
+                                id,
+                                title,
+                                funnelStage,
+                                channel,
+                                link,
+                                image,
+                                responsibleImage,
+                                channels: [channel] // Default to current broad channel if no specific channels
+                            }}
+                            onAdd={(data) => onUpdate && onUpdate(data)}
+                        >
+                            <button
+                                className="w-6 h-6 rounded-full bg-white text-slate-700 flex items-center justify-center hover:bg-slate-100 transition-colors shadow-sm border border-slate-100 cursor-pointer"
+                                title="Edit"
+                            >
+                                <Pencil className="w-3 h-3" />
+                            </button>
+                        </AddStrategyCardModal>
+                        <AlertDialogTrigger asChild>
+                            <button
+                                className="w-6 h-6 rounded-full bg-white text-red-500 flex items-center justify-center hover:bg-red-50 transition-colors shadow-sm border border-slate-100 cursor-pointer"
+                                title="Delete"
+                            >
+                                <Trash2 className="w-3 h-3" />
+                            </button>
+                        </AlertDialogTrigger>
                     </div>
-                )}
-            </Card>
-        </a>
+                </Card>
+
+                {/* Title Outside */}
+                <a href={link || '#'} target={link ? '_blank' : undefined} className={`outline-none ${!link ? 'pointer-events-none' : ''}`}>
+                    <h3 className="text-[10px] font-medium leading-tight text-slate-400 text-center line-clamp-2 px-1 group-hover:text-white transition-colors">
+                        {title}
+                    </h3>
+                </a>
+            </div>
+
+            <AlertDialogContent className="bg-zinc-950 text-white border-zinc-800">
+                <AlertDialogHeader>
+                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                    <AlertDialogDescription className="text-slate-400">
+                        Permanently delete "{title}"? This cannot be undone.
+                    </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter className="gap-4">
+                    <AlertDialogCancel className="bg-transparent border-zinc-800 text-white hover:bg-zinc-900 hover:text-white mt-0">Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleDelete} className="bg-red-600 hover:bg-red-700 text-white" disabled={isDeleting}>
+                        {isDeleting ? 'Deleting...' : 'Delete'}
+                    </AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
     )
 }
 
+function CampaignsView({ cards, onAdd, onUpdate, onDelete }: {
+    cards: StrategyCardData[],
+    onAdd: (data: NewCardData) => void,
+    onUpdate: (data: NewCardData) => void,
+    onDelete: (id: string) => void
+}) {
+    const [inputValue, setInputValue] = useState('')
+    const [isSubmitting, setIsSubmitting] = useState(false)
+
+    const handleQuickAdd = async () => {
+        if (!inputValue.trim()) return
+        setIsSubmitting(true)
+
+        // Default values for Quick Add
+        const defaultStage: FunnelStage = 'ToFu'
+        const defaultChannel: Channel = 'Organic'
+
+        try {
+            const formData = new FormData()
+            formData.append('title', inputValue)
+            formData.append('funnelStage', defaultStage)
+            formData.append('channel', defaultChannel)
+
+            await createInitiative(formData)
+
+            // Optimistic update
+            onAdd({
+                funnelStage: defaultStage,
+                channel: defaultChannel,
+                title: inputValue,
+            })
+            setInputValue('')
+        } catch (error) {
+            console.error(error)
+        } finally {
+            setIsSubmitting(false)
+        }
+    }
+
+    const handleKeyDown = (e: React.KeyboardEvent) => {
+        if (e.key === 'Enter') {
+            handleQuickAdd()
+        }
+    }
+
+    return (
+        <div className="flex flex-col h-full bg-black/20 rounded-lg border border-white/5 overflow-hidden">
+            {/* Hero Input Section */}
+            <div className="p-12 flex flex-col items-center justify-center border-b border-white/10 bg-gradient-to-b from-white/5 to-transparent">
+                <div className="w-full max-w-2xl flex flex-col gap-4">
+                    <h2 className="text-2xl font-light text-center text-slate-300">Create a New Campaign</h2>
+                    <div className="flex gap-2 relative">
+                        <input
+                            type="text"
+                            placeholder="Type campaign name and press Enter..."
+                            value={inputValue}
+                            onChange={(e) => setInputValue(e.target.value)}
+                            onKeyDown={handleKeyDown}
+                            disabled={isSubmitting}
+                            className="w-full h-14 bg-zinc-900 border border-zinc-800 rounded-lg px-6 text-lg text-white placeholder:text-zinc-600 focus:outline-none focus:border-zinc-700 transition-all shadow-xl"
+                        />
+                        <Button
+                            onClick={handleQuickAdd}
+                            disabled={!inputValue.trim() || isSubmitting}
+                            className="absolute right-2 top-2 h-10 bg-[#1C73E8] hover:bg-[#1560bd] text-white px-6"
+                        >
+                            {isSubmitting ? 'Save' : 'Save'}
+                        </Button>
+                    </div>
+                </div>
+            </div>
+
+            {/* Grid List */}
+            <div className="flex-1 p-8 overflow-y-auto custom-scrollbar">
+                <div className="flex flex-wrap gap-6 justify-center content-start pb-20">
+                    {cards.length === 0 ? (
+                        <div className="text-slate-600 mt-20 text-center">No campaigns yet. Create one above!</div>
+                    ) : (
+                        cards.map(card => (
+                            <StrategyCard
+                                key={card.id}
+                                {...card}
+                                onUpdate={onUpdate}
+                                onDelete={onDelete}
+                            />
+                        ))
+                    )}
+                </div>
+            </div>
+        </div>
+    )
+}
+
+
+function ChannelsView({ cards, onUpdate, onDelete }: {
+    cards: StrategyCardData[],
+    onUpdate: (data: NewCardData) => void,
+    onDelete: (id: string) => void
+}) {
+
+    // 1. Identify active channels from cards + unassigned
+    // We want to group by Channel Name
+    const activeChannelNames = Array.from(new Set(
+        cards.flatMap(card => card.channels || [])
+    )).sort()
+
+    const unassignedCards = cards.filter(card => !card.channels || card.channels.length === 0)
+
+    // Calculate total displayed initiatives
+    const totalDisplayed = cards.length
+
+    return (
+        <div className="flex-1 w-full h-full bg-black flex overflow-hidden">
+            {/* MAIN CONTENT */}
+            <div className="flex-1 overflow-y-auto custom-scrollbar bg-black p-8">
+
+
+                <div className="flex flex-col gap-12 max-w-[1600px] mb-20">
+
+                    {/* Empty State */}
+                    {activeChannelNames.length === 0 && unassignedCards.length === 0 && (
+                        <div className="flex flex-col items-center justify-center p-12 border border-dashed border-white/10 rounded-xl">
+                            <Compass className="w-10 h-10 text-slate-600 mb-4" />
+                            <p className="text-slate-500">No channels active yet.</p>
+                        </div>
+                    )}
+
+                    {/* Render Grouped Channels */}
+                    {activeChannelNames.map(channelName => {
+                        const channelCards = cards.filter(card => card.channels?.includes(channelName))
+                        if (channelCards.length === 0) return null
+
+                        return (
+                            <div key={channelName} className="flex flex-col gap-4">
+                                <div className="flex items-center gap-4 border-b border-white/10 pb-2">
+                                    <h3 className="text-lg font-medium text-white">{channelName}</h3>
+                                    <span className="text-xs font-mono text-slate-500 bg-white/5 px-2 py-0.5 rounded-full">
+                                        {channelCards.length}
+                                    </span>
+                                </div>
+                                <div className="flex flex-wrap gap-4">
+                                    {channelCards.map(card => (
+                                        <StrategyCard
+                                            key={`${channelName}-${card.id}`}
+                                            {...card}
+                                            onUpdate={onUpdate}
+                                            onDelete={onDelete}
+                                        />
+                                    ))}
+                                </div>
+                            </div>
+                        )
+                    })}
+
+                    {/* Unassigned Cards */}
+                    {unassignedCards.length > 0 && (
+                        <div className="flex flex-col gap-4 opacity-70 hover:opacity-100 transition-opacity">
+                            <div className="flex items-center gap-4 border-b border-white/10 pb-2">
+                                <h3 className="text-lg font-medium text-slate-400">Unassigned / General</h3>
+                                <span className="text-xs font-mono text-slate-500 bg-white/5 px-2 py-0.5 rounded-full">
+                                    {unassignedCards.length}
+                                </span>
+                            </div>
+                            <div className="flex flex-wrap gap-4">
+                                {unassignedCards.map(card => (
+                                    <StrategyCard
+                                        key={`unassigned-${card.id}`}
+                                        {...card}
+                                        onUpdate={onUpdate}
+                                        onDelete={onDelete}
+                                    />
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                </div>
+            </div>
+        </div>
+    )
+}

@@ -28,6 +28,7 @@ import { CompetitorForm } from '@/components/competitors/competitor-form'
 import { getCompetitors, getCompetitor } from '@/actions/competitor-actions'
 import { getTrainings } from '@/actions/training-actions'
 import { getDesignRequests } from '@/actions/design-actions'
+import { getInitiatives } from '@/actions/strategy-actions'
 import { BiDashboard } from '@/components/bi/bi-dashboard'
 
 import { MobileDashboardLayout } from '@/components/mobile-dashboard-layout'
@@ -355,6 +356,8 @@ export default async function AgentPage({ params, searchParams }: AgentPageProps
     }
 
     if (slug === 'strategy-overview') {
+        const initiatives = await getInitiatives()
+
         return (
             <div className="h-screen bg-black text-white font-sans flex flex-col overflow-hidden">
                 <DashboardHeader />
@@ -375,7 +378,7 @@ export default async function AgentPage({ params, searchParams }: AgentPageProps
                         />
                     }
                 >
-                    <StrategyOverviewDashboard agent={agent} />
+                    <StrategyOverviewDashboard agent={agent} initialCards={initiatives} />
                 </MobileDashboardLayout>
             </div>
         )

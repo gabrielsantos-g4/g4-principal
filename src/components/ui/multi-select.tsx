@@ -19,6 +19,7 @@ export function MultiSelect({ options, value, onChange, placeholder = 'Select...
     const [isOpen, setIsOpen] = useState(false)
     const [position, setPosition] = useState({ top: 0, left: 0, width: 0 })
     const containerRef = useRef<HTMLDivElement>(null)
+    const dropdownRef = useRef<HTMLDivElement>(null)
 
     // Ensure value is always an array
     const safeValue = value || []
@@ -26,32 +27,41 @@ export function MultiSelect({ options, value, onChange, placeholder = 'Select...
     // Calculate position for the dropdown
     useEffect(() => {
         if (isOpen && containerRef.current) {
-            const rect = containerRef.current.getBoundingClientRect()
-            setPosition({
-                top: rect.bottom + window.scrollY + 4, // 4px gap
-                left: rect.left + window.scrollX,
-                width: rect.width
-            })
+            const updatePosition = () => {
+                const rect = containerRef.current!.getBoundingClientRect()
+                setPosition({
+                    top: rect.bottom + window.scrollY + 4, // 4px gap
+                    left: rect.left + window.scrollX,
+                    width: rect.width
+                })
+            }
+            updatePosition()
+            window.addEventListener('resize', updatePosition)
+            return () => window.removeEventListener('resize', updatePosition)
         }
     }, [isOpen])
 
     // Close on click outside
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
-            if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
-                // Check if click was inside the portal dropdown
-                const dropdown = document.getElementById('multiselect-dropdown')
-                if (dropdown && !dropdown.contains(event.target as Node)) {
-                    setIsOpen(false)
-                }
+            // If click is inside container (trigger) or inside dropdown (portal), ignore
+            if (
+                containerRef.current?.contains(event.target as Node) ||
+                dropdownRef.current?.contains(event.target as Node)
+            ) {
+                return
             }
+            setIsOpen(false)
         }
 
-        document.addEventListener('mousedown', handleClickOutside)
+        if (isOpen) {
+            document.addEventListener('mousedown', handleClickOutside)
+        }
         return () => document.removeEventListener('mousedown', handleClickOutside)
-    }, [])
+    }, [isOpen])
 
-    const toggleOption = (optionValue: string) => {
+    const toggleOption = (e: React.MouseEvent, optionValue: string) => {
+        e.stopPropagation() // Prevent bubbling
         const newValue = safeValue.includes(optionValue)
             ? safeValue.filter(v => v !== optionValue)
             : [...safeValue, optionValue]
@@ -83,7 +93,7 @@ export function MultiSelect({ options, value, onChange, placeholder = 'Select...
 
             {isOpen && createPortal(
                 <div
-                    id="multiselect-dropdown"
+                    ref={dropdownRef}
                     style={{
                         position: 'absolute',
                         top: position.top,
@@ -92,11 +102,12 @@ export function MultiSelect({ options, value, onChange, placeholder = 'Select...
                         zIndex: 9999
                     }}
                     className="bg-[#1A1A1A] border border-white/10 rounded-lg shadow-xl max-h-60 overflow-y-auto"
+                    onMouseDown={(e) => e.stopPropagation()} // Prevent closing when clicking scrollbar or empty space
                 >
                     {options.map((option) => (
                         <div
                             key={option.value}
-                            onClick={() => toggleOption(option.value)}
+                            onClick={(e) => toggleOption(e, option.value)}
                             className={`px-3 py-2 text-sm cursor-pointer flex items-center gap-2 hover:bg-white/5 transition-colors ${safeValue.includes(option.value) ? 'text-white bg-white/5' : 'text-gray-300'
                                 }`}
                         >

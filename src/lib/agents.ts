@@ -6,7 +6,7 @@ export interface Agent {
     printUrl?: string
     slug: string
     externalUrl?: string
-    category: 'orchestration' | 'strategy' | 'execution' | 'the-gold-mine'
+    category: 'orchestration' | 'strategy' | 'execution' | 'the-gold-mine' | 'professional-services'
     description: string
     keywords?: string[]
 }
@@ -219,4 +219,20 @@ export const AGENTS: Agent[] = [
         description: 'I manage your pipeline and deal flow.',
         keywords: ['vendas', 'pipeline', 'funil', 'negocios', 'fechamento']
     },
+    // PROFESSIONAL SERVICES
+    {
+        id: 'professional-gabriel',
+        name: 'Gabriel Santos',
+        role: 'Fractional CMO',
+        slug: 'professional-services',
+        category: 'professional-services',
+        // Using a placeholder or potentially the user's avatar dynamically in the UI, but here we need a string.
+        // We'll use a generic transparent one or a placeholder, as the Sidebar uses the user's avatar.
+        // Ideally we should use the same image as the user profile if possible, or a specific one for Gabriel.
+        // Given the sidebar uses `user.avatar`, let's use a similar placeholder or the same one if static.
+        avatar: 'https://i.pinimg.com/736x/5f/40/6a/5f406ab25e8942cbe0da6485afd26b71.jpg',
+        externalUrl: '#',
+        description: 'Fractional Full-Stack Marketer and Sales Dev.',
+        keywords: ['consultoria', 'ajuda', 'suporte', 'gabriel']
+    }
 ]

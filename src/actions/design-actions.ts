@@ -160,7 +160,7 @@ export async function getDesignRequests() {
     return data
 }
 
-export async function updateDesignRequest(id: string, updates: { status?: string; delivery_link?: string; notes?: string }) {
+export async function updateDesignRequest(id: string, updates: Partial<DesignRequest>) {
     const supabase = await createClient()
 
     const { data: { user } } = await supabase.auth.getUser()

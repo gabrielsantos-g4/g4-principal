@@ -140,36 +140,38 @@ export function SidebarNav({ agents, activeAgents, user }: SidebarNavProps) {
             )}
 
             {/* PROFESSIONAL SERVICES */}
-            <div className="space-y-2">
-                {!isCollapsed && (
-                    <div className="px-4 text-[10px] font-medium text-slate-500 uppercase tracking-wider">
-                        Professional Services
-                    </div>
-                )}
-
-                <GabrielExpertiseDialog>
-                    <button className={`w-full flex items-center gap-3 px-4 py-2 rounded-lg transition-all duration-200 group text-left ${isCollapsed ? 'justify-center px-2' : ''} hover:bg-slate-800`}>
-                        <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0 border border-white/10 group-hover:border-white/30 transition-all">
-                            <img
-                                src={user.avatar}
-                                alt={user.name}
-                                className="w-full h-full object-cover"
-                            />
+            {visibleAgents.some(a => a.id === 'professional-gabriel') && (
+                <div className="space-y-2">
+                    {!isCollapsed && (
+                        <div className="px-4 text-[10px] font-medium text-slate-500 uppercase tracking-wider">
+                            Professional Services
                         </div>
+                    )}
 
-                        {!isCollapsed && (
-                            <div className="flex flex-col overflow-hidden">
-                                <span className="truncate text-sm font-medium text-slate-200 group-hover:text-white transition-colors">
-                                    Gabriel Santos
-                                </span>
-                                <span className="text-xs text-slate-500 group-hover:text-slate-400 transition-colors whitespace-normal leading-tight">
-                                    Fractional Full-Stack Marketer and Sales Dev
-                                </span>
+                    <GabrielExpertiseDialog>
+                        <button className={`w-full flex items-center gap-3 px-4 py-2 rounded-lg transition-all duration-200 group text-left ${isCollapsed ? 'justify-center px-2' : ''} hover:bg-slate-800`}>
+                            <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0 border border-white/10 group-hover:border-white/30 transition-all">
+                                <img
+                                    src={user.avatar}
+                                    alt={user.name}
+                                    className="w-full h-full object-cover"
+                                />
                             </div>
-                        )}
-                    </button>
-                </GabrielExpertiseDialog>
-            </div>
+
+                            {!isCollapsed && (
+                                <div className="flex flex-col overflow-hidden">
+                                    <span className="truncate text-sm font-medium text-slate-200 group-hover:text-white transition-colors">
+                                        Gabriel Santos
+                                    </span>
+                                    <span className="text-xs text-slate-500 group-hover:text-slate-400 transition-colors whitespace-normal leading-tight">
+                                        Fractional Full-Stack Marketer and Sales Dev
+                                    </span>
+                                </div>
+                            )}
+                        </button>
+                    </GabrielExpertiseDialog>
+                </div>
+            )}
 
             {/* FOOTER */}
             <div className="pt-4 mt-2 border-t border-white/5 px-2 pb-8">
