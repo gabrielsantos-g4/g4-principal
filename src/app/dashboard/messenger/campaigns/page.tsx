@@ -1,9 +1,10 @@
 import { getCampaigns } from "@/actions/messenger/campaigns-actions"
 import { getContactLists } from "@/actions/messenger/contacts-actions"
-import { getInstances } from "@/actions/messenger/instances-actions"
+import { getWhatsAppInstances } from "@/actions/whatsapp-actions"
 import { CampaignDialog } from "@/components/messenger/campaigns/campaign-dialog"
 import { TriggerCampaignDialog } from "@/components/messenger/campaigns/trigger-campaign-dialog"
 import { DeleteCampaignDialog } from "@/components/messenger/campaigns/delete-campaign-dialog"
+import { getEmpresaId } from "@/lib/get-empresa-id"
 import {
     Table,
     TableBody,
@@ -21,7 +22,8 @@ import { ptBR } from "date-fns/locale"
 export default async function CampaignsPage() {
     const campaigns = await getCampaigns()
     const lists = await getContactLists()
-    const instances = await getInstances()
+    const empresaId = await getEmpresaId()
+    const instances = empresaId ? await getWhatsAppInstances(empresaId) : []
 
     const getIcon = (type: string) => {
         switch (type) {

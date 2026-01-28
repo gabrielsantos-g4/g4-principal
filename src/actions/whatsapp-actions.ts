@@ -9,6 +9,7 @@ export type WhatsAppInstance = {
     qr_code: string | null;
     avatar: string | null;
     nome: string;
+    auto_response: boolean | null;
 };
 
 import { revalidatePath } from "next/cache";
@@ -91,5 +92,23 @@ export async function deleteWhatsAppInstance(uid: string, companyId: string) {
 
     revalidatePath('/dashboard/messenger/instances');
     revalidatePath('/dashboard/customer-support');
+    return { success: true };
+}
+
+export async function updateWhatsAppInstanceAutoResponse(uid: string, autoResponse: boolean, companyId: string) {
+    const supabase = await createClient();
+
+    const { error } = await supabase
+        .from('instance_wa_chaterly')
+        .update({ auto_response: autoResponse })
+        .match({ uid, empresa: companyId });
+
+    if (error) {
+        console.error('Error updating instance auto_response:', error);
+        return { error: 'Erro ao atualizar Auto Response.' };
+    }
+
+    revalidatePath('/dashboard/messenger/instances');
+    revalidatePath('/dashboard/customer-support'); // Just in case it's used there
     return { success: true };
 }

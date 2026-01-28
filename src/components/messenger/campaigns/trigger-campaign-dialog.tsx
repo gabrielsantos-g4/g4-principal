@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import {
     Dialog,
@@ -20,10 +20,11 @@ import {
 } from "@/components/ui/select"
 import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Loader2, Rocket, ArrowRight, ArrowLeft } from "lucide-react"
+import { Loader2, Rocket, ArrowRight, ArrowLeft, Smartphone, Check } from "lucide-react"
 import { toast } from "sonner"
 import { Campaign, triggerCampaign } from "@/actions/messenger/campaigns-actions"
 import { ContactList } from "@/actions/messenger/contacts-actions"
+import { SearchableMultiSelect } from "@/components/ui/searchable-multi-select"
 // We will just pass pre-fetched count or use simple length for now for list count as an optimization or separate action
 // For now, let's assume we can pass the list count or fetch it if needed. 
 // Simpler approach: Pass full objects.
@@ -39,13 +40,28 @@ export function TriggerCampaignDialog({ campaigns, lists, instances }: TriggerCa
     const [step, setStep] = useState(1)
 
     const [selectedCampaignId, setSelectedCampaignId] = useState<string>("")
-    const [selectedInstanceId, setSelectedInstanceId] = useState<string>("")
+    // selectedInstanceId will now strictly hold a single ID string for single mode logic convenience
+    // But for multi-select component we might need an array state.
+    // Let's use a new state for the multi-select value array to support both modes seamlessly.
+    const [selectedInstanceIds, setSelectedInstanceIds] = useState<string[]>([])
+
+    // We keep selectedInstanceId for backward compatibility mostly, or just use selectedInstanceIds[0]
+    const selectedInstanceId = selectedInstanceIds[0] || ""
+
     const [rotateInstances, setRotateInstances] = useState(false)
     const [selectedListId, setSelectedListId] = useState<string>("")
     const [isSending, setIsSending] = useState(false)
 
+
     // Filter only WORKING instances
-    const activeInstances = instances.filter(i => i.status === 'WORKING')
+    const activeInstances = instances.filter(i => {
+        // Standardize status check
+        const status = i.status?.toLowerCase()?.trim()
+        return status === 'working' || status === 'online'
+    })
+
+    // Auto-select removed for debugging
+    console.log('DEBUG: Step 3 activeInstances:', activeInstances)
 
     // Reset state when opening
     const handleOpenChange = (newOpen: boolean) => {
@@ -55,7 +71,7 @@ export function TriggerCampaignDialog({ campaigns, lists, instances }: TriggerCa
             setTimeout(() => {
                 setStep(1)
                 setSelectedCampaignId("")
-                setSelectedInstanceId("")
+                setSelectedInstanceIds([])
                 setRotateInstances(false)
                 setSelectedListId("")
             }, 300)
@@ -70,7 +86,7 @@ export function TriggerCampaignDialog({ campaigns, lists, instances }: TriggerCa
         } else if (step === 3) {
             if (rotateInstances && activeInstances.length > 1) {
                 setStep(4)
-            } else if (selectedInstanceId) {
+            } else if (selectedInstanceIds.length > 0) {
                 setStep(4)
             }
         }
@@ -85,9 +101,7 @@ export function TriggerCampaignDialog({ campaigns, lists, instances }: TriggerCa
     const handleSend = async () => {
         setIsSending(true)
         try {
-            const instanceIds = rotateInstances
-                ? activeInstances.map(i => i.id)
-                : [selectedInstanceId]
+            const instanceIds = selectedInstanceIds
 
             const result = await triggerCampaign(selectedCampaignId, instanceIds, selectedListId, rotateInstances)
 
@@ -107,7 +121,7 @@ export function TriggerCampaignDialog({ campaigns, lists, instances }: TriggerCa
 
     const selectedCampaign = campaigns.find(c => c.id === selectedCampaignId)
     const selectedList = lists.find(l => l.id === selectedListId)
-    const selectedInstance = instances.find(i => i.id === selectedInstanceId)
+    const selectedInstance = instances.find(i => i.uid === selectedInstanceId)
 
     return (
         <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -178,31 +192,58 @@ export function TriggerCampaignDialog({ campaigns, lists, instances }: TriggerCa
                             <div className="space-y-2">
                                 <Label>Instance (Whatsapp)</Label>
 
-                                {!rotateInstances && (
-                                    <Select value={selectedInstanceId} onValueChange={setSelectedInstanceId}>
-                                        <SelectTrigger className="bg-[#0f0f0f] border-white/10 text-white focus:ring-[#1C73E8]">
-                                            <SelectValue placeholder="Select instance..." />
-                                        </SelectTrigger>
-                                        <SelectContent className="bg-[#1a1a1a] border-white/10 text-white">
-                                            {activeInstances.length === 0 ? (
-                                                <div className="p-2 text-sm text-gray-400 text-center">No active instance</div>
-                                            ) : activeInstances.map(inst => (
-                                                <SelectItem key={inst.id} value={inst.id}>
-                                                    {inst.name.split('_')[0]}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
+                                {!rotateInstances ? (
+                                    <div className="space-y-4">
+                                        <SearchableMultiSelect
+                                            options={activeInstances.map(i => ({
+                                                label: i.nome?.split('_')[0] || "Sem Nome",
+                                                value: i.uid
+                                            }))}
+                                            value={selectedInstanceIds}
+                                            onChange={setSelectedInstanceIds}
+                                            placeholder="Select instance..."
+                                            single={true}
+                                        />
+                                    </div>
+                                ) : (
+                                    <div className="space-y-4">
+                                        <p className="text-xs text-gray-400 mb-2">
+                                            Select instances to rotate (leave empty to use all {activeInstances.length} active instances)
+                                        </p>
+                                        <SearchableMultiSelect
+                                            options={activeInstances.map(i => ({
+                                                label: i.nome?.split('_')[0] || "Sem Nome",
+                                                value: i.uid
+                                            }))}
+                                            value={selectedInstanceIds}
+                                            onChange={setSelectedInstanceIds}
+                                            placeholder="Select instances to rotate..."
+                                            single={false}
+                                        />
+                                    </div>
+                                )}
+
+                                {activeInstances.length === 0 && (
+                                    <p className="text-xs text-red-400 mt-2">You need an instance with WORKING status.</p>
                                 )}
 
                                 {activeInstances.length > 1 && (
-                                    <div className="flex items-center space-x-2 pt-2">
+                                    <div className="flex items-center space-x-2 pt-4">
                                         <Checkbox
                                             id="rotate-instances"
                                             checked={rotateInstances}
                                             onCheckedChange={(checked: boolean) => {
                                                 setRotateInstances(checked)
-                                                if (checked) setSelectedInstanceId("")
+                                                // When enabling rotate, default to all active if selection is empty? 
+                                                // Or kept as is.
+                                                if (checked && selectedInstanceIds.length === 0) {
+                                                    // Optional: pre-select all? 
+                                                    // setSelectedInstanceIds(activeInstances.map(i => i.uid))
+                                                }
+                                                // If disabling rotate, keep first selection or clear?
+                                                if (!checked && selectedInstanceIds.length > 1) {
+                                                    setSelectedInstanceIds([selectedInstanceIds[0]])
+                                                }
                                             }}
                                             className="border-white/20 data-[state=checked]:bg-[#1C73E8]"
                                         />
@@ -210,20 +251,11 @@ export function TriggerCampaignDialog({ campaigns, lists, instances }: TriggerCa
                                             htmlFor="rotate-instances"
                                             className="text-sm font-medium leading-none text-gray-300 peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
                                         >
-                                            Rotate instances (Round-robin)
+                                            Rotate between selected instances
                                         </label>
                                     </div>
                                 )}
 
-                                {rotateInstances && (
-                                    <p className="text-xs text-gray-500 mt-1">
-                                        The {activeInstances.length} active instances will be used for sending in round-robin mode.
-                                    </p>
-                                )}
-
-                                {activeInstances.length === 0 && (
-                                    <p className="text-xs text-red-400">You need an instance with WORKING status to send.</p>
-                                )}
                             </div>
                         </div>
                     )}
@@ -237,12 +269,12 @@ export function TriggerCampaignDialog({ campaigns, lists, instances }: TriggerCa
                                         <span className="font-semibold block mb-1">Rotating between:</span>
                                         <ul className="list-disc list-inside text-xs text-gray-400">
                                             {activeInstances.map(inst => (
-                                                <li key={inst.id}>{inst.name.split('_')[0]}</li>
+                                                <li key={inst.uid}>{inst.nome?.split('_')[0]}</li>
                                             ))}
                                         </ul>
                                     </div>
                                 ) : (
-                                    <span className="col-span-2 font-semibold text-white">{selectedInstance?.name.split('_')[0]}</span>
+                                    <span className="col-span-2 font-semibold text-white">{selectedInstanceIds.map(id => instances.find(i => i.uid === id)?.nome?.split('_')[0]).join(', ')}</span>
                                 )}
 
                                 <span className="font-medium text-gray-400">Template:</span>
@@ -283,7 +315,7 @@ export function TriggerCampaignDialog({ campaigns, lists, instances }: TriggerCa
                             disabled={
                                 (step === 1 && !selectedCampaignId) ||
                                 (step === 2 && !selectedListId) ||
-                                (step === 3 && ((!selectedInstanceId && !rotateInstances) || activeInstances.length === 0))
+                                (step === 3 && ((selectedInstanceIds.length === 0 && !rotateInstances) || (rotateInstances && selectedInstanceIds.length === 0 && activeInstances.length === 0))) // Allow empty rotate if fallback to all active? No, let's enforce selection if rotate is custom. Or fallback to all if empty. Let's strictly require selection for clarity now.
                             }
                         >
                             Next

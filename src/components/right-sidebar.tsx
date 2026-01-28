@@ -241,7 +241,62 @@ export function RightSidebar({ agent, userId, companyId, userName = 'there', ini
                     content: "Sorry, I encountered an error while processing your request. Please try again later."
                 }])
             }
-        } else {
+        }
+
+        // CRM Logic (Emily Webhook API)
+        else if (agent?.slug === 'crm') {
+            try {
+                // Send POST to Emily's specific hook
+                const response = await fetch('https://hook.startg4.com/webhook/8dca6858-985e-41ff-b366-5913f9532553', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        agente_name: "Emily",
+                        empresa_id: companyId,
+                        text: text
+                    })
+                })
+
+                if (!response.ok) {
+                    throw new Error('Failed to send webhook')
+                }
+
+                const data = await response.json()
+                const aiMsg = Array.isArray(data) && data[0]?.output
+                    ? data[0].output
+                    : (data.output || "Understood. I'm processing your request.");
+
+                setMessages(prev => [...prev, {
+                    id: Date.now().toString() + '-ai',
+                    role: 'assistant',
+                    content: aiMsg
+                }])
+
+                setIsTyping(false)
+
+                // Persist Agent Message
+                if (companyId && userId && agent?.name) {
+                    saveChatMessage({
+                        empresa_id: companyId,
+                        user_id: userId,
+                        agent_name: agent.name,
+                        message: aiMsg,
+                        sender: 'AGENT'
+                    })
+                }
+
+            } catch (error) {
+                console.error('Emily Webhook Error:', error)
+                setIsTyping(false)
+                setMessages(prev => [...prev, {
+                    id: Date.now().toString(),
+                    role: 'assistant',
+                    content: "Sorry, I encountered an error while processing your request. Please try again later."
+                }])
+            }
+        }
+
+        else {
             // Default echo for others if needed, or nothing
             setIsTyping(false)
         }

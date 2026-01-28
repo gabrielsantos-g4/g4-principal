@@ -4,8 +4,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Copy, ExternalLink, QrCode, Loader2, Save, Plus, Smartphone, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
-import { getWhatsAppInstances, createWhatsAppInstance, deleteWhatsAppInstance, WhatsAppInstance } from "@/actions/whatsapp-actions";
 import { getCompanySettings, updateAgentName } from "@/actions/settings-actions";
+import {
+    getWhatsAppInstances,
+    createWhatsAppInstance,
+    deleteWhatsAppInstance,
+    updateWhatsAppInstanceAutoResponse, // New import
+    WhatsAppInstance
+} from "@/actions/whatsapp-actions";
 import { createBrowserClient } from "@supabase/ssr";
 import { toast } from "sonner";
 import {
@@ -36,6 +42,13 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/ui/table"
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select"
 
 interface ChannelsConfigProps {
     companyId: string;
@@ -59,6 +72,7 @@ export function ChannelsConfig({ companyId, showWebChat = true }: ChannelsConfig
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [instanceToDelete, setInstanceToDelete] = useState<WhatsAppInstance | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
+    const [updatingAutoResponse, setUpdatingAutoResponse] = useState<string | null>(null);
 
     const fetchInstances = async (silent = false) => {
         if (!silent) setLoading(true);
@@ -231,6 +245,37 @@ export function ChannelsConfig({ companyId, showWebChat = true }: ChannelsConfig
         window.open(url, '_blank');
     };
 
+    const handleAutoResponseChange = async (uid: string, value: string) => {
+        setUpdatingAutoResponse(uid);
+        const newValue = value === 'true';
+        try {
+            // Optimistic update
+            setInstances(prev => prev.map(inst =>
+                inst.uid === uid ? { ...inst, auto_response: newValue } : inst
+            ));
+
+            const result = await updateWhatsAppInstanceAutoResponse(uid, newValue, companyId);
+
+            if (result.error) {
+                toast.error(result.error);
+                // Revert optimistic update
+                setInstances(prev => prev.map(inst =>
+                    inst.uid === uid ? { ...inst, auto_response: !newValue } : inst
+                ));
+            } else {
+                toast.success("Auto Response updated!");
+            }
+        } catch (error) {
+            toast.error("Failed to update Auto Response");
+            // Revert optimistic update
+            setInstances(prev => prev.map(inst =>
+                inst.uid === uid ? { ...inst, auto_response: !newValue } : inst
+            ));
+        } finally {
+            setUpdatingAutoResponse(null);
+        }
+    };
+
     return (
         <div className="bg-[#111] p-6 rounded-lg border border-white/5">
             <h2 className="text-lg font-bold text-white mb-6">Channels & Connectors</h2>
@@ -333,7 +378,7 @@ export function ChannelsConfig({ companyId, showWebChat = true }: ChannelsConfig
                                     <TableHeader className="bg-white/5">
                                         <TableRow className="border-white/5 hover:bg-transparent">
                                             <TableHead className="text-gray-400">Instance</TableHead>
-
+                                            <TableHead className="text-center text-gray-400">Auto Response</TableHead>
                                             <TableHead className="text-center text-gray-400">Status</TableHead>
                                             <TableHead className="text-center text-gray-400">QR Code</TableHead>
                                             <TableHead className="text-right text-gray-400">Actions</TableHead>
@@ -362,6 +407,23 @@ export function ChannelsConfig({ companyId, showWebChat = true }: ChannelsConfig
                                                             </div>
                                                             <span>{displayName}</span>
                                                         </div>
+                                                    </TableCell>
+
+
+                                                    <TableCell className="text-center">
+                                                        <Select
+                                                            value={inst.auto_response ? 'true' : 'false'}
+                                                            onValueChange={(value) => handleAutoResponseChange(inst.uid, value)}
+                                                            disabled={updatingAutoResponse === inst.uid}
+                                                        >
+                                                            <SelectTrigger className="w-[100px] h-8 mx-auto bg-white/5 border-white/10 text-white text-xs">
+                                                                <SelectValue />
+                                                            </SelectTrigger>
+                                                            <SelectContent className="bg-[#1a1a1a] border-white/10 text-white">
+                                                                <SelectItem value="true" className="text-xs hover:bg-white/10 focus:bg-white/10 focus:text-white cursor-pointer">Enabled</SelectItem>
+                                                                <SelectItem value="false" className="text-xs hover:bg-white/10 focus:bg-white/10 focus:text-white cursor-pointer">Disabled</SelectItem>
+                                                            </SelectContent>
+                                                        </Select>
                                                     </TableCell>
 
                                                     <TableCell className="text-center">
@@ -433,76 +495,78 @@ export function ChannelsConfig({ companyId, showWebChat = true }: ChannelsConfig
                     </div>
                 </div>
 
-                {showWebChat && (
-                    <>
-                        {/* Web Chat */}
-                        <div className="border border-white/10 rounded-lg p-4 bg-white/[0.02]">
-                            <div className="flex items-center gap-6">
-                                <span className="font-bold text-white w-24 shrink-0">Web chat</span>
+                {
+                    showWebChat && (
+                        <>
+                            {/* Web Chat */}
+                            <div className="border border-white/10 rounded-lg p-4 bg-white/[0.02]">
+                                <div className="flex items-center gap-6">
+                                    <span className="font-bold text-white w-24 shrink-0">Web chat</span>
 
-                                <div className="flex items-center gap-4 flex-1">
-                                    <div className="flex flex-col items-center gap-1">
-                                        <div className="text-[10px] text-gray-500 font-bold">Profile Picture</div>
-                                        <div className="w-10 h-10 rounded-full bg-gray-700 overflow-hidden">
-                                            <img src="https://i.pinimg.com/736x/24/29/61/2429617ce5e50f631606f92b65aaeb0f.jpg" alt="Profile" className="w-full h-full object-cover" />
+                                    <div className="flex items-center gap-4 flex-1">
+                                        <div className="flex flex-col items-center gap-1">
+                                            <div className="text-[10px] text-gray-500 font-bold">Profile Picture</div>
+                                            <div className="w-10 h-10 rounded-full bg-gray-700 overflow-hidden">
+                                                <img src="https://i.pinimg.com/736x/24/29/61/2429617ce5e50f631606f92b65aaeb0f.jpg" alt="Profile" className="w-full h-full object-cover" />
+                                            </div>
                                         </div>
-                                    </div>
 
-                                    <div className="flex-1 space-y-2">
-                                        <div className="flex gap-2 items-center h-full pt-2">
-                                            <Button
-                                                variant="secondary"
-                                                className="bg-blue-50 text-blue-600 hover:bg-blue-100 h-7 text-xs font-bold"
-                                                onClick={handleCopyWebChatUrl}
-                                            >
-                                                Copy URL <Copy size={12} className="ml-2" />
-                                            </Button>
-                                            <Button
-                                                variant="secondary"
-                                                className="bg-blue-50 text-blue-600 hover:bg-blue-100 h-7 text-xs font-bold"
-                                                onClick={handleOpenWebChat}
-                                            >
-                                                Open page <ExternalLink size={12} className="ml-2" />
-                                            </Button>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Bubble Chat */}
-                        <div className="border border-white/10 rounded-lg p-4 bg-white/[0.02]">
-                            <div className="flex items-center gap-6">
-                                <span className="font-bold text-white w-24 shrink-0">Bubble chat</span>
-
-                                <div className="flex items-center gap-4 flex-1">
-                                    <div className="flex flex-col items-center gap-1">
-                                        <div className="text-[10px] text-gray-500 font-bold">Profile Picture</div>
-                                        <div className="w-10 h-10 rounded-full bg-gray-700 overflow-hidden">
-                                            <img src="https://i.pinimg.com/736x/24/29/61/2429617ce5e50f631606f92b65aaeb0f.jpg" alt="Profile" className="w-full h-full object-cover" />
-                                        </div>
-                                    </div>
-
-                                    <div className="flex-1 space-y-2">
-                                        <div className="flex gap-2 mt-4">
-                                            <Button variant="secondary" className="bg-blue-50 text-blue-600 hover:bg-blue-100 h-7 text-xs font-bold">
-                                                Copy Code <Copy size={12} className="ml-2" />
-                                            </Button>
-                                            <Button variant="secondary" className="bg-blue-50 text-blue-600 hover:bg-blue-100 h-7 text-xs font-bold">
-                                                Tutorial video <ExternalLink size={12} className="ml-2" />
-                                            </Button>
+                                        <div className="flex-1 space-y-2">
+                                            <div className="flex gap-2 items-center h-full pt-2">
+                                                <Button
+                                                    variant="secondary"
+                                                    className="bg-blue-50 text-blue-600 hover:bg-blue-100 h-7 text-xs font-bold"
+                                                    onClick={handleCopyWebChatUrl}
+                                                >
+                                                    Copy URL <Copy size={12} className="ml-2" />
+                                                </Button>
+                                                <Button
+                                                    variant="secondary"
+                                                    className="bg-blue-50 text-blue-600 hover:bg-blue-100 h-7 text-xs font-bold"
+                                                    onClick={handleOpenWebChat}
+                                                >
+                                                    Open page <ExternalLink size={12} className="ml-2" />
+                                                </Button>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
-                        </div>
-                    </>
-                )}
 
-            </div>
+                            {/* Bubble Chat */}
+                            <div className="border border-white/10 rounded-lg p-4 bg-white/[0.02]">
+                                <div className="flex items-center gap-6">
+                                    <span className="font-bold text-white w-24 shrink-0">Bubble chat</span>
+
+                                    <div className="flex items-center gap-4 flex-1">
+                                        <div className="flex flex-col items-center gap-1">
+                                            <div className="text-[10px] text-gray-500 font-bold">Profile Picture</div>
+                                            <div className="w-10 h-10 rounded-full bg-gray-700 overflow-hidden">
+                                                <img src="https://i.pinimg.com/736x/24/29/61/2429617ce5e50f631606f92b65aaeb0f.jpg" alt="Profile" className="w-full h-full object-cover" />
+                                            </div>
+                                        </div>
+
+                                        <div className="flex-1 space-y-2">
+                                            <div className="flex gap-2 mt-4">
+                                                <Button variant="secondary" className="bg-blue-50 text-blue-600 hover:bg-blue-100 h-7 text-xs font-bold">
+                                                    Copy Code <Copy size={12} className="ml-2" />
+                                                </Button>
+                                                <Button variant="secondary" className="bg-blue-50 text-blue-600 hover:bg-blue-100 h-7 text-xs font-bold">
+                                                    Tutorial video <ExternalLink size={12} className="ml-2" />
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </>
+                    )
+                }
+
+            </div >
 
             {/* Delete Confirmation Dialog */}
-            <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+            < AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen} >
                 <AlertDialogContent className="bg-[#1a1a1a] border-white/10 text-white">
                     <AlertDialogHeader>
                         <AlertDialogTitle>Delete Instance</AlertDialogTitle>
@@ -526,7 +590,7 @@ export function ChannelsConfig({ companyId, showWebChat = true }: ChannelsConfig
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
-            </AlertDialog>
-        </div>
+            </AlertDialog >
+        </div >
     );
 }
