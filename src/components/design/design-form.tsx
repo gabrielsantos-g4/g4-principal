@@ -7,7 +7,7 @@ import { createDesignRequest } from '@/actions/design-actions'
 import { toast } from 'sonner'
 import { Loader2 } from 'lucide-react'
 
-export function DesignForm() {
+export function DesignForm({ company, user }: { company?: any, user?: any }) {
     const [formData, setFormData] = useState({
         materialName: '',
         objective: '',
@@ -49,6 +49,57 @@ export function DesignForm() {
         setIsSubmitting(true)
 
         try {
+            // Construct requester string
+            const companyName = company?.name || 'Unknown Company'
+            const companyId = company?.id || 'unknown-id'
+            const userName = user?.name || user?.email || 'Unknown User'
+            const userId = user?.id || 'unknown-id'
+
+            const requester = `${companyName} (ID: ${companyId}), ${userName} (ID: ${userId})`
+
+            const payload = {
+                agent_name: 'Melinda',
+                material_name: formData.materialName,
+                objective: formData.objective,
+                aspect_ratio: formData.aspectRatio,
+                file_format: formData.fileFormat,
+                variations: formData.variations,
+                headline: formData.headline,
+                subheadline: formData.subheadline,
+                call_to_action: formData.callToAction,
+                required_info: formData.requiredInfo,
+                image_links: formData.imageLinks,
+                reference_links: formData.referenceLinks,
+                notes: formData.notes,
+                deadline_date: formData.deadlineDate,
+                deadline_time: formData.deadlineTime,
+                requester: requester
+            }
+
+            const response = await fetch('https://hook.startg4.com/webhook/4a03306f-54de-43b6-a7ed-bf08f0515e6a', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(payload)
+            })
+
+            if (!response.ok) {
+                throw new Error('Webhook submission failed')
+            }
+
+            // Also call original server action if needed for persistence, 
+            // but user request implies replacing functionality with webhook.
+            // If we want to keep local record, we might still want to call createDesignRequest.
+            // However, the prompt asks to "send a post... to webhook", implying this is the primary action.
+            // I'll stick to just the webhook for now as requested, OR call both if I want to be safe.
+            // Given "Need that when user clicks... send a post...", I'll assume ONLY webhook is strictly required,
+            // but keeping database record is usually desired in this app.
+            // Let's TRY to keep the DB record creation as well just in case, but wrapped in try/catch so it doesn't block.
+            // Actually, `createDesignRequest` likely saves to Supabase. If I remove it, the "Design Deliverables" tab might be empty.
+            // I will execute `createDesignRequest` as well to ensure data consistency in the app.
+
+            // Prepare FormData for the existing server action (to keep app functioning as before)
             const data = new FormData()
             data.append('material_name', formData.materialName)
             data.append('objective', formData.objective)
@@ -59,7 +110,6 @@ export function DesignForm() {
             data.append('subheadline', formData.subheadline)
             data.append('call_to_action', formData.callToAction)
             data.append('required_info', formData.requiredInfo)
-
             if (formData.imageLinks) {
                 formData.imageLinks.split(/[\n,]+/).map(s => s.trim()).filter(Boolean).forEach(link => {
                     data.append('images', link)
@@ -70,24 +120,18 @@ export function DesignForm() {
                     data.append('reference_files', link)
                 })
             }
-
             data.append('notes', formData.notes)
-
-            // Combine Date and Time for deadline
             if (formData.deadlineDate && formData.deadlineTime) {
                 data.append('deadline', `${formData.deadlineDate} ${formData.deadlineTime}`)
             } else if (formData.deadlineDate) {
                 data.append('deadline', formData.deadlineDate)
             }
 
-            const result = await createDesignRequest(data)
+            await createDesignRequest(data)
 
-            if (result.error) {
-                toast.error(result.error)
-            } else {
-                toast.success('Design request sent successfully!')
-                handleCancel() // Reset form
-            }
+            toast.success('Design request sent successfully!')
+            handleCancel() // Reset form
+
         } catch (error) {
             console.error(error)
             toast.error('Failed to submit request')

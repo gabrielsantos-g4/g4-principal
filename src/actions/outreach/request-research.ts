@@ -72,6 +72,7 @@ export async function requestResearch(icpData?: any) {
 
     // Build Webhook Payload (Dynamic from inputs)
     const webhookPayload = {
+        agent_name: 'Amanda',
         company_headcount: Array.isArray(icpData?.company_headcount) ? icpData.company_headcount : (icpData?.company_headcount ? [icpData.company_headcount] : []),
         example_ideal_companies: icpData?.example_ideal_companies || '',
         company_type: Array.isArray(icpData?.company_type) ? icpData.company_type : (icpData?.company_type ? [icpData.company_type] : []),

@@ -32,9 +32,11 @@ interface RightSidebarProps {
     userName?: string
     initialChatId?: string
     chatTitle?: string
+    companyName?: string
+    userFullName?: string
 }
 
-export function RightSidebar({ agent, userId, companyId, userName = 'there', initialChatId, chatTitle }: RightSidebarProps) {
+export function RightSidebar({ agent, userId, companyId, userName = 'there', initialChatId, chatTitle, companyName, userFullName }: RightSidebarProps) {
     const { isRightSidebarCollapsed, toggleRightSidebar } = useSidebar()
     const [messages, setMessages] = useState<Message[]>([])
     const [isTyping, setIsTyping] = useState(false)
@@ -98,15 +100,15 @@ export function RightSidebar({ agent, userId, companyId, userName = 'there', ini
 
     // Load Messages for AI Agents (Generic)
     useEffect(() => {
-        if (agent?.slug && agent.slug !== 'audience-channels' && companyId) {
-            loadAgentChatHistory(agent.name, companyId)
+        if (agent?.slug && agent.slug !== 'audience-channels' && companyId && userId) {
+            loadAgentChatHistory(agent.name, companyId, userId)
         }
-    }, [agent?.slug, agent?.name, companyId])
+    }, [agent?.slug, agent?.name, companyId, userId])
 
-    const loadAgentChatHistory = async (agentName: string, companyId: string) => {
+    const loadAgentChatHistory = async (agentName: string, companyId: string, userId: string) => {
         setIsTyping(true)
         setMessages([])
-        const result = await getChatMessages({ empresa_id: companyId, agent_name: agentName })
+        const result = await getChatMessages({ empresa_id: companyId, agent_name: agentName, user_id: userId })
         if (result.success && result.messages) {
             // Map IDs to strings to match Message interface if they are UUIDs
             setMessages(result.messages.map(m => ({
@@ -147,6 +149,24 @@ export function RightSidebar({ agent, userId, companyId, userName = 'there', ini
         }
     }
 
+    const persistMessage = async (msgData: {
+        empresa_id: string
+        user_id: string
+        agent_name: string
+        message: string
+        sender: 'AGENT' | 'USER'
+    }) => {
+        try {
+            await fetch('/api/chats/save', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(msgData)
+            })
+        } catch (error) {
+            console.error('Failed to persist message:', error)
+        }
+    }
+
     const handleSendMessage = async (text: string) => {
         if (!text.trim()) return
 
@@ -161,7 +181,7 @@ export function RightSidebar({ agent, userId, companyId, userName = 'there', ini
 
         // Persist User Message (except for audience-channels which has its own logic)
         if (agent?.slug !== 'audience-channels' && companyId && userId && agent?.name) {
-            saveChatMessage({
+            persistMessage({
                 empresa_id: companyId,
                 user_id: userId,
                 agent_name: agent.name,
@@ -192,14 +212,21 @@ export function RightSidebar({ agent, userId, companyId, userName = 'there', ini
         if (agent?.slug === 'outreach') {
             try {
                 // Send POST to Amanda's specific hook
+                const payload = {
+                    agent_name: "Amanda",
+                    empresa_id: companyId,
+                    text: text,
+                    agente_name: "Amanda",
+                    user_name: userFullName || userName,
+                    empresa: companyName || 'Unknown Company'
+                }
+
+                console.log('DEBUG: Sending Amanda Webhook Payload:', payload)
+
                 const response = await fetch('https://hook.startg4.com/webhook/2c65b755-6b30-44b2-ae51-7072d7e63510-amanda', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        empresa_id: companyId,
-                        text: text,
-                        agent_name: agent?.name
-                    })
+                    body: JSON.stringify(payload)
                 })
 
                 if (!response.ok) {
@@ -221,7 +248,7 @@ export function RightSidebar({ agent, userId, companyId, userName = 'there', ini
 
                 // Persist Agent Message
                 if (companyId && userId && agent?.name) {
-                    saveChatMessage({
+                    persistMessage({
                         empresa_id: companyId,
                         user_id: userId,
                         agent_name: agent.name,
@@ -276,7 +303,7 @@ export function RightSidebar({ agent, userId, companyId, userName = 'there', ini
 
                 // Persist Agent Message
                 if (companyId && userId && agent?.name) {
-                    saveChatMessage({
+                    persistMessage({
                         empresa_id: companyId,
                         user_id: userId,
                         agent_name: agent.name,
@@ -287,6 +314,80 @@ export function RightSidebar({ agent, userId, companyId, userName = 'there', ini
 
             } catch (error) {
                 console.error('Emily Webhook Error:', error)
+                setIsTyping(false)
+                setMessages(prev => [...prev, {
+                    id: Date.now().toString(),
+                    role: 'assistant',
+                    content: "Sorry, I encountered an error while processing your request. Please try again later."
+                }])
+            }
+        }
+
+        // Strategy Logic (Liz Webhook API)
+        else if (agent?.slug === 'strategy-overview') {
+            try {
+                // 1. Persist User Message FIRST (and wait)
+                if (companyId && userId && agent?.name) {
+                    await persistMessage({
+                        empresa_id: companyId,
+                        user_id: userId,
+                        agent_name: agent.name,
+                        message: text,
+                        sender: 'USER'
+                    })
+                }
+
+                // 2. Wait 3 seconds
+                await new Promise(resolve => setTimeout(resolve, 3000))
+
+                // 3. Send POST to Liz's specific hook
+                const payload = {
+                    empresa_id: companyId,
+                    user_id: userId,
+                    agent_name: "Liz",
+                    message: text,
+                    sender: "USER"
+                }
+
+                const response = await fetch('https://hook.startg4.com/webhook/3453cb1e-a654-4cb1-9b33-acbfaf9322a6', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                })
+
+                if (!response.ok) {
+                    const errText = await response.text()
+                    console.error('Liz Webhook Failed:', response.status, errText)
+                    throw new Error('Failed to send webhook')
+                }
+
+                const textRes = await response.text()
+                let data
+                try {
+                    data = textRes ? JSON.parse(textRes) : {}
+                } catch (e) {
+                    console.warn('Liz Webhook return invalid JSON:', textRes)
+                    data = {}
+                }
+
+                // New format: { "message": "..." }
+                // Fallback to old format just in case: data.output or data[0].output
+                const aiMsg = data.message ||
+                    (Array.isArray(data) && data[0]?.output ? data[0].output : data.output) ||
+                    "I'm analyzing your strategy. One moment please.";
+
+                setMessages(prev => [...prev, {
+                    id: Date.now().toString() + '-ai',
+                    role: 'assistant',
+                    content: aiMsg
+                }])
+
+                setIsTyping(false)
+
+                // Agent message is now persisted by the backend, so we don't save it here.
+
+            } catch (error) {
+                console.error('Liz Webhook Error:', error)
                 setIsTyping(false)
                 setMessages(prev => [...prev, {
                     id: Date.now().toString(),
@@ -461,8 +562,28 @@ export function RightSidebar({ agent, userId, companyId, userName = 'there', ini
                 )}
             </div>
 
+            {/* Liz Suggestions */}
+            {agent?.slug === 'strategy-overview' && messages.length === 0 && (
+                <div className="px-4 pb-2 flex flex-col gap-2 shrink-0 items-end">
+                    {[
+                        "How do I choose the right channels for my type of business?",
+                        "How do I know when to scale or stop a channel?",
+                        "How do I combine channels without wasting budget?",
+                        "How do I turn attention into real sales opportunities?"
+                    ].map((suggestion, idx) => (
+                        <button
+                            key={idx}
+                            onClick={() => handleSendMessage(suggestion)}
+                            className="bg-white/5 hover:bg-white/10 border border-white/10 rounded-full px-3 py-1.5 text-xs text-slate-300 hover:text-white transition-colors text-right"
+                        >
+                            {suggestion}
+                        </button>
+                    ))}
+                </div>
+            )}
+
             {/* Chat Input Mock */}
-            <div className={`p-4 pt-4 border-t border-white/10 shrink-0 transition-opacity duration-200 ${isRightSidebarCollapsed ? 'opacity-0 invisible hidden' : 'opacity-100 visible'}`}>
+            <div className={`p-4 pt-2 border-t border-white/10 shrink-0 transition-opacity duration-200 ${isRightSidebarCollapsed ? 'opacity-0 invisible hidden' : 'opacity-100 visible'}`}>
                 <div className="bg-white/5 border border-white/10 rounded-xl flex gap-2 p-2 items-end">
                     <textarea
                         onKeyDown={(e) => {

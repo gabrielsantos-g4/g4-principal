@@ -38,10 +38,12 @@ export async function saveChatMessage({
 
 export async function getChatMessages({
     empresa_id,
-    agent_name
+    agent_name,
+    user_id
 }: {
     empresa_id: string
     agent_name: string
+    user_id: string
 }) {
     const supabase = await createClient()
 
@@ -50,6 +52,7 @@ export async function getChatMessages({
         .select('*')
         .eq('empresa_id', empresa_id)
         .eq('agent_name', agent_name)
+        .eq('user_id', user_id)
         .order('created_at', { ascending: true })
 
     if (error) {

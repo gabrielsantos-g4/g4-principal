@@ -75,30 +75,18 @@ export function ICPForm({ initialData, initialDemands = [] }: ICPFormProps) {
     }
 
     // State for Text Inputs (Controlled to sync with LocalStorage)
-    const [textExamples, setTextExamples] = useState(initialData?.example_ideal_companies || "")
-    const [textLocation, setTextLocation] = useState(initialData?.company_headquarter_location || "")
-    const [textJobTitle, setTextJobTitle] = useState(initialData?.job_title || "")
-    const [textInstructions, setTextInstructions] = useState(initialData?.additional_instruction || "")
+    const [textExamples, setTextExamples] = useState("")
+    const [textLocation, setTextLocation] = useState("")
+    const [textJobTitle, setTextJobTitle] = useState("")
+    const [textInstructions, setTextInstructions] = useState("")
 
     // State for MultiSelects
-    const [headcount, setHeadcount] = useState<string[]>(toArray(initialData?.company_headcount))
-    const [companyType, setCompanyType] = useState<string[]>(toArray(initialData?.company_type))
-    const [functionArea, setFunctionArea] = useState<string[]>(toArray(initialData?.function_or_area))
-    const [seniority, setSeniority] = useState<string[]>(toArray(initialData?.seniority_level))
+    const [headcount, setHeadcount] = useState<string[]>([])
+    const [companyType, setCompanyType] = useState<string[]>([])
+    const [functionArea, setFunctionArea] = useState<string[]>([])
+    const [seniority, setSeniority] = useState<string[]>([])
 
-    // Reset state when initialData changes (after save/load)
-    useEffect(() => {
-        if (initialData) {
-            setTextExamples(initialData.example_ideal_companies || "")
-            setTextLocation(initialData.company_headquarter_location || "")
-            setTextJobTitle(initialData.job_title || "")
-            setTextInstructions(initialData.additional_instruction || "")
-            setHeadcount(toArray(initialData.company_headcount))
-            setCompanyType(toArray(initialData.company_type))
-            setFunctionArea(toArray(initialData.function_or_area))
-            setSeniority(toArray(initialData.seniority_level))
-        }
-    }, [initialData])
+
 
     // Sync to LocalStorage for Chat Agent Access
     useEffect(() => {

@@ -8,7 +8,7 @@ import { VideoForm } from "./video-form"
 import { VideoDeliverables } from "./video-deliverables"
 import { DesignHistoryList } from "./design-history-list"
 
-export function DesignVideoTabs({ initialRequests = [] }: { initialRequests?: any[] }) {
+export function DesignVideoTabs({ initialRequests = [], company, user }: { initialRequests?: any[], company?: any, user?: any }) {
     const [activeTab, setActiveTab] = useState<"design-request" | "design-deliverables" | "video-request" | "video-deliverables">("design-request")
 
     return (
@@ -61,7 +61,7 @@ export function DesignVideoTabs({ initialRequests = [] }: { initialRequests?: an
             <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
                 {activeTab === "design-request" && (
                     <div className="space-y-12">
-                        <DesignForm />
+                        <DesignForm company={company} user={user} />
                     </div>
                 )}
                 {activeTab === "design-deliverables" && <DesignDeliverables requests={initialRequests} />}

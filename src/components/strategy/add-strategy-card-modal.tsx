@@ -182,9 +182,14 @@ export function AddStrategyCardModal({ onAdd, children, initialData }: AddStrate
     }
 
     useEffect(() => {
-        fetchChannels()
-        fetchCampaigns()
-    }, []) // Run once on mount
+        if (open) {
+            // Only fetch if we haven't loaded yet or if forced.
+            // For now, fetching on every open is acceptable compared to fetching 50 times on page load.
+            // We can optimize by checking if allChannelOptions is empty, but we might want fresh data.
+            fetchChannels()
+            fetchCampaigns()
+        }
+    }, [open])
 
     const handleCreateChannel = async (name: string) => {
         try {

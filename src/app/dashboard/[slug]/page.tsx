@@ -69,7 +69,14 @@ export default async function AgentPage({ params, searchParams }: AgentPageProps
         .eq('id', user?.id)
         .single()
 
+
     const companyId = profile?.empresa_id
+
+    const { data: companyData } = companyId
+        ? await supabase.from('main_empresas').select('name').eq('id', companyId).single()
+        : { data: null }
+
+    const companyName = companyData?.name || 'Unknown Company'
 
     if (isOrchestrator) {
         const company = await getCompanyDNA()
@@ -320,7 +327,14 @@ export default async function AgentPage({ params, searchParams }: AgentPageProps
                     }
                 >
                     <div className="flex-1 min-w-0 overflow-y-auto bg-black p-6">
-                        <DesignVideoTabs initialRequests={designRequests} />
+                        <DesignVideoTabs
+                            initialRequests={designRequests}
+                            company={profile ? { ...profile, ...await getCompanyDNA() } : null}
+                            user={{
+                                id: user?.id,
+                                name: profile?.name || user?.email
+                            }}
+                        />
                     </div>
                 </MobileDashboardLayout>
             </div>
@@ -366,6 +380,7 @@ export default async function AgentPage({ params, searchParams }: AgentPageProps
                         <RightSidebar
                             key={slug + (chatId || '')}
                             userId={user?.id}
+                            companyId={companyId}
                             userName={(user?.user_metadata?.full_name || user?.user_metadata?.name || 'there').split(' ')[0]}
                             agent={{
                                 name: agent.name,
@@ -375,6 +390,8 @@ export default async function AgentPage({ params, searchParams }: AgentPageProps
                                 slug: agent.slug,
                                 description: agent.description
                             }}
+                            companyName={companyName}
+                            userFullName={user?.user_metadata?.full_name || user?.user_metadata?.name || profile?.name || user?.email}
                         />
                     }
                 >
@@ -479,6 +496,8 @@ export default async function AgentPage({ params, searchParams }: AgentPageProps
                             description: agent.description
                         }}
                         initialChatId={isAudience ? chatId : undefined}
+                        companyName={companyName}
+                        userFullName={user?.user_metadata?.full_name || user?.user_metadata?.name || profile?.name || user?.email}
                     />
                 }
             >
