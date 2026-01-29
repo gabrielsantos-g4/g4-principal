@@ -57,6 +57,17 @@ export function SignupForm() {
                         />
                     </div>
                     <div className="space-y-2">
+                        <Label htmlFor="company_name" className="text-xs font-medium text-gray-400 uppercase tracking-wider">Company Name</Label>
+                        <Input
+                            id="company_name"
+                            name="company_name"
+                            type="text"
+                            placeholder="Your Company"
+                            required
+                            className="bg-white/5 border-white/10 text-white placeholder:text-gray-600 focus:border-[#1C73E8] focus:ring-0 transition-all h-11 rounded-md"
+                        />
+                    </div>
+                    <div className="space-y-2">
                         <Label htmlFor="email" className="text-xs font-medium text-gray-400 uppercase tracking-wider">Email</Label>
                         <Input
                             id="email"
@@ -93,7 +104,7 @@ export function SignupForm() {
                     <div className="text-sm text-center text-gray-500">
                         Already have an account?{' '}
                         <Link href="/login" className="text-[#1C73E8] hover:text-[#1C73E8]/80 transition-colors font-medium">
-                            Sign in
+                            Login
                         </Link>
                     </div>
                 </CardFooter>

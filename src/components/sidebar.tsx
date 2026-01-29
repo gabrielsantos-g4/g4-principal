@@ -40,7 +40,7 @@ export async function Sidebar() {
     const companyName = companyData?.name || 'My Company'
     const userName = profile?.name || 'User'
     const userRole = profile?.role || 'User'
-    const userAvatar = '/gabriel-santos.png'
+    const userAvatar = profile?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(userName)}&background=random`
     const activeAgents = profile?.active_agents || null
 
     return (

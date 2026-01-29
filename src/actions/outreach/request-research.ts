@@ -27,7 +27,7 @@ export async function requestResearch(icpData?: any) {
     // Get company ID from profile
     const { data: profile } = await supabase
         .from('main_profiles')
-        .select('empresa_id')
+        .select('empresa_id, name')
         .eq('id', user.id)
         .single()
 
@@ -67,6 +67,43 @@ export async function requestResearch(icpData?: any) {
         deadline: deadline.toISOString(),
         email_to_send: user.email,
         status: 'Pending'
+    }
+
+
+    // Build Webhook Payload (Dynamic from inputs)
+    const webhookPayload = {
+        company_headcount: Array.isArray(icpData?.company_headcount) ? icpData.company_headcount : (icpData?.company_headcount ? [icpData.company_headcount] : []),
+        example_ideal_companies: icpData?.example_ideal_companies || '',
+        company_type: Array.isArray(icpData?.company_type) ? icpData.company_type : (icpData?.company_type ? [icpData.company_type] : []),
+        company_headquarter_location: icpData?.company_headquarter_location || '',
+        function_or_area: Array.isArray(icpData?.function_or_area) ? icpData.function_or_area : (icpData?.function_or_area ? [icpData.function_or_area] : []),
+        job_title: icpData?.job_title || '',
+        seniority_level: Array.isArray(icpData?.seniority_level) ? icpData.seniority_level : (icpData?.seniority_level ? [icpData.seniority_level] : []),
+        additional_instruction: icpData?.additional_instruction || '',
+        user_id: user.id,
+        requester: `${companyName} (ID: ${profile.empresa_id}), ${profile.name || user.email} (ID: ${user.id})`
+    }
+
+    // Send to Webhook
+    try {
+        const webhookUrl = 'https://hook.startg4.com/webhook/4a03306f-54de-43b6-a7ed-bf08f0515e6a'
+        console.log('Sending to webhook:', webhookUrl, webhookPayload)
+
+        const webhookResponse = await fetch(webhookUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(webhookPayload)
+        })
+
+        if (!webhookResponse.ok) {
+            console.error('Webhook failed:', await webhookResponse.text())
+        } else {
+            console.log('Webhook success:', await webhookResponse.json())
+        }
+    } catch (e) {
+        console.error('Error sending to webhook:', e)
     }
 
     const { error } = await supabase

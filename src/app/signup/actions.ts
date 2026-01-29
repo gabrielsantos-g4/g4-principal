@@ -9,8 +9,9 @@ export async function signup(formData: FormData) {
     const name = formData.get('name') as string
     const email = formData.get('email') as string
     const password = formData.get('password') as string
+    const companyName = formData.get('company_name') as string
 
-    if (!name || !email || !password) {
+    if (!name || !email || !password || !companyName) {
         return { error: 'Por favor, preencha todos os campos' }
     }
 
@@ -57,7 +58,7 @@ export async function signup(formData: FormData) {
     const { data: companyData, error: companyError } = await adminAuthClient
         .from('main_empresas')
         .insert({
-            name: `${name}'s Company`,
+            name: companyName,
         })
         .select()
         .single()

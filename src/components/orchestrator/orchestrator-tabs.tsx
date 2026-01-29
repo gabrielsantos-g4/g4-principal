@@ -4,16 +4,18 @@ import { useState } from "react"
 import { CompanyDNAForm } from "@/components/company-dna-form"
 import { PricingContent } from "@/components/pricing-content"
 import { signout } from '@/app/login/actions'
-import { User, BadgeDollarSign, CreditCard, ArrowUpRight, LogOut, Ban, Plus } from "lucide-react"
+import { User, Building2, BadgeDollarSign, CreditCard, ArrowUpRight, LogOut, Ban, Plus } from "lucide-react"
 import { AgentsOverviewDialog } from '@/components/dashboard/agents-overview-dialog'
 
 interface OrchestratorTabsProps {
     company: any
     activeAgents?: string[] | null
+    userProfile?: any
+    mode?: any
 }
 
-export function OrchestratorTabs({ company, activeAgents }: OrchestratorTabsProps) {
-    const [activeTab, setActiveTab] = useState<"profile" | "pricing" | "billing" | "support">("profile")
+export function OrchestratorTabs({ company, activeAgents, userProfile }: OrchestratorTabsProps) {
+    const [activeTab, setActiveTab] = useState<"profile" | "company" | "pricing" | "billing" | "support">("profile")
     // State
     const [currency, setCurrency] = useState<'USD' | 'BRL'>('USD')
 
@@ -30,7 +32,18 @@ export function OrchestratorTabs({ company, activeAgents }: OrchestratorTabsProp
                             }`}
                     >
                         <User size={16} />
-                        Profile (Context)
+                        Profile
+                    </button>
+
+                    <button
+                        onClick={() => setActiveTab("company")}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${activeTab === "company"
+                            ? "bg-[#2a2a2a] text-white shadow-sm"
+                            : "text-gray-400 hover:text-white hover:bg-white/5"
+                            }`}
+                    >
+                        <Building2 size={16} />
+                        Company
                     </button>
 
                     <AgentsOverviewDialog initialActiveAgents={activeAgents}>
@@ -91,7 +104,13 @@ export function OrchestratorTabs({ company, activeAgents }: OrchestratorTabsProp
             <div className="flex-1">
                 {activeTab === "profile" && (
                     <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
-                        <CompanyDNAForm company={company} />
+                        <CompanyDNAForm company={company} userProfile={userProfile} mode="profile" />
+                    </div>
+                )}
+
+                {activeTab === "company" && (
+                    <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+                        <CompanyDNAForm company={company} userProfile={userProfile} mode="company" />
                     </div>
                 )}
 
