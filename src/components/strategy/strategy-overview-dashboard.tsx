@@ -319,7 +319,7 @@ export function StrategyOverviewDashboard({ agent, initialCards = [] }: Strategy
     )
 }
 
-function StrategyCard({ id, title, description, icon, image, placeholderIcon, link, responsibleImage, funnelStage, channel, onUpdate, onDelete }: StrategyCardData & { onUpdate?: (data: NewCardData) => void, onDelete?: (id: string) => void }) {
+function StrategyCard({ id, title, description, icon, image, placeholderIcon, link, responsibleImage, funnelStage, channel, channels, campaign, onUpdate, onDelete }: StrategyCardData & { onUpdate?: (data: NewCardData) => void, onDelete?: (id: string) => void }) {
     const [isHovered, setIsHovered] = useState(false)
     const [isDeleting, setIsDeleting] = useState(false)
 
@@ -414,6 +414,7 @@ function StrategyCard({ id, title, description, icon, image, placeholderIcon, li
                     {/* Hover Actions Overlay - Top Right - Z-30 (Above Link) */}
                     <div className="absolute top-1 right-1 z-30 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1 p-1">
                         <AddStrategyCardModal
+                            key={`${id}-${campaign}-${channels?.join(',')}-${title}`} // Force remount when data changes
                             initialData={{
                                 id,
                                 title,
@@ -422,7 +423,8 @@ function StrategyCard({ id, title, description, icon, image, placeholderIcon, li
                                 link,
                                 image,
                                 responsibleImage,
-                                channels: [channel] // Default to current broad channel if no specific channels
+                                channels: channels || (channel ? [channel] : []), // Pass actual channels or fallback
+                                campaign: campaign
                             }}
                             onAdd={(data) => onUpdate && onUpdate(data)}
                         >

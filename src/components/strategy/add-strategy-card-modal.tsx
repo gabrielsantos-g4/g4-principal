@@ -338,6 +338,7 @@ export function AddStrategyCardModal({ onAdd, children, initialData }: AddStrate
             setTitle(initialData.title)
             setLink(initialData.link || '')
             setSelectedChannels(initialData.channels || [])
+            setSelectedCampaigns(initialData.campaign ? [initialData.campaign] : [])
             setImagePreview(initialData.image || null)
             setResponsiblePreview(initialData.responsibleImage || null)
         }
@@ -434,10 +435,16 @@ export function AddStrategyCardModal({ onAdd, children, initialData }: AddStrate
             if (imageFile) formData.append('image', imageFile)
             if (responsibleFile) formData.append('responsibleImage', responsibleFile)
 
+            let result
             if (initialData?.id) {
-                await updateInitiative(initialData.id, formData)
+                result = await updateInitiative(initialData.id, formData)
             } else {
-                await createInitiative(formData)
+                result = await createInitiative(formData)
+            }
+
+            if (result?.error) {
+                toast.error(`Failed to save: ${result.error}`)
+                return
             }
 
             onAdd({
@@ -900,6 +907,9 @@ export function AddStrategyCardModal({ onAdd, children, initialData }: AddStrate
                                     type="date"
                                     value={editCampaignEndDate}
                                     onChange={(e) => setEditCampaignEndDate(e.target.value)}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter') confirmEditCampaign()
+                                    }}
                                     disabled={editCampaignNoEndDate}
                                     className={`bg-zinc-900 border-zinc-800 text-white ${editCampaignNoEndDate ? 'opacity-50' : ''}`}
                                 />

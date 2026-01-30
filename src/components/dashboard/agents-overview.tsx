@@ -26,7 +26,7 @@ export function AgentsOverview() {
             {/* Main Content */}
             <div className="w-full max-w-2xl flex flex-col items-center gap-8 relative z-10">
                 <h1 className="text-3xl font-medium text-white text-center tracking-tight">
-                    What are we going to work on today?
+                    Which agent should we use now?
                 </h1>
 
                 {/* Search Input - Pill Shape */}

@@ -440,7 +440,7 @@ export function PaidSocialDashboard() {
                     </form>
                 </TabsContent>
 
-                <TabsContent value="reports" className="flex-1 flex flex-col min-h-0 overflow-hidden">
+                <TabsContent value="reports" className="flex-1 flex flex-col min-h-0 overflow-y-auto custom-scrollbar pb-20">
                     <DashboardClient />
                 </TabsContent>
             </Tabs>
