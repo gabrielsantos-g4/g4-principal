@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Loader2, Save } from "lucide-react"
 import { toast } from "sonner"
 import { getCrmSettings } from "@/actions/crm/get-crm-settings"
@@ -139,18 +140,33 @@ export function QualificationParametersForm() {
                                 />
                             </div>
                             <div className="col-span-4">
-                                <Input
-                                    value={p.criteria}
-                                    onChange={(e) => handleChange(i, 'criteria', e.target.value)}
-                                    placeholder={ph.criteria}
-                                    className="bg-zinc-900 border-white/10 text-white focus-visible:ring-blue-500 placeholder:text-gray-600"
-                                />
+                                <Select
+                                    value={["Text", "Date", "Numeric", "Numeric Range"].includes(p.criteria) ? p.criteria : undefined}
+                                    onValueChange={(value) => handleChange(i, 'criteria', value)}
+                                >
+                                    <SelectTrigger className="bg-zinc-900 border-white/10 text-white focus:ring-blue-500">
+                                        <SelectValue placeholder="Select type" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="Text">Text</SelectItem>
+                                        <SelectItem value="Date">Date</SelectItem>
+                                        <SelectItem value="Numeric">Numeric</SelectItem>
+                                        <SelectItem value="Numeric Range">Numeric Range</SelectItem>
+                                    </SelectContent>
+                                </Select>
                             </div>
                             <div className="col-span-4">
                                 <Input
                                     value={p.format}
                                     onChange={(e) => handleChange(i, 'format', e.target.value)}
                                     placeholder={ph.format}
+                                    type={(() => {
+                                        switch (p.criteria) {
+                                            case 'Date': return 'date'
+                                            case 'Numeric': return 'number'
+                                            default: return 'text'
+                                        }
+                                    })()}
                                     className="bg-zinc-900 border-white/10 text-white focus-visible:ring-blue-500 placeholder:text-gray-600"
                                 />
                             </div>
