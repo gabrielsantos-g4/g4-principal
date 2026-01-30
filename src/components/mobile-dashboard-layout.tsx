@@ -42,7 +42,7 @@ export function MobileDashboardLayout({ children, rightSidebar }: MobileDashboar
     }, [resize, stopResizing])
 
     return (
-        <div className="flex flex-1 min-h-0 relative w-full select-none">
+        <div className="flex flex-col flex-1 min-h-0 h-full bg-black md:bg-transparent">
             {/* Desktop View: Side by Side */}
             <div className="hidden md:flex w-full h-full">
                 <div className="flex-1 min-w-0 overflow-y-auto h-full p-4 md:p-6">

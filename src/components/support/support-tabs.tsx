@@ -74,7 +74,7 @@ export function SupportTabs({ trainings, companyId }: SupportTabsProps) {
                 )}
 
                 {activeTab === "parameters" && (
-                    <div className="flex flex-col gap-6 max-w-5xl mx-auto">
+                    <div className="flex flex-col gap-6 max-w-5xl">
                         <QualificationParametersForm />
                     </div>
                 )}

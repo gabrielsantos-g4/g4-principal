@@ -12,12 +12,14 @@ interface CreateOpportunityParams {
     phone?: string;
     email?: string;
     linkedin?: string;
+    website?: string;
+    role?: string;
     product?: string;
     customField?: string;
 }
 
 export async function createOpportunity(params: CreateOpportunityParams) {
-    const { name, company, phone, email, linkedin, product, customField } = params;
+    const { name, company, phone, email, linkedin, website, role, product, customField } = params;
 
     // Validação básica
     if (!name || !company) {
@@ -35,8 +37,26 @@ export async function createOpportunity(params: CreateOpportunityParams) {
 
         // Fetch settings to get product price
         const settings = await getCrmSettings();
-        const selectedProduct = settings.products.find(p => p.name === product);
-        const amount = selectedProduct ? parseFloat(selectedProduct.price) : 0;
+
+        let amount = 0;
+        try {
+            // Try to parse as JSON array first
+            const products = JSON.parse(product || "[]");
+            if (Array.isArray(products)) {
+                amount = products.reduce((acc: number, pName: string) => {
+                    const found = settings.products.find(p => p.name === pName);
+                    return acc + (found ? parseFloat(found.price) : 0);
+                }, 0);
+            } else {
+                // Fallback for single string if not JSON
+                const selectedProduct = settings.products.find(p => p.name === product);
+                amount = selectedProduct ? parseFloat(selectedProduct.price) : 0;
+            }
+        } catch (e) {
+            // Fallback for simple string
+            const selectedProduct = settings.products.find(p => p.name === product);
+            amount = selectedProduct ? parseFloat(selectedProduct.price) : 0;
+        }
 
         const { error } = await supabase
             .from('main_crm')
@@ -46,6 +66,8 @@ export async function createOpportunity(params: CreateOpportunityParams) {
                 phone,
                 email,
                 linkedin,
+                website,
+                role,
                 product: product,
                 custom_field: customField,
                 amount: amount,

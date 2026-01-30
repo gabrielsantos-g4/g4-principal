@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase";
 import { getEmpresaId } from "@/lib/get-empresa-id";
 import { revalidatePath } from "next/cache";
 
-export async function updateQualificationQuestions(questions: { field: string; criteria: string; }[]) {
+export async function updateQualificationQuestions(questions: { field: string; criteria: string; format: string; }[]) {
     const supabase = await createClient();
     const empresaId = await getEmpresaId();
 

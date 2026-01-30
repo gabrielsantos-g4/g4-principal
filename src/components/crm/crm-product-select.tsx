@@ -77,7 +77,7 @@ export function CrmProductSelect({ value, options, onChange }: CrmProductSelectP
                     <div className="flex flex-wrap gap-1 items-center text-left">
                         {selectedProducts.length > 0 ? (
                             selectedProducts.map((name) => (
-                                <Badge key={name} variant="secondary" className="px-1 py-0 h-4 text-[9px] bg-white/10 hover:bg-white/20 text-white border-0 font-normal rounded-sm text-nowrap">
+                                <Badge key={name} variant="secondary" className="px-1 py-0.5 h-auto text-[11px] bg-white/10 hover:bg-white/20 text-white border-0 font-normal rounded-sm text-nowrap">
                                     {name}
                                 </Badge>
                             ))

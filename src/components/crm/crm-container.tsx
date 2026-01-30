@@ -12,7 +12,7 @@ export interface CrmFilterState {
     searchCompany: string;
     searchPhone: string;
     date: Date | undefined;
-    product: string;
+    product: string[];
     status: string;
     source: string;
     responsible: string;
@@ -32,7 +32,7 @@ export function CrmContainer({ initialLeads, stats, settings }: CrmContainerProp
         searchCompany: '',
         searchPhone: '',
         date: undefined,
-        product: '',
+        product: [],
         status: '',
         source: '',
         responsible: '',
@@ -40,12 +40,13 @@ export function CrmContainer({ initialLeads, stats, settings }: CrmContainerProp
     });
 
     return (
-        <div className="flex flex-col gap-6">
+        <div className="flex flex-col gap-6 h-full min-h-0 flex-1">
             <CrmStats stats={stats} />
             <CrmFilters
                 settings={settings}
                 filters={filters}
                 setFilters={setFilters}
+                leads={initialLeads}
             />
             <CrmTable
                 initialLeads={initialLeads}

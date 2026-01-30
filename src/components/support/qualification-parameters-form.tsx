@@ -12,15 +12,16 @@ import { updateQualificationQuestions } from "@/actions/crm/update-qualification
 interface Param {
     field: string
     criteria: string
+    format: string
 }
 
 export function QualificationParametersForm() {
     // Fixed size 4 for the 4 questions req
     const [params, setParams] = useState<Param[]>([
-        { field: "", criteria: "" },
-        { field: "", criteria: "" },
-        { field: "", criteria: "" },
-        { field: "", criteria: "" }
+        { field: "", criteria: "", format: "" },
+        { field: "", criteria: "", format: "" },
+        { field: "", criteria: "", format: "" },
+        { field: "", criteria: "", format: "" }
     ])
     const [loading, setLoading] = useState(true)
     const [saving, setSaving] = useState(false)
@@ -41,15 +42,15 @@ export function QualificationParametersForm() {
 
                 // Safe mapping in case of mixed data (though unlikely given dev flow)
                 const safeLoaded = loaded.map((item: any) => {
-                    if (typeof item === 'string') return { field: item, criteria: '' }
-                    return item as Param
+                    if (typeof item === 'string') return { field: item, criteria: '', format: '' }
+                    return { ...item, format: item.format || '' } as Param
                 })
 
                 const padded = [
-                    safeLoaded[0] || { field: "", criteria: "" },
-                    safeLoaded[1] || { field: "", criteria: "" },
-                    safeLoaded[2] || { field: "", criteria: "" },
-                    safeLoaded[3] || { field: "", criteria: "" }
+                    safeLoaded[0] || { field: "", criteria: "", format: "" },
+                    safeLoaded[1] || { field: "", criteria: "", format: "" },
+                    safeLoaded[2] || { field: "", criteria: "", format: "" },
+                    safeLoaded[3] || { field: "", criteria: "", format: "" }
                 ]
                 setParams(padded)
             }
@@ -100,41 +101,62 @@ export function QualificationParametersForm() {
     }
 
     return (
-        <div className="bg-[#111] p-6 rounded-lg border border-white/5 max-w-4xl">
+        <div className="bg-[#111] p-6 rounded-lg border border-white/5 max-w-5xl">
             <div className="mb-6">
                 <h2 className="text-lg font-bold text-white mb-2">Qualification Parameters</h2>
                 <p className="text-sm text-gray-400">
-                    Define the 4 key criteria (Field & Correct Answer) that Jess uses to qualify leads.
+                    Define 4 parameters to determine if a lead is qualified or not.
                 </p>
             </div>
 
             <div className="space-y-6">
                 <div className="grid grid-cols-12 gap-4 border-b border-white/10 pb-2">
-                    <div className="col-span-5 text-xs font-bold text-gray-500 uppercase">Field Name (e.g. Budget)</div>
-                    <div className="col-span-7 text-xs font-bold text-gray-500 uppercase">Expected Criteria (e.g. {'>'} 5000)</div>
+                    <div className="col-span-1 text-xs font-bold text-gray-500 uppercase">#</div>
+                    <div className="col-span-3 text-xs font-bold text-gray-500 uppercase">Field Name (e.g. Budget)</div>
+                    <div className="col-span-4 text-xs font-bold text-gray-500 uppercase">Expected Criteria (e.g. {'>'} 5000)</div>
+                    <div className="col-span-4 text-xs font-bold text-gray-500 uppercase">Data Format (e.g. 11 digits)</div>
                 </div>
 
-                {params.map((p, i) => (
-                    <div key={i} className="grid grid-cols-12 gap-4 items-center">
-                        <div className="col-span-1 text-gray-500 text-xs font-mono">{i + 1}</div>
-                        <div className="col-span-4">
-                            <Input
-                                value={p.field}
-                                onChange={(e) => handleChange(i, 'field', e.target.value)}
-                                placeholder="Field name..."
-                                className="bg-zinc-900 border-white/10 text-white focus-visible:ring-blue-500"
-                            />
+                {params.map((p, i) => {
+                    // B2B Market Standard Placeholders (English - US Context)
+                    const placeholders = [
+                        { field: "EIN (Employer ID)", criteria: "12-3456789", format: "9 digits" },
+                        { field: "Monthly Revenue Range", criteria: "$20,000 - $50,000", format: "Numeric ($)" },
+                        { field: "Company Size", criteria: "51-200 employees", format: "Number range" },
+                        { field: "Lead Role", criteria: "Manager or VP", format: "Free text" }
+                    ]
+                    const ph = placeholders[i] || { field: "Custom field", criteria: "Validation criteria", format: "Expected format" }
+
+                    return (
+                        <div key={i} className="grid grid-cols-12 gap-4 items-center">
+                            <div className="col-span-1 text-gray-500 text-xs font-mono">{i + 1}</div>
+                            <div className="col-span-3">
+                                <Input
+                                    value={p.field}
+                                    onChange={(e) => handleChange(i, 'field', e.target.value)}
+                                    placeholder={ph.field}
+                                    className="bg-zinc-900 border-white/10 text-white focus-visible:ring-blue-500 placeholder:text-gray-600"
+                                />
+                            </div>
+                            <div className="col-span-4">
+                                <Input
+                                    value={p.criteria}
+                                    onChange={(e) => handleChange(i, 'criteria', e.target.value)}
+                                    placeholder={ph.criteria}
+                                    className="bg-zinc-900 border-white/10 text-white focus-visible:ring-blue-500 placeholder:text-gray-600"
+                                />
+                            </div>
+                            <div className="col-span-4">
+                                <Input
+                                    value={p.format}
+                                    onChange={(e) => handleChange(i, 'format', e.target.value)}
+                                    placeholder={ph.format}
+                                    className="bg-zinc-900 border-white/10 text-white focus-visible:ring-blue-500 placeholder:text-gray-600"
+                                />
+                            </div>
                         </div>
-                        <div className="col-span-7">
-                            <Input
-                                value={p.criteria}
-                                onChange={(e) => handleChange(i, 'criteria', e.target.value)}
-                                placeholder="Expected response / Valid criteria..."
-                                className="bg-zinc-900 border-white/10 text-white focus-visible:ring-blue-500"
-                            />
-                        </div>
-                    </div>
-                ))}
+                    )
+                })}
 
                 <div className="pt-4 flex justify-end">
                     <Button

@@ -6,11 +6,12 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { CrmFilterState } from "./crm-container";
 import { formatPhoneNumberIntl } from 'react-phone-number-input';
 
-import { Trash2, Edit2, CheckCircle2, MessageCircle, ExternalLink, ChevronDown, Phone, Mail, Linkedin, Link2, RefreshCw } from "lucide-react";
+import { Trash2, Edit2, CheckCircle2, MessageCircle, ExternalLink, ChevronDown, Phone, Mail, Linkedin, Link2, RefreshCw, Globe, Copy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { LeadDetailsModal } from "./lead-details-modal";
 import { LeadHistoryModal } from "./lead-history-modal";
 import { LeadAmountModal } from "./lead-amount-modal";
+import { LostLeadModal } from "./lost-lead-modal";
 import { CrmSettingsModal } from "./crm-settings-modal";
 import { NewOpportunityModal } from "./new-opportunity-modal";
 import { CrmProductSelect } from "./crm-product-select";
@@ -53,6 +54,10 @@ import { updateLead } from "@/actions/crm/update-lead";
 import { toast } from "sonner";
 import { CrmSettings } from "@/actions/crm/get-crm-settings";
 
+// ... existing imports ...
+
+
+
 // Helper type aligned with Database structure
 interface LeadType {
     id: number;
@@ -61,6 +66,8 @@ interface LeadType {
     phone: string;
     email: string;
     linkedin: string;
+    website?: string;
+    role?: string;
     amount: string;
     product: string;
     status: string;
@@ -70,6 +77,7 @@ interface LeadType {
     nextStep: { date: string; progress: number; total: number };
     history: { id: string; message: string; date: Date }[];
     date: string; // Creation date required by Modals
+    lost_reason?: string;
 }
 
 interface CrmTableProps {
@@ -127,6 +135,8 @@ export function CrmTable({ initialLeads, settings, filters }: CrmTableProps) {
         phone: l.phone,
         email: l.email,
         linkedin: l.linkedin,
+        website: l.website,
+        role: l.role,
         product: l.product || "",
         amount: l.amount?.toString() || "0",
         status: l.status || "New",
@@ -149,6 +159,7 @@ export function CrmTable({ initialLeads, settings, filters }: CrmTableProps) {
     const [editLead, setEditLead] = useState<LeadType | null>(null);
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
     const [deleteLeadId, setDeleteLeadId] = useState<number | null>(null);
+    const [lostLeadId, setLostLeadId] = useState<number | null>(null);
 
     // Pagination State
     const [currentPage, setCurrentPage] = useState(1);
@@ -177,7 +188,7 @@ export function CrmTable({ initialLeads, settings, filters }: CrmTableProps) {
             if (filters.searchPhone && !lead.phone?.toLowerCase().includes(filters.searchPhone.toLowerCase())) return false;
 
             // Product Filter
-            if (filters.product && lead.product !== filters.product) return false;
+            if (filters.product?.length > 0 && !filters.product.includes(lead.product)) return false;
 
             // Custom Field Filter
             if (filters.customField && lead.custom !== filters.customField) return false;
@@ -295,12 +306,57 @@ export function CrmTable({ initialLeads, settings, filters }: CrmTableProps) {
         }
     };
 
-    const handleMoveToWon = (leadId: number) => {
+    const handleMoveToWon = async (leadId: number) => {
         setLeads(prev => prev.map(l => l.id === leadId ? { ...l, status: "Won", destination: "Won" } : l));
+        const result = await updateLead(leadId, { status: "Won" });
+        if (result.success) {
+            toast.success("Nice! Deal won.");
+        } else {
+            toast.error("Failed to move to Won");
+        }
     };
 
     const handleMoveToLost = (leadId: number) => {
-        setLeads(prev => prev.map(l => l.id === leadId ? { ...l, status: "Lost", destination: "Lost" } : l));
+        setLostLeadId(leadId);
+    };
+
+    const handleConfirmLost = async (reason: string) => {
+        if (!lostLeadId) return;
+
+        const leadId = lostLeadId;
+
+        // Optimistic UI update
+        setLeads(prev => prev.map(l => l.id === leadId ? { ...l, status: "Lost", destination: "Lost", lost_reason: reason } : l));
+        setLostLeadId(null);
+
+        const result = await updateLead(leadId, { status: "Lost", lost_reason: reason });
+
+        if (result.success) {
+            toast.error("No problem. Let’s move forward.", {
+                description: `Reason: ${reason}`
+            });
+        } else {
+            toast.error("Failed to move to Lost");
+        }
+    }
+
+    const handleReturnToLeads = async (leadId: number) => {
+        // Optimistic update: Set status to "New" and move to top
+        setLeads(prev => {
+            const lead = prev.find(l => l.id === leadId);
+            if (!lead) return prev;
+
+            const updatedLead = { ...lead, status: "New" };
+            // Remove from current position and add to top
+            return [updatedLead, ...prev.filter(l => l.id !== leadId)];
+        });
+
+        const result = await updateLead(leadId, { status: "New" });
+        if (result.success) {
+            toast.success("Lead returned to active list");
+        } else {
+            toast.error("Failed to return lead");
+        }
     };
 
     const handleAddHistoryMessage = async (message: string) => {
@@ -389,18 +445,20 @@ export function CrmTable({ initialLeads, settings, filters }: CrmTableProps) {
 
     return (
         <>
-            <div className="bg-[#111] rounded-lg border border-white/5 flex flex-col">
-                <div className="overflow-auto custom-scrollbar max-h-[calc(100vh-380px)] min-h-[400px]">
+            <div className="bg-[#111] rounded-lg border border-white/5 flex flex-col flex-1 min-h-0 h-full overflow-hidden">
+                <div className="w-full flex-1 min-h-0 overflow-y-auto custom-scrollbar">
                     <table className="w-full border-collapse">
 
                         <thead className="bg-[#1E1E1E] sticky top-0 z-10 border-b border-white/5">
                             <tr className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">
                                 <th className="px-3 py-3 text-left min-w-[140px]">Name</th>
                                 <th className="px-3 py-3 text-left min-w-[120px]">Company</th>
+                                <th className="px-3 py-3 text-left min-w-[100px]">Role</th>
                                 <th className="px-2 py-3 text-center w-[36px]"><div className="flex justify-center"><Phone size={13} /></div></th>
                                 <th className="px-2 py-3 text-center w-[36px]"><div className="flex justify-center"><Mail size={13} /></div></th>
                                 <th className="px-2 py-3 text-center w-[36px]"><div className="flex justify-center"><Linkedin size={13} /></div></th>
-                                <th className="px-3 py-3 text-left min-w-[130px]">Next Step</th>
+                                <th className="px-2 py-3 text-center w-[36px]"><div className="flex justify-center"><Globe size={13} /></div></th>
+                                <th className="px-3 py-3 pl-8 text-left min-w-[130px]">Next Step</th>
                                 <th className="px-1 py-3 text-center w-[44px]">
                                     <div className="flex justify-center items-center gap-1">
                                         <Link2 size={13} />
@@ -434,6 +492,9 @@ export function CrmTable({ initialLeads, settings, filters }: CrmTableProps) {
                                         </td>
                                         <td className="px-3 py-2">
                                             <div className="font-normal text-white/50 truncate text-[11px] max-w-[110px]">{lead.company}</div>
+                                        </td>
+                                        <td className="px-3 py-2">
+                                            <div className="font-normal text-white/50 truncate text-[11px] max-w-[100px]">{lead.role || "-"}</div>
                                         </td>
                                         <td className="px-2 py-2">
                                             <div className="flex justify-center">
@@ -489,42 +550,80 @@ export function CrmTable({ initialLeads, settings, filters }: CrmTableProps) {
                                                             </TooltipContent>
                                                         </Tooltip>
                                                     </TooltipProvider>
-                                                    <PopoverContent className="w-auto p-3 bg-[#1A1A1A] border-white/10 text-white z-[9999]" align="center" onClick={(e) => e.stopPropagation()}>
-                                                        <a href={`mailto:${lead.email}`} className="text-sm font-medium text-blue-400 hover:underline hover:text-blue-300 transition-colors flex items-center gap-2">
-                                                            <Mail size={14} />
-                                                            {lead.email}
+                                                    <PopoverContent className="w-auto p-1.5 bg-[#1A1A1A] border-white/10 text-white z-[9999] flex flex-col gap-1" align="center" onClick={(e) => e.stopPropagation()}>
+                                                        <a
+                                                            href={`mailto:${lead.email}`}
+                                                            className="flex items-center gap-2 px-3 py-2 rounded-md hover:bg-white/10 transition-colors text-xs text-white w-full text-left"
+                                                        >
+                                                            <Mail size={13} />
+                                                            Send Email
                                                         </a>
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                navigator.clipboard.writeText(lead.email);
+                                                                toast.success("Email copied to clipboard");
+                                                            }}
+                                                            className="flex items-center gap-2 px-3 py-2 rounded-md hover:bg-white/10 transition-colors text-xs text-white w-full text-left"
+                                                        >
+                                                            <Copy size={13} />
+                                                            Copy Email
+                                                        </button>
                                                     </PopoverContent>
                                                 </Popover>
                                             </div>
                                         </td>
                                         <td className="px-2 py-2">
                                             <div className="flex justify-center">
-                                                <Popover>
+                                                <TooltipProvider>
+                                                    <Tooltip>
+                                                        <TooltipTrigger asChild>
+                                                            <a
+                                                                href={lead.linkedin}
+                                                                target="_blank"
+                                                                rel="noopener noreferrer"
+                                                                className="p-1 rounded-md block hover:bg-white/10 text-gray-500 hover:text-white transition-colors cursor-pointer"
+                                                                onClick={(e) => e.stopPropagation()}
+                                                            >
+                                                                <Linkedin size={13} />
+                                                            </a>
+                                                        </TooltipTrigger>
+                                                        <TooltipContent>
+                                                            <p>{lead.linkedin}</p>
+                                                        </TooltipContent>
+                                                    </Tooltip>
+                                                </TooltipProvider>
+                                            </div>
+                                        </td>
+                                        <td className="px-2 py-2">
+                                            <div className="flex justify-center">
+                                                {lead.website ? (
                                                     <TooltipProvider>
                                                         <Tooltip>
                                                             <TooltipTrigger asChild>
-                                                                <PopoverTrigger asChild>
-                                                                    <div className="p-1 rounded-md hover:bg-white/10 text-gray-500 hover:text-white transition-colors cursor-pointer" onClick={(e) => e.stopPropagation()}>
-                                                                        <Linkedin size={13} />
-                                                                    </div>
-                                                                </PopoverTrigger>
+                                                                <a
+                                                                    href={lead.website.startsWith('http') ? lead.website : `https://${lead.website}`}
+                                                                    target="_blank"
+                                                                    rel="noopener noreferrer"
+                                                                    className="p-1 rounded-md block hover:bg-white/10 text-gray-500 hover:text-white transition-colors cursor-pointer"
+                                                                    onClick={(e) => e.stopPropagation()}
+                                                                >
+                                                                    <Globe size={13} />
+                                                                </a>
                                                             </TooltipTrigger>
                                                             <TooltipContent>
-                                                                <p>{lead.linkedin}</p>
+                                                                <p>{lead.website}</p>
                                                             </TooltipContent>
                                                         </Tooltip>
                                                     </TooltipProvider>
-                                                    <PopoverContent className="w-auto p-3 bg-[#1A1A1A] border-white/10 text-white z-[9999]" align="center" onClick={(e) => e.stopPropagation()}>
-                                                        <a href={lead.linkedin} target="_blank" rel="noopener noreferrer" className="text-sm font-medium text-blue-400 hover:underline hover:text-blue-300 transition-colors flex items-center gap-2">
-                                                            <Linkedin size={14} />
-                                                            {lead.linkedin}
-                                                        </a>
-                                                    </PopoverContent>
-                                                </Popover>
+                                                ) : (
+                                                    <div className="p-1 rounded-md text-gray-700 cursor-not-allowed">
+                                                        <Globe size={13} />
+                                                    </div>
+                                                )}
                                             </div>
                                         </td>
-                                        <td className="px-3 py-2">
+                                        <td className="px-3 py-2 pl-8">
                                             <div className="flex flex-col gap-1" onClick={(e) => e.stopPropagation()}>
                                                 <Popover>
                                                     <PopoverTrigger asChild>
@@ -861,18 +960,29 @@ export function CrmTable({ initialLeads, settings, filters }: CrmTableProps) {
                                                         </button>
                                                     </DropdownMenuTrigger>
                                                     <DropdownMenuContent className="w-[160px] bg-[#1A1A1A] border-white/10 text-white" align="end">
-                                                        <DropdownMenuItem
-                                                            className="cursor-pointer hover:bg-white/10 text-[12px] focus:bg-white/10 focus:text-white"
-                                                            onClick={() => handleMoveToWon(lead.id)}
-                                                        >
-                                                            Move to Won
-                                                        </DropdownMenuItem>
-                                                        <DropdownMenuItem
-                                                            className="cursor-pointer hover:bg-white/10 text-[12px] focus:bg-white/10 focus:text-white"
-                                                            onClick={() => handleMoveToLost(lead.id)}
-                                                        >
-                                                            Move to Lost
-                                                        </DropdownMenuItem>
+                                                        {lead.status === 'Won' || lead.status === 'Lost' ? (
+                                                            <DropdownMenuItem
+                                                                className="cursor-pointer hover:bg-white/10 text-[12px] focus:bg-white/10 focus:text-white"
+                                                                onClick={() => handleReturnToLeads(lead.id)}
+                                                            >
+                                                                Return to leads
+                                                            </DropdownMenuItem>
+                                                        ) : (
+                                                            <>
+                                                                <DropdownMenuItem
+                                                                    className="cursor-pointer hover:bg-white/10 text-[12px] focus:bg-white/10 focus:text-white"
+                                                                    onClick={() => handleMoveToWon(lead.id)}
+                                                                >
+                                                                    Move to Won
+                                                                </DropdownMenuItem>
+                                                                <DropdownMenuItem
+                                                                    className="cursor-pointer hover:bg-white/10 text-[12px] focus:bg-white/10 focus:text-white"
+                                                                    onClick={() => handleMoveToLost(lead.id)}
+                                                                >
+                                                                    Move to Lost
+                                                                </DropdownMenuItem>
+                                                            </>
+                                                        )}
                                                         <DropdownMenuSeparator className="bg-white/10" />
                                                         <DropdownMenuItem
                                                             className="cursor-pointer hover:bg-red-500/10 text-red-400 hover:text-red-300 text-[12px] focus:bg-red-500/10 focus:text-red-300"
@@ -961,6 +1071,14 @@ export function CrmTable({ initialLeads, settings, filters }: CrmTableProps) {
                 onClose={() => setAmountLead(null)}
                 currentAmount={amountLead?.amount || ""}
                 onSave={handleSaveAmount}
+            />
+
+            {/* Lost Lead Modal */}
+            <LostLeadModal
+                isOpen={!!lostLeadId}
+                onClose={() => setLostLeadId(null)}
+                onConfirm={handleConfirmLost}
+                reasons={settings.lost_reasons || []}
             />
 
             <CrmSettingsModal

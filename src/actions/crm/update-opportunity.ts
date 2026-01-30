@@ -10,6 +10,8 @@ interface UpdateOpportunityParams {
     phone?: string;
     email?: string;
     linkedin?: string;
+    website?: string;
+    role?: string;
     product?: string;
     customField?: string;
     price?: number; // Optional, to update amount if product changes
@@ -24,6 +26,8 @@ export async function updateOpportunity(data: UpdateOpportunityParams) {
         phone: data.phone,
         email: data.email,
         linkedin: data.linkedin,
+        website: data.website,
+        role: data.role,
         product: data.product,
         custom_field: data.customField,
     };

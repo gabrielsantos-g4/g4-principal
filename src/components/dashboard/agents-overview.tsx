@@ -41,7 +41,6 @@ export function AgentsOverview() {
                                 onChange={(e) => setSearch(e.target.value)}
                                 placeholder="Type area or agent..."
                                 className="w-full bg-transparent text-lg text-white placeholder:text-gray-500 focus:outline-none font-light h-full"
-                                autoFocus
                             />
                         </div>
 

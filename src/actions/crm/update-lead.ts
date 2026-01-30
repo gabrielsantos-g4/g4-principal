@@ -10,6 +10,7 @@ interface UpdateLeadParams {
     custom_field?: string;
     amount?: number;
     product?: string;
+    lost_reason?: string;
 }
 
 export async function updateLead(id: number, data: UpdateLeadParams) {

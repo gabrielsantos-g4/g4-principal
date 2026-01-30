@@ -67,8 +67,9 @@ export function CrmSettingsModal({ isOpen, onClose, settings }: CrmSettingsModal
     const normalizeTags = (items: (string | TagItem)[]): TagItem[] =>
         items?.map(item => typeof item === 'string' ? { label: item, bg: 'bg-slate-800', text: 'text-slate-100' } : item) || [];
 
-    const [responsibles, setResponsibles] = useState<TagItem[]>(normalizeTags(settings?.responsibles));
-    const [sources, setSources] = useState<TagItem[]>(normalizeTags(settings?.sources));
+    const [responsibles, setResponsibles] = useState<TagItem[]>(normalizeTags(settings?.responsibles || []));
+    const [sources, setSources] = useState<TagItem[]>(normalizeTags(settings?.sources || []));
+    const [lostReasons, setLostReasons] = useState<TagItem[]>(normalizeTags(settings?.lost_reasons || []));
 
     // Custom Field State
     const [customFieldName, setCustomFieldName] = useState(settings?.custom_fields?.name || "Category");
@@ -79,26 +80,28 @@ export function CrmSettingsModal({ isOpen, onClose, settings }: CrmSettingsModal
     const [newStatus, setNewStatus] = useState({ label: "", bg: "bg-gray-500", text: "text-white" });
     const [newResponsible, setNewResponsible] = useState({ name: "", email: "" });
     const [newSource, setNewSource] = useState("");
+    const [newLostReason, setNewLostReason] = useState("");
     const [newCustomOption, setNewCustomOption] = useState("");
 
     // Edit/Delete State
     const [editingProductIndex, setEditingProductIndex] = useState<number | null>(null);
     const [editingProductData, setEditingProductData] = useState({ name: "", price: "" });
-    const [itemToDelete, setItemToDelete] = useState<{ type: 'product' | 'status' | 'responsible' | 'source' | 'customOption', index: number } | null>(null);
+    const [itemToDelete, setItemToDelete] = useState<{ type: 'product' | 'status' | 'responsible' | 'source' | 'lostReason' | 'customOption', index: number } | null>(null);
 
     // Sync state when settings prop updates
     useEffect(() => {
         if (!settings) return;
         setProducts(settings.products || []);
         setStatuses(settings.statuses || []);
-        setResponsibles(normalizeTags(settings.responsibles));
-        setSources(normalizeTags(settings.sources));
+        setResponsibles(normalizeTags(settings.responsibles || []));
+        setSources(normalizeTags(settings.sources || []));
+        setLostReasons(normalizeTags(settings.lost_reasons || []));
         setCustomFieldName(settings.custom_fields?.name || "Category");
-        setCustomOptions(normalizeTags(settings.custom_fields?.options));
+        setCustomOptions(normalizeTags(settings.custom_fields?.options || []));
     }, [settings]);
 
 
-    const saveSettings = async (overrideProducts?: any[], overrideStatuses?: any[], overrideResponsibles?: any[], overrideSources?: any[], overrideCustomOptions?: any[], silent: boolean = false) => {
+    const saveSettings = async (overrideProducts?: any[], overrideStatuses?: any[], overrideResponsibles?: any[], overrideSources?: any[], overrideCustomOptions?: any[], overrideLostReasons?: any[], silent: boolean = false) => {
         setLoading(true);
         try {
             const updatedSettings = {
@@ -106,6 +109,7 @@ export function CrmSettingsModal({ isOpen, onClose, settings }: CrmSettingsModal
                 statuses: overrideStatuses || statuses,
                 responsibles: overrideResponsibles || responsibles,
                 sources: overrideSources || sources,
+                lost_reasons: overrideLostReasons || lostReasons,
                 custom_fields: {
                     name: customFieldName,
                     options: overrideCustomOptions || customOptions
@@ -170,27 +174,32 @@ export function CrmSettingsModal({ isOpen, onClose, settings }: CrmSettingsModal
             const updatedProducts = [...products];
             updatedProducts.splice(index, 1);
             setProducts(updatedProducts);
-            await saveSettings(updatedProducts, undefined, undefined, undefined, undefined, true);
+            await saveSettings(updatedProducts, undefined, undefined, undefined, undefined, undefined, true);
         } else if (type === 'status') {
             const updatedStatuses = [...statuses];
             updatedStatuses.splice(index, 1);
             setStatuses(updatedStatuses);
-            await saveSettings(undefined, updatedStatuses, undefined, undefined, undefined, true);
+            await saveSettings(undefined, updatedStatuses, undefined, undefined, undefined, undefined, true);
         } else if (type === 'responsible') {
             const updated = [...responsibles];
             updated.splice(index, 1);
             setResponsibles(updated);
-            await saveSettings(undefined, undefined, updated, undefined, undefined, true);
+            await saveSettings(undefined, undefined, updated, undefined, undefined, undefined, true);
         } else if (type === 'source') {
             const updated = [...sources];
             updated.splice(index, 1);
             setSources(updated);
-            await saveSettings(undefined, undefined, undefined, updated, undefined, true);
+            await saveSettings(undefined, undefined, undefined, updated, undefined, undefined, true);
+        } else if (type === 'lostReason') {
+            const updated = [...lostReasons];
+            updated.splice(index, 1);
+            setLostReasons(updated);
+            await saveSettings(undefined, undefined, undefined, undefined, undefined, updated, true);
         } else if (type === 'customOption') {
             const updated = [...customOptions];
             updated.splice(index, 1);
             setCustomOptions(updated);
-            await saveSettings(undefined, undefined, undefined, undefined, updated, true);
+            await saveSettings(undefined, undefined, undefined, undefined, updated, undefined, true);
         }
 
         toast.error("Deleted!", {
@@ -227,7 +236,7 @@ export function CrmSettingsModal({ isOpen, onClose, settings }: CrmSettingsModal
         const updatedStatuses = [...statuses];
         updatedStatuses[index] = { ...updatedStatuses[index], bg, text };
         setStatuses(updatedStatuses);
-        await saveSettings(undefined, updatedStatuses, undefined, undefined, undefined, true);
+        await saveSettings(undefined, updatedStatuses, undefined, undefined, undefined, undefined, true);
     }
 
     // --- Others ---
@@ -248,7 +257,7 @@ export function CrmSettingsModal({ isOpen, onClose, settings }: CrmSettingsModal
         const updated = [...responsibles];
         updated[index] = { ...updated[index], bg, text };
         setResponsibles(updated);
-        await saveSettings(undefined, undefined, updated, undefined, undefined, true);
+        await saveSettings(undefined, undefined, updated, undefined, undefined, undefined, true);
     }
 
     const addSource = async () => {
@@ -268,7 +277,28 @@ export function CrmSettingsModal({ isOpen, onClose, settings }: CrmSettingsModal
         const updated = [...sources];
         updated[index] = { ...updated[index], bg, text };
         setSources(updated);
-        await saveSettings(undefined, undefined, undefined, updated, undefined, true);
+        await saveSettings(undefined, undefined, undefined, updated, undefined, undefined, true);
+    }
+
+    // --- Lost Reasons ---
+    const addLostReason = async () => {
+        if (!newLostReason || lostReasons.some(r => r.label === newLostReason)) return;
+        const color = getRandomColor();
+        const updated = [...lostReasons, { label: newLostReason, ...color }];
+        setLostReasons(updated);
+        setNewLostReason("");
+        await saveSettings(undefined, undefined, undefined, undefined, undefined, updated);
+    };
+
+    const removeLostReason = (index: number) => {
+        setItemToDelete({ type: 'lostReason', index });
+    };
+
+    const updateLostReasonColor = async (index: number, bg: string, text: string) => {
+        const updated = [...lostReasons];
+        updated[index] = { ...updated[index], bg, text };
+        setLostReasons(updated);
+        await saveSettings(undefined, undefined, undefined, undefined, undefined, updated, true);
     }
 
     // --- Custom Options ---
@@ -289,7 +319,7 @@ export function CrmSettingsModal({ isOpen, onClose, settings }: CrmSettingsModal
         const updated = [...customOptions];
         updated[index] = { ...updated[index], bg, text };
         setCustomOptions(updated);
-        await saveSettings(undefined, undefined, undefined, undefined, updated, true);
+        await saveSettings(undefined, undefined, undefined, undefined, updated, undefined, true);
     }
 
     // Helper for Enter key
@@ -541,6 +571,46 @@ export function CrmSettingsModal({ isOpen, onClose, settings }: CrmSettingsModal
                                 </div>
                             </div>
 
+                            {/* Lost Reasons */}
+                            <div className="space-y-4">
+                                <h3 className="text-lg font-semibold border-b border-white/10 pb-2">Lost Lead Reasons</h3>
+                                <div className="flex gap-2">
+                                    <Input
+                                        placeholder="New Reason"
+                                        value={newLostReason}
+                                        onChange={(e) => setNewLostReason(e.target.value)}
+                                        className="bg-black/50 border-white/20 text-white"
+                                        onKeyDown={(e) => handleKeyDown(e, addLostReason)}
+                                    />
+                                    <Button onClick={addLostReason} disabled={loading || !newLostReason} className="bg-white/10 hover:bg-white/20 text-white">
+                                        <Plus className="h-4 w-4" />
+                                    </Button>
+                                </div>
+                                <div className="flex flex-wrap gap-2">
+                                    {lostReasons.map((reason, index) => (
+                                        <Popover key={index}>
+                                            <PopoverTrigger asChild>
+                                                <div className={`flex items-center gap-1 px-2 py-1 rounded text-xs border border-white/10 ${typeof reason === 'string' ? 'bg-red-900/30 text-red-200' : `${reason.bg} ${reason.text}`} cursor-pointer hover:opacity-80 transition-opacity`}>
+                                                    {typeof reason === 'string' ? reason : reason.label}
+                                                    <button
+                                                        onClick={(e) => { e.stopPropagation(); removeLostReason(index); }}
+                                                        className="hover:text-white ml-1 opacity-70 hover:opacity-100"
+                                                    >
+                                                        <X className="h-3 w-3" />
+                                                    </button>
+                                                </div>
+                                            </PopoverTrigger>
+                                            <PopoverContent className="w-auto p-0 bg-[#1a1a1a] border-white/10">
+                                                <ColorPicker
+                                                    currentColor={typeof reason === 'string' ? 'bg-red-900' : reason.bg}
+                                                    onSelect={(bg, text) => updateLostReasonColor(index, bg, text)}
+                                                />
+                                            </PopoverContent>
+                                        </Popover>
+                                    ))}
+                                </div>
+                            </div>
+
                             {/* Sources */}
                             <div className="space-y-4">
                                 <h3 className="text-lg font-semibold border-b border-white/10 pb-2">Lead Sources</h3>
@@ -580,6 +650,8 @@ export function CrmSettingsModal({ isOpen, onClose, settings }: CrmSettingsModal
                                     ))}
                                 </div>
                             </div>
+
+
 
                             {/* Custom Field */}
                             <div className="space-y-4">
@@ -670,6 +742,7 @@ export function CrmSettingsModal({ isOpen, onClose, settings }: CrmSettingsModal
                             {itemToDelete?.type === 'status' && <span className="font-semibold text-white"> {statuses[itemToDelete.index]?.label}</span>}
                             {itemToDelete?.type === 'responsible' && <span className="font-semibold text-white"> {responsibles[itemToDelete.index]?.label}</span>}
                             {itemToDelete?.type === 'source' && <span className="font-semibold text-white"> {sources[itemToDelete.index]?.label}</span>}
+                            {itemToDelete?.type === 'lostReason' && <span className="font-semibold text-white"> {lostReasons[itemToDelete.index]?.label}</span>}
                             {itemToDelete?.type === 'customOption' && <span className="font-semibold text-white"> {customOptions[itemToDelete.index]?.label}</span>}
                             ?
                         </AlertDialogDescription>

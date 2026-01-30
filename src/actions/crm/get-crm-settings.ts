@@ -19,6 +19,7 @@ export interface CrmSettings {
     sources: (string | TagItem)[];
     custom_fields: { name: string; options: (string | TagItem)[] };
     qualification_questions?: { field: string; criteria: string; }[];
+    lost_reasons?: (string | TagItem)[];
 }
 
 const DEFAULT_SETTINGS: CrmSettings = {
@@ -56,7 +57,13 @@ const DEFAULT_SETTINGS: CrmSettings = {
             { label: "Internal", bg: "bg-slate-800", text: "text-slate-100" }
         ]
     },
-    qualification_questions: []
+    qualification_questions: [],
+    lost_reasons: [
+        { label: "Price too high", bg: "bg-red-900", text: "text-red-100" },
+        { label: "Competitor", bg: "bg-slate-800", text: "text-slate-100" },
+        { label: "Features missing", bg: "bg-slate-800", text: "text-slate-100" },
+        { label: "Bad timing", bg: "bg-slate-800", text: "text-slate-100" }
+    ]
 };
 
 export async function getCrmSettings(): Promise<CrmSettings> {
@@ -87,7 +94,8 @@ export async function getCrmSettings(): Promise<CrmSettings> {
                 ...data.custom_fields,
                 options: migrateTags(data.custom_fields?.options)
             },
-            qualification_questions: data.qualification_questions || []
+            qualification_questions: data.qualification_questions || [],
+            lost_reasons: migrateTags(data.lost_reasons || [])
         };
     }
 

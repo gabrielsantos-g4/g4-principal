@@ -82,7 +82,7 @@ export default async function AgentPage({ params, searchParams }: AgentPageProps
         const company = await getCompanyDNA()
 
         return (
-            <div className="h-screen bg-black text-white font-sans flex flex-col overflow-hidden">
+            <div className="flex-1 min-h-0 bg-black text-white font-sans flex flex-col overflow-hidden">
                 <DashboardHeader />
                 <div className="flex-1 w-full h-full overflow-y-auto bg-black p-8">
                     <OrchestratorTabs company={company} activeAgents={profile?.active_agents || null} userProfile={profile} />
@@ -120,7 +120,7 @@ export default async function AgentPage({ params, searchParams }: AgentPageProps
 
     if (isBi) {
         return (
-            <div className="h-screen bg-black text-white font-sans flex flex-col overflow-hidden">
+            <div className="flex-1 min-h-0 bg-black text-white font-sans flex flex-col overflow-hidden">
                 <DashboardHeader />
                 <MobileDashboardLayout
                     rightSidebar={
@@ -188,7 +188,7 @@ export default async function AgentPage({ params, searchParams }: AgentPageProps
 
     if (slug === 'organic-social') {
         return (
-            <div className="h-screen bg-black text-white font-sans flex flex-col overflow-hidden">
+            <div className="flex-1 min-h-0 bg-black text-white font-sans flex flex-col overflow-hidden">
                 <DashboardHeader />
                 <MobileDashboardLayout
                     rightSidebar={
@@ -216,7 +216,7 @@ export default async function AgentPage({ params, searchParams }: AgentPageProps
 
     if (slug === 'organic-search') {
         return (
-            <div className="h-screen bg-black text-white font-sans flex flex-col overflow-hidden">
+            <div className="flex-1 min-h-0 bg-black text-white font-sans flex flex-col overflow-hidden">
                 <DashboardHeader />
                 <MobileDashboardLayout
                     rightSidebar={
@@ -244,7 +244,7 @@ export default async function AgentPage({ params, searchParams }: AgentPageProps
 
     if (isCrm) {
         return (
-            <div className="h-screen bg-black text-white font-sans flex flex-col overflow-hidden">
+            <div className="flex-1 min-h-0 bg-black text-white font-sans flex flex-col overflow-hidden">
                 <DashboardHeader />
                 <MobileDashboardLayout
                     rightSidebar={
@@ -274,7 +274,7 @@ export default async function AgentPage({ params, searchParams }: AgentPageProps
         const trainings = await getTrainings()
 
         return (
-            <div className="h-screen bg-black text-white font-sans flex flex-col overflow-hidden">
+            <div className="flex-1 min-h-0 bg-black text-white font-sans flex flex-col overflow-hidden">
                 <DashboardHeader />
                 <MobileDashboardLayout
                     rightSidebar={
@@ -306,7 +306,7 @@ export default async function AgentPage({ params, searchParams }: AgentPageProps
         const designRequests = await getDesignRequests()
 
         return (
-            <div className="h-screen bg-black text-white font-sans flex flex-col overflow-hidden">
+            <div className="flex-1 min-h-0 bg-black text-white font-sans flex flex-col overflow-hidden">
                 <DashboardHeader />
                 <MobileDashboardLayout
                     rightSidebar={
@@ -342,7 +342,7 @@ export default async function AgentPage({ params, searchParams }: AgentPageProps
     }
     if (slug === 'paid-social') {
         return (
-            <div className="h-screen bg-black text-white font-sans flex flex-col overflow-hidden">
+            <div className="flex-1 min-h-0 bg-black text-white font-sans flex flex-col overflow-hidden">
                 <DashboardHeader />
                 <MobileDashboardLayout
                     rightSidebar={
@@ -373,7 +373,7 @@ export default async function AgentPage({ params, searchParams }: AgentPageProps
         const initiatives = await getInitiatives()
 
         return (
-            <div className="h-screen bg-black text-white font-sans flex flex-col overflow-hidden">
+            <div className="flex-1 min-h-0 bg-black text-white font-sans flex flex-col overflow-hidden">
                 <DashboardHeader />
                 <MobileDashboardLayout
                     rightSidebar={
@@ -403,7 +403,7 @@ export default async function AgentPage({ params, searchParams }: AgentPageProps
 
     if (slug === 'ceo-positioning') {
         return (
-            <div className="h-screen bg-black text-white font-sans flex flex-col overflow-hidden">
+            <div className="flex-1 min-h-0 bg-black text-white font-sans flex flex-col overflow-hidden">
                 <DashboardHeader />
                 <MobileDashboardLayout
                     rightSidebar={
@@ -430,7 +430,7 @@ export default async function AgentPage({ params, searchParams }: AgentPageProps
 
     if (isCompetitors) {
         return (
-            <div className="h-screen bg-black text-white font-sans flex flex-col overflow-hidden">
+            <div className="flex-1 min-h-0 bg-black text-white font-sans flex flex-col overflow-hidden">
                 <DashboardHeader />
                 <MobileDashboardLayout
                     rightSidebar={
@@ -477,7 +477,7 @@ export default async function AgentPage({ params, searchParams }: AgentPageProps
     }
 
     return (
-        <div className="h-screen bg-black text-white font-sans flex flex-col overflow-hidden">
+        <div className="h-full bg-black text-white font-sans flex flex-col overflow-hidden">
             <DashboardHeader />
 
             <MobileDashboardLayout

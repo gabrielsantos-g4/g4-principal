@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import PhoneInput from "react-phone-number-input";
@@ -12,6 +11,7 @@ import { createOpportunity } from "@/actions/crm/create-opportunity";
 import { updateOpportunity } from "@/actions/crm/update-opportunity";
 import "@/styles/phone-input.css";
 import { CountrySelect } from "./country-select";
+import { CrmProductSelect } from "./crm-product-select";
 
 import { CrmSettings } from "@/actions/crm/get-crm-settings";
 
@@ -26,10 +26,13 @@ export function NewOpportunityModal({ isOpen, onClose, settings, initialData }: 
     const isEditMode = !!initialData;
     const [phone, setPhone] = useState<string | undefined>();
     const [name, setName] = useState("");
+    const [role, setRole] = useState("");
     const [company, setCompany] = useState("");
+    const [website, setWebsite] = useState("");
     const [email, setEmail] = useState("");
     const [linkedin, setLinkedin] = useState("");
     const [product, setProduct] = useState("");
+    const [amount, setAmount] = useState<number>(0);
     const [isSaving, setIsSaving] = useState(false);
 
     // Sync with initialData when opening
@@ -37,18 +40,26 @@ export function NewOpportunityModal({ isOpen, onClose, settings, initialData }: 
         if (isOpen) {
             if (initialData) {
                 setName(initialData.name || "");
+                setRole(initialData.role || "");
                 setCompany(initialData.company || "");
+                setWebsite(initialData.website || "");
                 setPhone(initialData.phone);
                 setEmail(initialData.email || "");
                 setLinkedin(initialData.linkedin || "");
-                setProduct(initialData.product || "");
+                setLinkedin(initialData.linkedin || "");
+                setProduct(initialData.product || "[]");
+                setAmount(parseFloat(initialData.amount) || 0);
             } else {
                 setName("");
+                setRole("");
                 setCompany("");
+                setWebsite("");
                 setPhone(undefined);
                 setEmail("");
                 setLinkedin("");
-                setProduct("");
+                setLinkedin("");
+                setProduct("[]");
+                setAmount(0);
             }
         }
     }, [isOpen, initialData]);
@@ -64,12 +75,10 @@ export function NewOpportunityModal({ isOpen, onClose, settings, initialData }: 
             let result;
             if (isEditMode) {
                 // Determine if we need to update amount (if product changed)
+                // Update amount if product changed
                 let priceToUpdate: number | undefined = undefined;
                 if (product !== initialData.product) {
-                    const selectedProduct = settings?.products?.find(p => p.name === product);
-                    if (selectedProduct) {
-                        priceToUpdate = parseFloat(selectedProduct.price);
-                    }
+                    priceToUpdate = amount;
                 }
 
                 result = await updateOpportunity({
@@ -79,6 +88,8 @@ export function NewOpportunityModal({ isOpen, onClose, settings, initialData }: 
                     phone,
                     email,
                     linkedin,
+                    website,
+                    role,
                     product,
                     price: priceToUpdate
                 });
@@ -89,6 +100,8 @@ export function NewOpportunityModal({ isOpen, onClose, settings, initialData }: 
                     phone,
                     email,
                     linkedin,
+                    website,
+                    role,
                     product
                 });
             }
@@ -115,8 +128,8 @@ export function NewOpportunityModal({ isOpen, onClose, settings, initialData }: 
                     <DialogTitle className="text-2xl font-bold">{isEditMode ? "Edit Opportunity" : "New opportunity"}</DialogTitle>
                 </DialogHeader>
 
-                <div className="flex items-end gap-3 w-full">
-                    <div className="grid grid-cols-6 gap-3 w-full">
+                <form onSubmit={(e) => { e.preventDefault(); handleSave(); }} className="flex flex-col gap-6 w-full">
+                    <div className="grid grid-cols-4 gap-4 w-full">
                         {/* Name */}
                         <div className="flex flex-col gap-1.5">
                             <label className="text-sm font-bold text-gray-400">Name</label>
@@ -128,6 +141,17 @@ export function NewOpportunityModal({ isOpen, onClose, settings, initialData }: 
                             />
                         </div>
 
+                        {/* Role */}
+                        <div className="flex flex-col gap-1.5">
+                            <label className="text-sm font-bold text-gray-400">Role</label>
+                            <Input
+                                placeholder="Type here"
+                                className="bg-white/5 border-white/10 text-white placeholder:text-gray-600 h-10 rounded-sm focus-visible:ring-1 focus-visible:ring-[#1C73E8]"
+                                value={role}
+                                onChange={(e) => setRole(e.target.value)}
+                            />
+                        </div>
+
                         {/* Company */}
                         <div className="flex flex-col gap-1.5">
                             <label className="text-sm font-bold text-gray-400">Company</label>
@@ -136,6 +160,17 @@ export function NewOpportunityModal({ isOpen, onClose, settings, initialData }: 
                                 className="bg-white/5 border-white/10 text-white placeholder:text-gray-600 h-10 rounded-sm focus-visible:ring-1 focus-visible:ring-[#1C73E8]"
                                 value={company}
                                 onChange={(e) => setCompany(e.target.value)}
+                            />
+                        </div>
+
+                        {/* Website */}
+                        <div className="flex flex-col gap-1.5">
+                            <label className="text-sm font-bold text-gray-400">Website</label>
+                            <Input
+                                placeholder="Type here"
+                                className="bg-white/5 border-white/10 text-white placeholder:text-gray-600 h-10 rounded-sm focus-visible:ring-1 focus-visible:ring-[#1C73E8]"
+                                value={website}
+                                onChange={(e) => setWebsite(e.target.value)}
                             />
                         </div>
 
@@ -180,34 +215,30 @@ export function NewOpportunityModal({ isOpen, onClose, settings, initialData }: 
                         {/* Products/Services */}
                         <div className="flex flex-col gap-1.5">
                             <label className="text-sm font-bold text-gray-400">Products/Services ($)</label>
-                            <Select value={product} onValueChange={setProduct}>
-                                <SelectTrigger className="bg-white/5 border-white/10 text-white h-10 rounded-sm focus:ring-1 focus:ring-[#1C73E8]">
-                                    <SelectValue placeholder="Choose product" />
-                                </SelectTrigger>
-                                <SelectContent className="bg-[#1A1A1A] border-white/10 text-white z-[9999]">
-                                    {(settings?.products || []).map((p, i) => (
-                                        <SelectItem key={p.id || i} value={p.name} className="focus:bg-white/10 focus:text-white cursor-pointer">
-                                            {p.name} <span className="text-gray-500 ml-2">({p.price})</span>
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
+                            <CrmProductSelect
+                                value={product}
+                                options={settings?.products || []}
+                                onChange={(products, total) => {
+                                    setProduct(JSON.stringify(products));
+                                    setAmount(total);
+                                }}
+                            />
                         </div>
                     </div>
 
-                    <div className="flex items-center gap-2 pb-0.5 ml-2">
-                        <Button variant="outline" onClick={onClose} className="h-10 px-4 font-bold border-white/10 bg-transparent text-gray-400 hover:text-white hover:bg-white/5 rounded-sm">
+                    <div className="flex items-center justify-end gap-2 pt-2">
+                        <Button type="button" variant="outline" onClick={onClose} className="h-10 px-4 font-bold border-white/10 bg-transparent text-gray-400 hover:text-white hover:bg-white/5 rounded-sm">
                             Cancel
                         </Button>
                         <Button
-                            onClick={handleSave}
+                            type="submit"
                             disabled={isSaving}
                             className="h-10 px-6 font-bold bg-[#1C73E8] text-white hover:bg-[#1557B0] border-none shadow-none rounded-sm disabled:opacity-50"
                         >
                             {isSaving ? "Saving..." : "Save"}
                         </Button>
                     </div>
-                </div>
+                </form>
             </DialogContent>
         </Dialog>
     );
