@@ -144,7 +144,10 @@ export function CrmTable({ initialLeads, settings, filters }: CrmTableProps) {
         custom: l.custom_field || "",
         responsible: l.responsible || "",
         nextStep: l.next_step || { date: "Pending", progress: 0, total: 6 },
-        history: Array.isArray(l.history_log) ? l.history_log : [],
+        history: Array.isArray(l.history_log) ? l.history_log.map((h: any) => ({
+            ...h,
+            date: h.date ? new Date(h.date) : new Date()
+        })) : [],
         date: l.created_at || new Date().toISOString()
     })), [initialLeads]);
 

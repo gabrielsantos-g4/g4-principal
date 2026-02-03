@@ -15,7 +15,8 @@ interface OutreachTabsProps {
 
 export function OutreachTabs({ initialIcp, initialProspects, initialDemands = [] }: OutreachTabsProps) {
     const router = useRouter();
-    const [activeTab, setActiveTab] = useState<"targeting" | "leads">(initialIcp ? "leads" : "targeting")
+    const hasLeads = initialProspects && initialProspects.length > 0
+    const [activeTab, setActiveTab] = useState<"targeting" | "leads">((initialIcp || hasLeads) ? "leads" : "targeting")
     const hasICP = !!initialIcp
 
     return (
@@ -71,7 +72,7 @@ export function OutreachTabs({ initialIcp, initialProspects, initialDemands = []
                     <ICPForm key={hasICP ? 'edit' : 'create'} initialData={initialIcp} initialDemands={initialDemands} />
                 ) : (
                     <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
-                        {hasICP ? (
+                        {(hasICP || hasLeads) ? (
                             <ProspectsGrid data={initialProspects} />
                         ) : (
                             <div className="flex flex-col items-center justify-center p-12 text-center border border-dashed border-white/10 rounded-xl bg-white/5">
