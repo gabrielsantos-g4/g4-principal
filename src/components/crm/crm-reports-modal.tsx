@@ -7,7 +7,7 @@ import {
     DialogTitle,
     DialogDescription,
 } from "@/components/ui/dialog"
-import { BarChart3, PieChart, TrendingDown, Target, Award, X, Filter, Users, Tag, Globe, LineChart, Calendar as CalendarIcon, MessageSquare } from "lucide-react"
+import { BarChart3, PieChart, TrendingDown, Target, Award, X, Filter, Users, Tag, Globe, LineChart, Calendar as CalendarIcon, MessageSquare, DollarSign, CalendarClock, AlertTriangle } from "lucide-react"
 import { useMemo, useState } from "react"
 import {
     BarChart,
@@ -43,6 +43,36 @@ interface CrmReportsModalProps {
 }
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d', '#ef4444', '#3b82f6'];
+
+// Helper to parse dates (duplicated from CrmContainer to ensure self-containment or could be utils)
+function parseDateStr(str: string): Date {
+    if (!str || str === "Pending") return new Date(8640000000000000); // Max safe integer
+
+    const isoDate = new Date(str);
+    if (!isNaN(isoDate.getTime()) && str.includes('-')) {
+        return isoDate;
+    }
+
+    try {
+        const parts = str.split(',');
+        if (parts.length < 2) return new Date();
+
+        const dateParts = parts[1].trim().split('/');
+        if (dateParts.length < 2) return new Date();
+
+        const day = parseInt(dateParts[0], 10);
+        const monthStr = dateParts[1];
+        const months: Record<string, number> = {
+            'Jan': 0, 'Feb': 1, 'Mar': 2, 'Apr': 3, 'May': 4, 'Jun': 5,
+            'Jul': 6, 'Aug': 7, 'Sep': 8, 'Oct': 9, 'Nov': 10, 'Dec': 11
+        };
+        const month = months[monthStr] ?? 0;
+        const year = new Date().getFullYear();
+        return new Date(year, month, day);
+    } catch (e) {
+        return new Date();
+    }
+}
 
 export function CrmReportsModal({ isOpen, onClose, leads, settings }: CrmReportsModalProps) {
 
@@ -277,6 +307,63 @@ export function CrmReportsModal({ isOpen, onClose, leads, settings }: CrmReports
             { name: 'Advanced Conversation', value: engagementCount['Advanced'] } // >= 6
         ];
 
+        // --- GLOBAL Stats Calculation (Independent of Filters) ---
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        const tomorrow = new Date(today);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+
+        let globalContacts = 0;
+        let globalPipeline = 0;
+        let globalTodayCount = 0;
+        let globalTomorrowCount = 0;
+        let globalOverdueCount = 0;
+        let globalWon = 0;
+        let globalLost = 0;
+
+        leads.forEach(lead => {
+            globalContacts++;
+
+            // Parse amount if string
+            const amountVal = typeof lead.amount === 'number' ? lead.amount : (lead.amount ? parseFloat(lead.amount.toString().replace(/[^0-9.-]+/g, "")) : 0);
+            globalPipeline += amountVal || 0;
+
+            const nextStepDate = parseDateStr(lead.nextStep?.date || lead.next_step?.date);
+
+            // Stats checks
+            if (lead.status === 'Won') globalWon++;
+            else if (lead.status === 'Lost') globalLost++;
+
+            // Ignore Pending or far future for date-based stats
+            if (nextStepDate.getFullYear() > 3000) return;
+
+            // Check specific dates
+            const checkDate = new Date(nextStepDate);
+            checkDate.setHours(0, 0, 0, 0);
+
+            if (checkDate.getTime() === today.getTime()) {
+                globalTodayCount++;
+            } else if (checkDate.getTime() === tomorrow.getTime()) {
+                globalTomorrowCount++;
+            } else if (checkDate < today) {
+                globalOverdueCount++;
+            }
+        });
+
+        const globalWinRate = globalContacts > 0 ? (globalWon / globalContacts) * 100 : 0;
+
+        const globalStats = {
+            contacts: globalContacts,
+            pipeline: globalPipeline,
+            today: globalTodayCount,
+            tomorrow: globalTomorrowCount,
+            overdue: globalOverdueCount,
+            won: globalWon,
+            lost: globalLost,
+            winRate: globalWinRate
+        };
+
         return {
             total,
             won,
@@ -291,7 +378,8 @@ export function CrmReportsModal({ isOpen, onClose, leads, settings }: CrmReports
             lostReasonsData,
             mainLostReason,
             tpData,
-            engagementData
+            engagementData,
+            globalStats
         };
     }, [leads, settings, date]);
 
@@ -392,51 +480,48 @@ export function CrmReportsModal({ isOpen, onClose, leads, settings }: CrmReports
                         variants={containerVariants}
                         className="space-y-6 w-full max-w-full"
                     >
-                        {/* Summary Cards */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 w-full">
-                            <motion.div variants={itemVariants} className="bg-[#141414] p-6 rounded-2xl border border-white/5 relative overflow-hidden group hover:border-white/10 transition-all">
-                                <div className="absolute right-0 top-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
-                                    <Target size={100} />
-                                </div>
-                                <div className="text-gray-400 text-sm font-medium mb-2">Total Leads</div>
-                                <div className="text-4xl font-bold text-white mb-2">{stats.total}</div>
-                                <div className="flex items-center text-sm text-gray-400">
-                                    All leads currently in the list.
-                                </div>
-                            </motion.div>
+                        {/* Summary Cards Grid */}
+                        {/* Summary Cards Grid - Reduced to 3 cards (Deep Analysis) */}
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 w-full">
 
+
+                            {/* 3. Won Deals */}
                             <motion.div variants={itemVariants} className="bg-[#141414] p-6 rounded-2xl border border-white/5 relative overflow-hidden group hover:border-white/10 transition-all">
                                 <div className="absolute right-0 top-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
                                     <Award size={100} />
                                 </div>
                                 <div className="text-gray-400 text-sm font-medium mb-2">Won Deals</div>
-                                <div className="text-4xl font-bold text-green-400 mb-2">{stats.won}</div>
+                                <div className="text-4xl font-bold text-green-400 mb-2">{stats.globalStats.won}</div>
                                 <div className="flex items-center text-sm text-gray-400">
-                                    Great job!
+                                    Great job! Keep it up.
                                 </div>
                             </motion.div>
 
-                            <motion.div variants={itemVariants} className="bg-[#141414] p-6 rounded-2xl border border-white/5 relative overflow-hidden group hover:border-white/10 transition-all">
-                                <div className="absolute right-0 top-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
-                                    <TrendingDown size={100} />
-                                </div>
-                                <div className="text-gray-400 text-sm font-medium mb-2">Lost Leads</div>
-                                <div className="text-4xl font-bold text-red-400 mb-2">{stats.lost}</div>
-                                <div className="flex items-center text-sm text-gray-400">
-                                    {stats.mainLostReason && (
-                                        <>Main reason: <span className="text-white ml-1">{stats.mainLostReason.name}</span></>
-                                    )}
-                                </div>
-                            </motion.div>
-
+                            {/* 4. Win Rate */}
                             <motion.div variants={itemVariants} className="bg-[#141414] p-6 rounded-2xl border border-white/5 relative overflow-hidden group hover:border-white/10 transition-all">
                                 <div className="absolute right-0 top-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
                                     <PieChart size={100} />
                                 </div>
                                 <div className="text-gray-400 text-sm font-medium mb-2">Win Rate</div>
-                                <div className="text-4xl font-bold text-purple-400 mb-2">{stats.winRate.toFixed(1)}%</div>
+                                <div className="text-4xl font-bold text-purple-400 mb-2">{stats.globalStats.winRate.toFixed(1)}%</div>
                                 <div className="flex items-center text-sm text-gray-400">
-                                    Percentage of won deals from total leads.
+                                    Percentage of won deals.
+                                </div>
+                            </motion.div>
+
+
+
+                            {/* 8. Lost Leads */}
+                            <motion.div variants={itemVariants} className="bg-[#141414] p-6 rounded-2xl border border-white/5 relative overflow-hidden group hover:border-white/10 transition-all">
+                                <div className="absolute right-0 top-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
+                                    <TrendingDown size={100} />
+                                </div>
+                                <div className="text-gray-400 text-sm font-medium mb-2">Lost Leads</div>
+                                <div className="text-4xl font-bold text-red-400 mb-2">{stats.globalStats.lost}</div>
+                                <div className="flex items-center text-sm text-gray-400">
+                                    {stats.mainLostReason && (
+                                        <>Main reason: <span className="text-white ml-1">{stats.mainLostReason.name}</span></>
+                                    )}
                                 </div>
                             </motion.div>
                         </div>

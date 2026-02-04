@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { CrmStats } from "@/components/crm/crm-stats";
+
 import { CrmFilters } from "@/components/crm/crm-filters";
 import { CrmTable } from "@/components/crm/crm-table";
 import { CrmSettings } from "@/actions/crm/get-crm-settings";
@@ -18,6 +18,7 @@ export interface CrmFilterState {
     source: string;
     responsible: string;
     customField: string;
+    contactFilter: 'overdue' | 'today' | 'tomorrow' | null;
 }
 
 interface CrmContainerProps {
@@ -67,7 +68,8 @@ export function CrmContainer({ initialLeads, stats: initialStats, settings }: Cr
         status: '',
         source: '',
         responsible: '',
-        customField: ''
+        customField: '',
+        contactFilter: null
     });
 
     // 1. Transform Leads (Mirroring CrmTable logic for consistency)
@@ -120,61 +122,74 @@ export function CrmContainer({ initialLeads, stats: initialStats, settings }: Cr
                 if (lead.nextStep?.date !== filterDateStr) return false;
             }
 
+            // Contact Filter (Overdue/Today/Tomorrow)
+            if (filters.contactFilter) {
+                const nextStepDate = parseDateStr(lead.nextStep?.date);
+                // Ensure valid date
+                if (nextStepDate.getTime() >= 8640000000000000) return false;
+
+                const now = new Date();
+                const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                const tomorrowStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+                const dayAfterTomorrowStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 2);
+
+                if (filters.contactFilter === 'overdue') {
+                    if (nextStepDate >= todayStart) return false;
+                } else if (filters.contactFilter === 'today') {
+                    if (nextStepDate < todayStart || nextStepDate >= tomorrowStart) return false;
+                } else if (filters.contactFilter === 'tomorrow') {
+                    if (nextStepDate < tomorrowStart || nextStepDate >= dayAfterTomorrowStart) return false;
+                }
+            }
+
             return true;
         });
     }, [transformedLeads, filters]);
 
-    // 3. Calculate Dynamic Stats
-    const dynamicStats = useMemo(() => {
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
+    // 3. Calculate Header Stats
+    const headerStats = useMemo(() => {
+        let pipelineValue = 0;
+        let overdue = 0;
+        let today = 0;
+        let tomorrow = 0;
 
-        const tomorrow = new Date(today);
-        tomorrow.setDate(tomorrow.getDate() + 1);
-
-        let contacts = 0;
-        let pipeline = 0;
-        let todayCount = 0;
-        let tomorrowCount = 0;
-        let overdueCount = 0;
+        const now = new Date();
+        const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const tomorrowStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+        const dayAfterTomorrowStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 2);
 
         filteredLeads.forEach(lead => {
-            contacts++;
-            pipeline += lead.amount || 0;
+            pipelineValue += lead.amount || 0;
 
-            const nextStepDate = parseDateStr(lead.nextStep.date);
-            // Ignore Pending or far future
-            if (nextStepDate.getFullYear() > 3000) return;
-
-            // Check specific dates
-            nextStepDate.setHours(0, 0, 0, 0);
-
-            if (nextStepDate.getTime() === today.getTime()) {
-                todayCount++;
-            } else if (nextStepDate.getTime() === tomorrow.getTime()) {
-                tomorrowCount++;
-            } else if (nextStepDate < today) {
-                overdueCount++;
+            const nextStepDate = parseDateStr(lead.nextStep?.date);
+            // Check if date is valid and not "Pending" (max safe integer)
+            if (nextStepDate.getTime() < 8640000000000000) {
+                if (nextStepDate < todayStart) {
+                    overdue++;
+                } else if (nextStepDate >= todayStart && nextStepDate < tomorrowStart) {
+                    today++;
+                } else if (nextStepDate >= tomorrowStart && nextStepDate < dayAfterTomorrowStart) {
+                    tomorrow++;
+                }
             }
         });
 
         return {
-            contacts,
-            pipeline,
-            today: todayCount,
-            tomorrow: tomorrowCount,
-            overdue: overdueCount
+            totalLeads: filteredLeads.length,
+            pipelineValue,
+            contacts: { overdue, today, tomorrow }
         };
     }, [filteredLeads]);
 
+
     return (
-        <div className="flex flex-col gap-6 h-full min-h-0 flex-1">
-            <CrmStats stats={dynamicStats} />
+        <div className="flex flex-col gap-4 h-full min-h-0 flex-1">
             <CrmFilters
                 settings={settings}
                 filters={filters}
                 setFilters={setFilters}
                 leads={transformedLeads}
+                headerStats={headerStats}
             />
             <CrmTable
                 initialLeads={initialLeads}

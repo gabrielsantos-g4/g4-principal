@@ -169,7 +169,7 @@ export function CrmTable({ initialLeads, settings, filters }: CrmTableProps) {
             date: h.date ? new Date(h.date) : new Date()
         })) : [],
         date: l.created_at || new Date().toISOString()
-    })).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()), [initialLeads]);
+    })), [initialLeads]);
 
     const [leads, setLeads] = useState<LeadType[]>(transformedLeads);
 
@@ -229,6 +229,26 @@ export function CrmTable({ initialLeads, settings, filters }: CrmTableProps) {
             if (filters.date) {
                 const filterDateStr = format(filters.date, "EEE, dd/MMM");
                 if (lead.nextStep?.date !== filterDateStr) return false;
+            }
+
+            // Contact Filter (Overdue/Today/Tomorrow)
+            if (filters.contactFilter) {
+                const nextStepDate = parseDateStr(lead.nextStep?.date);
+                // Ensure valid date
+                if (nextStepDate.getTime() >= 8640000000000000) return false;
+
+                const now = new Date();
+                const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                const tomorrowStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+                const dayAfterTomorrowStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 2);
+
+                if (filters.contactFilter === 'overdue') {
+                    if (nextStepDate >= todayStart) return false;
+                } else if (filters.contactFilter === 'today') {
+                    if (nextStepDate < todayStart || nextStepDate >= tomorrowStart) return false;
+                } else if (filters.contactFilter === 'tomorrow') {
+                    if (nextStepDate < tomorrowStart || nextStepDate >= dayAfterTomorrowStart) return false;
+                }
             }
 
             return true;
@@ -486,7 +506,7 @@ export function CrmTable({ initialLeads, settings, filters }: CrmTableProps) {
                         <thead className="bg-[#1E1E1E] sticky top-0 z-10 border-b border-white/5">
                             <tr className="text-[10px] font-bold text-gray-500 tracking-wider">
                                 {/* Name */}
-                                <th className="px-3 py-3 text-left min-w-[140px]">
+                                <th className="px-3 py-1.5 text-left min-w-[140px]">
                                     <TooltipProvider>
                                         <Tooltip>
                                             <TooltipTrigger asChild><span>Name</span></TooltipTrigger>
@@ -495,7 +515,7 @@ export function CrmTable({ initialLeads, settings, filters }: CrmTableProps) {
                                     </TooltipProvider>
                                 </th>
                                 {/* Company */}
-                                <th className="px-3 py-3 text-left min-w-[120px]">
+                                <th className="px-3 py-1.5 text-left min-w-[120px]">
                                     <TooltipProvider>
                                         <Tooltip>
                                             <TooltipTrigger asChild><span>Company</span></TooltipTrigger>
@@ -504,7 +524,7 @@ export function CrmTable({ initialLeads, settings, filters }: CrmTableProps) {
                                     </TooltipProvider>
                                 </th>
                                 {/* Role */}
-                                <th className="px-3 py-3 text-left min-w-[100px]">
+                                <th className="px-3 py-1.5 text-left min-w-[100px]">
                                     <TooltipProvider>
                                         <Tooltip>
                                             <TooltipTrigger asChild><span>Role</span></TooltipTrigger>
@@ -513,7 +533,7 @@ export function CrmTable({ initialLeads, settings, filters }: CrmTableProps) {
                                     </TooltipProvider>
                                 </th>
                                 {/* Phone */}
-                                <th className="px-2 py-3 text-center w-[36px]">
+                                <th className="px-2 py-1.5 text-center w-[36px]">
                                     <div className="flex justify-center">
                                         <TooltipProvider>
                                             <Tooltip>
@@ -524,7 +544,7 @@ export function CrmTable({ initialLeads, settings, filters }: CrmTableProps) {
                                     </div>
                                 </th>
                                 {/* Email */}
-                                <th className="px-2 py-3 text-center w-[36px]">
+                                <th className="px-2 py-1.5 text-center w-[36px]">
                                     <div className="flex justify-center">
                                         <TooltipProvider>
                                             <Tooltip>
@@ -535,7 +555,7 @@ export function CrmTable({ initialLeads, settings, filters }: CrmTableProps) {
                                     </div>
                                 </th>
                                 {/* LinkedIn */}
-                                <th className="px-2 py-3 text-center w-[36px]">
+                                <th className="px-2 py-1.5 text-center w-[36px]">
                                     <div className="flex justify-center">
                                         <TooltipProvider>
                                             <Tooltip>
@@ -546,7 +566,7 @@ export function CrmTable({ initialLeads, settings, filters }: CrmTableProps) {
                                     </div>
                                 </th>
                                 {/* Website */}
-                                <th className="px-2 py-3 text-center w-[36px]">
+                                <th className="px-2 py-1.5 text-center w-[36px]">
                                     <div className="flex justify-center">
                                         <TooltipProvider>
                                             <Tooltip>
@@ -557,7 +577,7 @@ export function CrmTable({ initialLeads, settings, filters }: CrmTableProps) {
                                     </div>
                                 </th>
                                 {/* Next Step */}
-                                <th className="px-3 py-3 pl-8 text-left min-w-[130px]">
+                                <th className="px-3 py-1.5 pl-8 text-left min-w-[130px]">
                                     <TooltipProvider>
                                         <Tooltip>
                                             <TooltipTrigger asChild><span>Next Step</span></TooltipTrigger>
@@ -566,7 +586,7 @@ export function CrmTable({ initialLeads, settings, filters }: CrmTableProps) {
                                     </TooltipProvider>
                                 </th>
                                 {/* Touchpoints History */}
-                                <th className="px-1 py-3 text-center w-[44px]">
+                                <th className="px-1 py-1.5 text-center w-[44px]">
                                     <TooltipProvider>
                                         <Tooltip>
                                             <TooltipTrigger asChild>
@@ -580,7 +600,7 @@ export function CrmTable({ initialLeads, settings, filters }: CrmTableProps) {
                                     </TooltipProvider>
                                 </th>
                                 {/* Product */}
-                                <th className="px-3 py-3 text-left min-w-[160px] text-[10px]">
+                                <th className="px-3 py-1.5 text-left min-w-[160px] text-[10px]">
                                     <TooltipProvider>
                                         <Tooltip>
                                             <TooltipTrigger asChild><span>Product</span></TooltipTrigger>
@@ -589,7 +609,7 @@ export function CrmTable({ initialLeads, settings, filters }: CrmTableProps) {
                                     </TooltipProvider>
                                 </th>
                                 {/* Amount */}
-                                <th className="px-3 py-3 text-left min-w-[90px]">
+                                <th className="px-3 py-1.5 text-left min-w-[90px]">
                                     <TooltipProvider>
                                         <Tooltip>
                                             <TooltipTrigger asChild><span>Amount</span></TooltipTrigger>
@@ -598,7 +618,7 @@ export function CrmTable({ initialLeads, settings, filters }: CrmTableProps) {
                                     </TooltipProvider>
                                 </th>
                                 {/* Category/Custom */}
-                                <th className="px-3 py-3 text-left min-w-[110px]">
+                                <th className="px-3 py-1.5 text-left min-w-[110px]">
                                     <TooltipProvider>
                                         <Tooltip>
                                             <TooltipTrigger asChild><span>{customFieldName}</span></TooltipTrigger>
@@ -607,7 +627,7 @@ export function CrmTable({ initialLeads, settings, filters }: CrmTableProps) {
                                     </TooltipProvider>
                                 </th>
                                 {/* Source */}
-                                <th className="px-3 py-3 text-left min-w-[110px]">
+                                <th className="px-3 py-1.5 text-left min-w-[110px]">
                                     <TooltipProvider>
                                         <Tooltip>
                                             <TooltipTrigger asChild><span>Source</span></TooltipTrigger>
@@ -616,7 +636,7 @@ export function CrmTable({ initialLeads, settings, filters }: CrmTableProps) {
                                     </TooltipProvider>
                                 </th>
                                 {/* Status */}
-                                <th className="px-3 py-3 text-left min-w-[130px]">
+                                <th className="px-3 py-1.5 text-left min-w-[130px]">
                                     <TooltipProvider>
                                         <Tooltip>
                                             <TooltipTrigger asChild><span>Status</span></TooltipTrigger>
@@ -625,7 +645,7 @@ export function CrmTable({ initialLeads, settings, filters }: CrmTableProps) {
                                     </TooltipProvider>
                                 </th>
                                 {/* Responsible */}
-                                <th className="px-3 py-3 text-left min-w-[120px]">
+                                <th className="px-3 py-1.5 text-left min-w-[120px]">
                                     <TooltipProvider>
                                         <Tooltip>
                                             <TooltipTrigger asChild><span>Responsible</span></TooltipTrigger>
@@ -634,7 +654,7 @@ export function CrmTable({ initialLeads, settings, filters }: CrmTableProps) {
                                     </TooltipProvider>
                                 </th>
                                 {/* Actions */}
-                                <th className="px-3 py-3 text-center w-[50px]">
+                                <th className="px-3 py-1.5 text-center w-[50px]">
                                     <TooltipProvider>
                                         <Tooltip>
                                             <TooltipTrigger asChild><span>Actions</span></TooltipTrigger>
@@ -657,16 +677,16 @@ export function CrmTable({ initialLeads, settings, filters }: CrmTableProps) {
                                         key={lead.id}
                                         className="hover:bg-white/5 transition-colors group"
                                     >
-                                        <td className="px-3 py-2">
+                                        <td className="px-3 py-1">
                                             <div className="font-medium text-white truncate text-[11px] max-w-[130px]">{lead.name}</div>
                                         </td>
-                                        <td className="px-3 py-2">
+                                        <td className="px-3 py-1">
                                             <div className="font-normal text-white/50 truncate text-[11px] max-w-[110px]">{lead.company}</div>
                                         </td>
-                                        <td className="px-3 py-2">
+                                        <td className="px-3 py-1">
                                             <div className="font-normal text-white/50 truncate text-[11px] max-w-[100px]">{lead.role || "-"}</div>
                                         </td>
-                                        <td className="px-2 py-2">
+                                        <td className="px-2 py-1">
                                             <div className="flex justify-center">
                                                 <Popover>
                                                     <TooltipProvider>
@@ -703,7 +723,7 @@ export function CrmTable({ initialLeads, settings, filters }: CrmTableProps) {
                                                 </Popover>
                                             </div>
                                         </td>
-                                        <td className="px-2 py-2">
+                                        <td className="px-2 py-1">
                                             <div className="flex justify-center">
                                                 <Popover>
                                                     <TooltipProvider>
@@ -743,7 +763,7 @@ export function CrmTable({ initialLeads, settings, filters }: CrmTableProps) {
                                                 </Popover>
                                             </div>
                                         </td>
-                                        <td className="px-2 py-2">
+                                        <td className="px-2 py-1">
                                             <div className="flex justify-center">
                                                 <TooltipProvider>
                                                     <Tooltip>
@@ -765,7 +785,7 @@ export function CrmTable({ initialLeads, settings, filters }: CrmTableProps) {
                                                 </TooltipProvider>
                                             </div>
                                         </td>
-                                        <td className="px-2 py-2">
+                                        <td className="px-2 py-1">
                                             <div className="flex justify-center">
                                                 {lead.website ? (
                                                     <TooltipProvider>
@@ -793,7 +813,7 @@ export function CrmTable({ initialLeads, settings, filters }: CrmTableProps) {
                                                 )}
                                             </div>
                                         </td>
-                                        <td className="px-3 py-2 pl-8">
+                                        <td className="px-3 py-1 pl-8">
                                             <div className="flex flex-col gap-1" onClick={(e) => e.stopPropagation()}>
                                                 <Popover>
                                                     <PopoverTrigger asChild>
@@ -864,7 +884,7 @@ export function CrmTable({ initialLeads, settings, filters }: CrmTableProps) {
                                                 </div>
                                             </div>
                                         </td>
-                                        <td className="px-1 py-3">
+                                        <td className="px-1 py-1">
                                             <div className="flex justify-center items-center gap-2">
                                                 <TooltipProvider>
                                                     <Tooltip>
@@ -893,7 +913,7 @@ export function CrmTable({ initialLeads, settings, filters }: CrmTableProps) {
                                                 </div>
                                             </div>
                                         </td>
-                                        <td className="px-3 py-2">
+                                        <td className="px-3 py-1">
                                             <div onClick={(e) => e.stopPropagation()}>
                                                 <CrmProductSelect
                                                     value={lead.product || "[]"}
@@ -902,7 +922,7 @@ export function CrmTable({ initialLeads, settings, filters }: CrmTableProps) {
                                                 />
                                             </div>
                                         </td>
-                                        <td className="px-3 py-2">
+                                        <td className="px-3 py-1">
                                             <button
                                                 className="font-mono text-gray-300 text-[12px] hover:text-white hover:bg-white/5 rounded px-1.5 py-0.5 transition-colors text-left"
                                                 onClick={(e) => {
@@ -920,11 +940,11 @@ export function CrmTable({ initialLeads, settings, filters }: CrmTableProps) {
                                                 )}
                                             </button>
                                         </td>
-                                        <td className="px-3 py-2">
+                                        <td className="px-3 py-1">
                                             <DropdownMenu>
                                                 <DropdownMenuTrigger asChild>
                                                     <button
-                                                        className={`flex items-center justify-between text-[11px] px-2 py-1 rounded w-full outline-none transition-colors border ${(() => {
+                                                        className={`flex items-center justify-between text-[11px] px-2 py-0.5 rounded w-full outline-none transition-colors border ${(() => {
                                                             const opt = CUSTOM_OPTIONS.find((o: any) => (typeof o === 'string' ? o : o.label) === lead.custom);
                                                             return (opt && typeof opt !== 'string' && opt.bg)
                                                                 ? `${opt.bg} ${opt.text} border-white/10 font-medium`
@@ -969,11 +989,11 @@ export function CrmTable({ initialLeads, settings, filters }: CrmTableProps) {
                                                 </DropdownMenuContent>
                                             </DropdownMenu>
                                         </td>
-                                        <td className="px-3 py-2">
+                                        <td className="px-3 py-1">
                                             <DropdownMenu>
                                                 <DropdownMenuTrigger asChild>
                                                     <button
-                                                        className={`flex items-center justify-between text-[11px] px-2 py-1 rounded w-full outline-none transition-colors border ${(() => {
+                                                        className={`flex items-center justify-between text-[11px] px-2 py-0.5 rounded w-full outline-none transition-colors border ${(() => {
                                                             const opt = SOURCES.find((o: any) => (typeof o === 'string' ? o : o.label) === lead.source);
                                                             return (opt && typeof opt !== 'string' && opt.bg)
                                                                 ? `${opt.bg} ${opt.text} border-white/10 font-medium`
@@ -1018,7 +1038,7 @@ export function CrmTable({ initialLeads, settings, filters }: CrmTableProps) {
                                                 </DropdownMenuContent>
                                             </DropdownMenu>
                                         </td>
-                                        <td className="px-3 py-2">
+                                        <td className="px-3 py-1">
                                             <DropdownMenu>
                                                 <DropdownMenuTrigger asChild>
                                                     <button
@@ -1041,7 +1061,7 @@ export function CrmTable({ initialLeads, settings, filters }: CrmTableProps) {
                                                             }
 
                                                             return (
-                                                                <div className={`${statusStyle.bg} ${statusStyle.text} border border-white/5 px-3 py-1 rounded text-[11px] font-bold flex items-center justify-between w-full min-w-fit hover:opacity-80 transition-opacity whitespace-nowrap gap-2`}>
+                                                                <div className={`${statusStyle.bg} ${statusStyle.text} border border-white/5 px-2 py-0.5 rounded text-[11px] font-bold flex items-center justify-between w-full min-w-fit hover:opacity-80 transition-opacity whitespace-nowrap gap-2`}>
                                                                     <span>{lead.status}</span>
                                                                     <ChevronDown size={12} className="shrink-0" />
                                                                 </div>
@@ -1075,11 +1095,11 @@ export function CrmTable({ initialLeads, settings, filters }: CrmTableProps) {
                                                 </DropdownMenuContent>
                                             </DropdownMenu>
                                         </td>
-                                        <td className="px-3 py-2">
+                                        <td className="px-3 py-1">
                                             <DropdownMenu>
                                                 <DropdownMenuTrigger asChild>
                                                     <button
-                                                        className={`flex items-center justify-between text-[11px] px-2 py-1 rounded w-full outline-none transition-colors border ${(() => {
+                                                        className={`flex items-center justify-between text-[11px] px-2 py-0.5 rounded w-full outline-none transition-colors border ${(() => {
                                                             const opt = RESPONSIBLES.find((o: any) => (typeof o === 'string' ? o : o.label) === lead.responsible);
                                                             return (opt && typeof opt !== 'string' && opt.bg)
                                                                 ? `${opt.bg} ${opt.text} border-white/10 font-medium`
@@ -1125,7 +1145,7 @@ export function CrmTable({ initialLeads, settings, filters }: CrmTableProps) {
                                             </DropdownMenu>
                                         </td>
 
-                                        <td className="px-3 py-2 text-center">
+                                        <td className="px-3 py-1 text-center">
                                             <div className="flex items-center justify-center gap-1">
                                                 <button
                                                     className="text-gray-500 hover:text-white transition-colors p-1 rounded hover:bg-white/10 outline-none"
