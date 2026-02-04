@@ -99,92 +99,70 @@ export function AgentsOverviewDialog({ children, initialActiveAgents }: AgentsOv
                     </div>
 
                     <div className="flex-1 overflow-y-auto p-8 md:p-12 custom-scrollbar">
-                        <div className="space-y-12 pb-20 max-w-[1920px] mx-auto">
-                            {categories.map(category => {
-                                const categoryAgents = groupedAgents[category]
-                                if (!categoryAgents || categoryAgents.length === 0) return null
+                        <div className="max-w-[1920px] mx-auto">
+                            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-3">
+                                {AGENTS.map(agent => {
+                                    const isActive = selectedAgents.includes(agent.id)
+                                    return (
+                                        <TooltipProvider key={agent.id}>
+                                            <Tooltip delayDuration={200}>
+                                                <TooltipTrigger asChild>
+                                                    <div
+                                                        onClick={() => toggleAgent(agent.id)}
+                                                        className={cn(
+                                                            "relative group p-3 rounded-lg border transition-all duration-200 flex flex-col gap-2 cursor-pointer",
+                                                            isActive
+                                                                ? "bg-white/5 border-[#1C73E8]/50 ring-1 ring-[#1C73E8]/20"
+                                                                : "bg-transparent border-white/10 hover:bg-white/5 hover:border-white/20"
+                                                        )}
+                                                    >
+                                                        <div className="flex items-center gap-2.5">
+                                                            <div className={cn(
+                                                                "w-8 h-8 rounded-full overflow-hidden border shrink-0 transition-all",
+                                                                isActive ? "border-[#1C73E8]" : "border-white/10"
+                                                            )}>
+                                                                <img src={agent.avatar} alt={agent.name} className="w-full h-full object-cover grayscale-0" />
+                                                            </div>
+                                                            <div className="flex-1 min-w-0">
+                                                                <h4 className={cn("font-bold text-xs truncate leading-tight", isActive ? "text-white" : "text-slate-300")}>
+                                                                    {agent.name}
+                                                                </h4>
+                                                                <p className="text-[9px] text-slate-500 truncate leading-tight mt-0.5">{agent.role}</p>
+                                                            </div>
+                                                        </div>
 
-                                return (
-                                    <div key={category} className="space-y-6">
-                                        <h3 className="text-sm font-bold text-slate-500 uppercase tracking-widest border-b border-white/5 pb-2">
-                                            {category.replace(/-/g, ' ')}
-                                        </h3>
-                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                                            {categoryAgents.map(agent => {
-                                                const isActive = selectedAgents.includes(agent.id)
-                                                return (
-                                                    <TooltipProvider key={agent.id}>
-                                                        <Tooltip delayDuration={200}>
-                                                            <TooltipTrigger asChild>
-                                                                <div
-                                                                    className={cn(
-                                                                        "relative group p-5 rounded-2xl border transition-all duration-200 flex flex-col gap-4",
-                                                                        isActive
-                                                                            ? "bg-white/5 border-[#1C73E8]/50 ring-1 ring-[#1C73E8]/20"
-                                                                            : "bg-transparent border-white/10"
-                                                                    )}
-                                                                >
-                                                                    <div className="flex items-start gap-4">
-                                                                        <div className={cn(
-                                                                            "w-12 h-12 rounded-full overflow-hidden border shrink-0 transition-all",
-                                                                            isActive ? "border-[#1C73E8]" : "border-white/10"
-                                                                        )}>
-                                                                            <img src={agent.avatar} alt={agent.name} className="w-full h-full object-cover grayscale-0" />
-                                                                        </div>
-                                                                        <div className="flex-1 min-w-0 pt-1">
-                                                                            <h4 className={cn("font-bold text-base truncate", isActive ? "text-white" : "text-slate-300")}>
-                                                                                {agent.name}
-                                                                            </h4>
-                                                                            <p className="text-xs text-slate-500 truncate">{agent.role}</p>
-                                                                        </div>
-                                                                    </div>
-
-                                                                    <div className="grid grid-cols-2 gap-3 pt-2">
-                                                                        <button
-                                                                            onClick={(e) => {
-                                                                                e.stopPropagation()
-                                                                                if (!isActive) toggleAgent(agent.id)
-                                                                            }}
-                                                                            className={cn(
-                                                                                "flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-bold transition-all border",
-                                                                                isActive
-                                                                                    ? "bg-[#1C73E8] text-white border-[#1C73E8] shadow-lg shadow-[#1C73E8]/20"
-                                                                                    : "bg-transparent text-slate-600 border-white/5 hover:bg-[#1C73E8] hover:text-white hover:border-[#1C73E8] hover:shadow-lg hover:shadow-[#1C73E8]/20 opacity-60 hover:opacity-100"
-                                                                            )}
-                                                                        >
-                                                                            <PlusCircle size={14} strokeWidth={2.5} />
-                                                                            On Team
-                                                                        </button>
-
-                                                                        <button
-                                                                            onClick={(e) => {
-                                                                                e.stopPropagation()
-                                                                                if (isActive) toggleAgent(agent.id)
-                                                                            }}
-                                                                            className={cn(
-                                                                                "flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-bold transition-all border",
-                                                                                !isActive
-                                                                                    ? "bg-white/10 text-slate-300 border-white/10"
-                                                                                    : "bg-transparent text-slate-600 border-white/5 hover:bg-white/5 hover:text-red-400 hover:border-red-500/20 opacity-60 hover:opacity-100"
-                                                                            )}
-                                                                        >
-                                                                            <MinusCircle size={14} strokeWidth={2.5} />
-                                                                            Step Back
-                                                                        </button>
-                                                                    </div>
-                                                                </div>
-                                                            </TooltipTrigger>
-                                                            <TooltipContent className="bg-[#111] border-white/10 text-white z-[10002]">
-                                                                <p>{agent.description}</p>
-                                                            </TooltipContent>
-                                                        </Tooltip>
-                                                    </TooltipProvider>
-                                                )
-                                            })}
-                                        </div>
-                                    </div>
-                                )
-                            })}
+                                                        <div className="pt-1">
+                                                            <button
+                                                                className={cn(
+                                                                    "w-full flex items-center justify-center gap-1 h-6 rounded-[4px] text-[9px] uppercase tracking-wide font-bold transition-all border",
+                                                                    isActive
+                                                                        ? "bg-[#1C73E8] text-white border-[#1C73E8] shadow-sm shadow-[#1C73E8]/20"
+                                                                        : "bg-white/5 text-slate-400 border-white/5 group-hover:bg-white/10 group-hover:text-white"
+                                                                )}
+                                                            >
+                                                                {isActive ? (
+                                                                    <>
+                                                                        <Check size={9} strokeWidth={3} />
+                                                                        On Team
+                                                                    </>
+                                                                ) : (
+                                                                    <>
+                                                                        <Plus size={9} strokeWidth={3} />
+                                                                        Add
+                                                                    </>
+                                                                )}
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </TooltipTrigger>
+                                                <TooltipContent className="bg-[#111] border-white/10 text-white z-[10002]">
+                                                    <p>{agent.description}</p>
+                                                </TooltipContent>
+                                            </Tooltip>
+                                        </TooltipProvider>
+                                    )
+                                })}
+                            </div>
                         </div>
                     </div>
                 </DialogPrimitive.Content>

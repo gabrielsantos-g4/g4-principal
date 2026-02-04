@@ -51,6 +51,7 @@ import { updateTouchpoint } from "@/actions/crm/update-touchpoint";
 import { updateDate } from "@/actions/crm/update-date";
 import { updateHistory } from "@/actions/crm/update-history";
 import { updateLead } from "@/actions/crm/update-lead";
+import { deleteLead } from "@/actions/crm/delete-lead";
 import { toast } from "sonner";
 import { CrmSettings } from "@/actions/crm/get-crm-settings";
 
@@ -125,6 +126,25 @@ function formatDateStr(date: Date | undefined): string {
     return format(date, "EEE, dd/MMM");
 }
 
+function getDaysRemaining(dateStr: string): number | null {
+    if (!dateStr || dateStr === "Pending") return null;
+    const date = parseDateStr(dateStr);
+
+    // If date is the fallback max future date, return null
+    if (date.getTime() >= 8640000000000000) return null;
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const target = new Date(date);
+    target.setHours(0, 0, 0, 0);
+
+    const diffTime = target.getTime() - today.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+    return diffDays;
+}
+
 export function CrmTable({ initialLeads, settings, filters }: CrmTableProps) {
     const router = useRouter();
     // Transform initial DB leads to UI format
@@ -149,7 +169,7 @@ export function CrmTable({ initialLeads, settings, filters }: CrmTableProps) {
             date: h.date ? new Date(h.date) : new Date()
         })) : [],
         date: l.created_at || new Date().toISOString()
-    })), [initialLeads]);
+    })).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()), [initialLeads]);
 
     const [leads, setLeads] = useState<LeadType[]>(transformedLeads);
 
@@ -302,10 +322,21 @@ export function CrmTable({ initialLeads, settings, filters }: CrmTableProps) {
 
 
 
-    const handleDeleteLead = () => {
+    const handleDeleteLead = async () => {
         if (deleteLeadId) {
+            const idToDelete = deleteLeadId;
+            // Optimistic update
             setLeads(prev => prev.filter(l => l.id !== deleteLeadId));
             setDeleteLeadId(null);
+
+            const result = await deleteLead(idToDelete);
+
+            if (result.success) {
+                toast.success("Lead deleted successfully");
+            } else {
+                toast.error("Failed to delete lead");
+                // Optional: Revert optimistic update here if needed, but for deletion it's rare to fail
+            }
         }
     };
 
@@ -453,28 +484,164 @@ export function CrmTable({ initialLeads, settings, filters }: CrmTableProps) {
                     <table className="w-full border-collapse">
 
                         <thead className="bg-[#1E1E1E] sticky top-0 z-10 border-b border-white/5">
-                            <tr className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">
-                                <th className="px-3 py-3 text-left min-w-[140px]">Name</th>
-                                <th className="px-3 py-3 text-left min-w-[120px]">Company</th>
-                                <th className="px-3 py-3 text-left min-w-[100px]">Role</th>
-                                <th className="px-2 py-3 text-center w-[36px]"><div className="flex justify-center"><Phone size={13} /></div></th>
-                                <th className="px-2 py-3 text-center w-[36px]"><div className="flex justify-center"><Mail size={13} /></div></th>
-                                <th className="px-2 py-3 text-center w-[36px]"><div className="flex justify-center"><Linkedin size={13} /></div></th>
-                                <th className="px-2 py-3 text-center w-[36px]"><div className="flex justify-center"><Globe size={13} /></div></th>
-                                <th className="px-3 py-3 pl-8 text-left min-w-[130px]">Next Step</th>
-                                <th className="px-1 py-3 text-center w-[44px]">
-                                    <div className="flex justify-center items-center gap-1">
-                                        <Link2 size={13} />
-                                        <MessageCircle size={13} />
+                            <tr className="text-[10px] font-bold text-gray-500 tracking-wider">
+                                {/* Name */}
+                                <th className="px-3 py-3 text-left min-w-[140px]">
+                                    <TooltipProvider>
+                                        <Tooltip>
+                                            <TooltipTrigger asChild><span>Name</span></TooltipTrigger>
+                                            <TooltipContent><p>Lead's full name</p></TooltipContent>
+                                        </Tooltip>
+                                    </TooltipProvider>
+                                </th>
+                                {/* Company */}
+                                <th className="px-3 py-3 text-left min-w-[120px]">
+                                    <TooltipProvider>
+                                        <Tooltip>
+                                            <TooltipTrigger asChild><span>Company</span></TooltipTrigger>
+                                            <TooltipContent><p>Organization or business entity</p></TooltipContent>
+                                        </Tooltip>
+                                    </TooltipProvider>
+                                </th>
+                                {/* Role */}
+                                <th className="px-3 py-3 text-left min-w-[100px]">
+                                    <TooltipProvider>
+                                        <Tooltip>
+                                            <TooltipTrigger asChild><span>Role</span></TooltipTrigger>
+                                            <TooltipContent><p>Professional job title</p></TooltipContent>
+                                        </Tooltip>
+                                    </TooltipProvider>
+                                </th>
+                                {/* Phone */}
+                                <th className="px-2 py-3 text-center w-[36px]">
+                                    <div className="flex justify-center">
+                                        <TooltipProvider>
+                                            <Tooltip>
+                                                <TooltipTrigger asChild><div><Phone size={13} /></div></TooltipTrigger>
+                                                <TooltipContent><p>Contact phone number</p></TooltipContent>
+                                            </Tooltip>
+                                        </TooltipProvider>
                                     </div>
                                 </th>
-                                <th className="px-3 py-3 text-left min-w-[160px] text-[10px]">Product</th>
-                                <th className="px-3 py-3 text-left min-w-[90px]">Amount</th>
-                                <th className="px-3 py-3 text-left min-w-[110px]">{customFieldName}</th>
-                                <th className="px-3 py-3 text-left min-w-[110px]">Source</th>
-                                <th className="px-3 py-3 text-left min-w-[130px]">Status</th>
-                                <th className="px-3 py-3 text-left min-w-[120px]">Responsible</th>
-                                <th className="px-3 py-3 text-center w-[50px]">Actions</th>
+                                {/* Email */}
+                                <th className="px-2 py-3 text-center w-[36px]">
+                                    <div className="flex justify-center">
+                                        <TooltipProvider>
+                                            <Tooltip>
+                                                <TooltipTrigger asChild><div><Mail size={13} /></div></TooltipTrigger>
+                                                <TooltipContent><p>Email address</p></TooltipContent>
+                                            </Tooltip>
+                                        </TooltipProvider>
+                                    </div>
+                                </th>
+                                {/* LinkedIn */}
+                                <th className="px-2 py-3 text-center w-[36px]">
+                                    <div className="flex justify-center">
+                                        <TooltipProvider>
+                                            <Tooltip>
+                                                <TooltipTrigger asChild><div><Linkedin size={13} /></div></TooltipTrigger>
+                                                <TooltipContent><p>LinkedIn profile</p></TooltipContent>
+                                            </Tooltip>
+                                        </TooltipProvider>
+                                    </div>
+                                </th>
+                                {/* Website */}
+                                <th className="px-2 py-3 text-center w-[36px]">
+                                    <div className="flex justify-center">
+                                        <TooltipProvider>
+                                            <Tooltip>
+                                                <TooltipTrigger asChild><div><Globe size={13} /></div></TooltipTrigger>
+                                                <TooltipContent><p>Company website</p></TooltipContent>
+                                            </Tooltip>
+                                        </TooltipProvider>
+                                    </div>
+                                </th>
+                                {/* Next Step */}
+                                <th className="px-3 py-3 pl-8 text-left min-w-[130px]">
+                                    <TooltipProvider>
+                                        <Tooltip>
+                                            <TooltipTrigger asChild><span>Next Step</span></TooltipTrigger>
+                                            <TooltipContent><p>Scheduled follow-up action</p></TooltipContent>
+                                        </Tooltip>
+                                    </TooltipProvider>
+                                </th>
+                                {/* Touchpoints History */}
+                                <th className="px-1 py-3 text-center w-[44px]">
+                                    <TooltipProvider>
+                                        <Tooltip>
+                                            <TooltipTrigger asChild>
+                                                <div className="flex justify-center items-center gap-1">
+                                                    <Link2 size={13} />
+                                                    <MessageCircle size={13} />
+                                                </div>
+                                            </TooltipTrigger>
+                                            <TooltipContent><p>Interaction history & logs</p></TooltipContent>
+                                        </Tooltip>
+                                    </TooltipProvider>
+                                </th>
+                                {/* Product */}
+                                <th className="px-3 py-3 text-left min-w-[160px] text-[10px]">
+                                    <TooltipProvider>
+                                        <Tooltip>
+                                            <TooltipTrigger asChild><span>Product</span></TooltipTrigger>
+                                            <TooltipContent><p>Interested product or service</p></TooltipContent>
+                                        </Tooltip>
+                                    </TooltipProvider>
+                                </th>
+                                {/* Amount */}
+                                <th className="px-3 py-3 text-left min-w-[90px]">
+                                    <TooltipProvider>
+                                        <Tooltip>
+                                            <TooltipTrigger asChild><span>Amount</span></TooltipTrigger>
+                                            <TooltipContent><p>Estimated potential value</p></TooltipContent>
+                                        </Tooltip>
+                                    </TooltipProvider>
+                                </th>
+                                {/* Category/Custom */}
+                                <th className="px-3 py-3 text-left min-w-[110px]">
+                                    <TooltipProvider>
+                                        <Tooltip>
+                                            <TooltipTrigger asChild><span>{customFieldName}</span></TooltipTrigger>
+                                            <TooltipContent><p>Lead classification/segment</p></TooltipContent>
+                                        </Tooltip>
+                                    </TooltipProvider>
+                                </th>
+                                {/* Source */}
+                                <th className="px-3 py-3 text-left min-w-[110px]">
+                                    <TooltipProvider>
+                                        <Tooltip>
+                                            <TooltipTrigger asChild><span>Source</span></TooltipTrigger>
+                                            <TooltipContent><p>Origin of the lead</p></TooltipContent>
+                                        </Tooltip>
+                                    </TooltipProvider>
+                                </th>
+                                {/* Status */}
+                                <th className="px-3 py-3 text-left min-w-[130px]">
+                                    <TooltipProvider>
+                                        <Tooltip>
+                                            <TooltipTrigger asChild><span>Status</span></TooltipTrigger>
+                                            <TooltipContent><p>Current pipeline stage</p></TooltipContent>
+                                        </Tooltip>
+                                    </TooltipProvider>
+                                </th>
+                                {/* Responsible */}
+                                <th className="px-3 py-3 text-left min-w-[120px]">
+                                    <TooltipProvider>
+                                        <Tooltip>
+                                            <TooltipTrigger asChild><span>Responsible</span></TooltipTrigger>
+                                            <TooltipContent><p>Assigned team member</p></TooltipContent>
+                                        </Tooltip>
+                                    </TooltipProvider>
+                                </th>
+                                {/* Actions */}
+                                <th className="px-3 py-3 text-center w-[50px]">
+                                    <TooltipProvider>
+                                        <Tooltip>
+                                            <TooltipTrigger asChild><span>Actions</span></TooltipTrigger>
+                                            <TooltipContent><p>Manage or delete lead</p></TooltipContent>
+                                        </Tooltip>
+                                    </TooltipProvider>
+                                </th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-white/5 bg-transparent">
@@ -631,9 +798,12 @@ export function CrmTable({ initialLeads, settings, filters }: CrmTableProps) {
                                                 <Popover>
                                                     <PopoverTrigger asChild>
                                                         <button
-                                                            className={`text-[10px] font-semibold hover:bg-white/10 rounded px-1 -ml-1 w-fit transition-colors text-left ${parseDateStr(lead.nextStep.date) < new Date(new Date().setHours(0, 0, 0, 0)) ? 'text-red-400' : 'text-gray-400'}`}
+                                                            className={`text-[11px] font-semibold hover:bg-white/10 rounded px-1 -ml-1 w-fit transition-colors text-left ${parseDateStr(lead.nextStep.date) < new Date(new Date().setHours(0, 0, 0, 0)) ? 'text-red-400' : 'text-gray-400'}`}
                                                         >
                                                             {lead.nextStep.date}
+                                                            {getDaysRemaining(lead.nextStep.date) !== null && (
+                                                                <span className="opacity-75"> ({getDaysRemaining(lead.nextStep.date)})</span>
+                                                            )}
                                                         </button>
                                                     </PopoverTrigger>
                                                     <PopoverContent className="w-auto p-0" align="start">
@@ -856,12 +1026,22 @@ export function CrmTable({ initialLeads, settings, filters }: CrmTableProps) {
                                                         onClick={(e) => e.stopPropagation()}
                                                     >
                                                         {(() => {
-                                                            const status = settings.statuses?.find(s => s.label === lead.status) || {
+                                                            let statusStyle = {
                                                                 bg: 'bg-[#1C73E8]/10',
                                                                 text: 'text-[#1C73E8]'
                                                             };
+
+                                                            if (lead.status === 'Won') {
+                                                                statusStyle = { bg: 'bg-green-500/10', text: 'text-green-500' };
+                                                            } else if (lead.status === 'Lost') {
+                                                                statusStyle = { bg: 'bg-red-500/10', text: 'text-red-500' };
+                                                            } else {
+                                                                const found = settings.statuses?.find(s => s.label === lead.status);
+                                                                if (found) statusStyle = found;
+                                                            }
+
                                                             return (
-                                                                <div className={`${status.bg} ${status.text} border border-white/5 px-3 py-1 rounded text-[11px] font-bold flex items-center justify-between w-full min-w-fit hover:opacity-80 transition-opacity whitespace-nowrap gap-2`}>
+                                                                <div className={`${statusStyle.bg} ${statusStyle.text} border border-white/5 px-3 py-1 rounded text-[11px] font-bold flex items-center justify-between w-full min-w-fit hover:opacity-80 transition-opacity whitespace-nowrap gap-2`}>
                                                                     <span>{lead.status}</span>
                                                                     <ChevronDown size={12} className="shrink-0" />
                                                                 </div>

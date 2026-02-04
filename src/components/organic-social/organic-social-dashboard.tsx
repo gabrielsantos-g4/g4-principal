@@ -9,11 +9,26 @@ export function OrganicSocialDashboard() {
     return (
         <div className="w-full min-h-screen text-white p-6 md:p-8">
             <Tabs defaultValue="planning" className="space-y-6">
-                <div className="flex justify-center">
-                    <TabsList className="bg-white/5 border border-white/10">
-                        <TabsTrigger value="planning" className="data-[state=active]:bg-[#1C73E8] data-[state=active]:text-white">Planning</TabsTrigger>
-                        <TabsTrigger value="execution" className="data-[state=active]:bg-[#1C73E8] data-[state=active]:text-white">Execution</TabsTrigger>
-                        <TabsTrigger value="reports" className="data-[state=active]:bg-[#1C73E8] data-[state=active]:text-white">Reports</TabsTrigger>
+                <div className="flex justify-start">
+                    <TabsList className="bg-[#171717] p-1 rounded-lg border border-white/10 w-fit h-auto">
+                        <TabsTrigger
+                            value="planning"
+                            className="px-4 py-2 rounded-md text-sm font-medium transition-all data-[state=active]:bg-[#2a2a2a] data-[state=active]:text-white data-[state=active]:shadow-sm text-gray-400 hover:text-white hover:bg-white/5"
+                        >
+                            Planning
+                        </TabsTrigger>
+                        <TabsTrigger
+                            value="execution"
+                            className="px-4 py-2 rounded-md text-sm font-medium transition-all data-[state=active]:bg-[#2a2a2a] data-[state=active]:text-white data-[state=active]:shadow-sm text-gray-400 hover:text-white hover:bg-white/5"
+                        >
+                            Execution
+                        </TabsTrigger>
+                        <TabsTrigger
+                            value="reports"
+                            className="px-4 py-2 rounded-md text-sm font-medium transition-all data-[state=active]:bg-[#2a2a2a] data-[state=active]:text-white data-[state=active]:shadow-sm text-gray-400 hover:text-white hover:bg-white/5"
+                        >
+                            Reports
+                        </TabsTrigger>
                     </TabsList>
                 </div>
 

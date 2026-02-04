@@ -141,17 +141,6 @@ export function NewOpportunityModal({ isOpen, onClose, settings, initialData }: 
                             />
                         </div>
 
-                        {/* Role */}
-                        <div className="flex flex-col gap-1.5">
-                            <label className="text-sm font-bold text-gray-400">Role</label>
-                            <Input
-                                placeholder="Type here"
-                                className="bg-white/5 border-white/10 text-white placeholder:text-gray-600 h-10 rounded-sm focus-visible:ring-1 focus-visible:ring-[#1C73E8]"
-                                value={role}
-                                onChange={(e) => setRole(e.target.value)}
-                            />
-                        </div>
-
                         {/* Company */}
                         <div className="flex flex-col gap-1.5">
                             <label className="text-sm font-bold text-gray-400">Company</label>
@@ -160,6 +149,17 @@ export function NewOpportunityModal({ isOpen, onClose, settings, initialData }: 
                                 className="bg-white/5 border-white/10 text-white placeholder:text-gray-600 h-10 rounded-sm focus-visible:ring-1 focus-visible:ring-[#1C73E8]"
                                 value={company}
                                 onChange={(e) => setCompany(e.target.value)}
+                            />
+                        </div>
+
+                        {/* Role */}
+                        <div className="flex flex-col gap-1.5">
+                            <label className="text-sm font-bold text-gray-400">Role</label>
+                            <Input
+                                placeholder="Type here"
+                                className="bg-white/5 border-white/10 text-white placeholder:text-gray-600 h-10 rounded-sm focus-visible:ring-1 focus-visible:ring-[#1C73E8]"
+                                value={role}
+                                onChange={(e) => setRole(e.target.value)}
                             />
                         </div>
 

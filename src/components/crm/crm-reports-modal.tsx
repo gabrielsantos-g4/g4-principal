@@ -7,8 +7,8 @@ import {
     DialogTitle,
     DialogDescription,
 } from "@/components/ui/dialog"
-import { BarChart3, PieChart, TrendingDown, Target, Award, X, Filter, Users, Tag, Globe, LineChart } from "lucide-react"
-import { useMemo } from "react"
+import { BarChart3, PieChart, TrendingDown, Target, Award, X, Filter, Users, Tag, Globe, LineChart, Calendar as CalendarIcon, MessageSquare } from "lucide-react"
+import { useMemo, useState } from "react"
 import {
     BarChart,
     Bar,
@@ -17,17 +17,23 @@ import {
     CartesianGrid,
     Tooltip as RechartsTooltip,
     ResponsiveContainer,
-    PieChart as RePieChart,
-    Pie,
-    Cell,
-    Legend,
+    LabelList,
     AreaChart,
     Area,
-    LabelList
+    Cell
 } from 'recharts';
 import { motion } from "framer-motion";
-import { format, eachDayOfInterval, isSameDay, startOfMonth, endOfMonth } from "date-fns";
+import { format, eachDayOfInterval, isSameDay, startOfMonth, endOfMonth, isWithinInterval, startOfDay, endOfDay } from "date-fns";
 import { CrmSettings } from "@/actions/crm/get-crm-settings";
+import { DateRange } from "react-day-picker"
+import { cn } from "@/lib/utils"
+import { Button } from "@/components/ui/button"
+import { Calendar } from "@/components/ui/calendar"
+import {
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
+} from "@/components/ui/popover"
 
 interface CrmReportsModalProps {
     isOpen: boolean
@@ -50,10 +56,26 @@ export function CrmReportsModal({ isOpen, onClose, leads, settings }: CrmReports
         }
     }
 
+    const [date, setDate] = useState<DateRange | undefined>(undefined)
+
     const stats = useMemo(() => {
-        const total = leads.length;
-        const won = leads.filter(l => l.status === 'Won').length;
-        const lost = leads.filter(l => l.status === 'Lost').length;
+        // Filter leads by date range first
+        const filteredLeads = leads.filter(l => {
+            if (!date?.from) return true;
+
+            const leadDateStr = l.created_at || l.date;
+            if (!leadDateStr || leadDateStr === 'Pending') return false;
+
+            const leadDate = new Date(leadDateStr);
+            const from = startOfDay(date.from);
+            const to = date.to ? endOfDay(date.to) : endOfDay(date.from);
+
+            return isWithinInterval(leadDate, { start: from, end: to });
+        });
+
+        const total = filteredLeads.length;
+        const won = filteredLeads.filter(l => l.status === 'Won').length;
+        const lost = filteredLeads.filter(l => l.status === 'Lost').length;
         const winRate = total > 0 ? (won / total) * 100 : 0;
 
         // --- Status Distribution ---
@@ -65,7 +87,7 @@ export function CrmReportsModal({ isOpen, onClose, leads, settings }: CrmReports
         const statusCount: Record<string, number> = {};
         allStatuses.forEach((s: any) => statusCount[s.label] = 0);
 
-        leads.forEach(l => {
+        filteredLeads.forEach(l => {
             const s = l.status || 'New';
             statusCount[s] = (statusCount[s] || 0) + 1;
         });
@@ -80,7 +102,7 @@ export function CrmReportsModal({ isOpen, onClose, leads, settings }: CrmReports
         const productCount: Record<string, number> = {};
         allProducts.forEach((p: any) => productCount[p.name] = 0);
 
-        leads.forEach(l => {
+        filteredLeads.forEach(l => {
             let products: string[] = [];
             try {
                 if (l.product && l.product.startsWith('[')) {
@@ -106,7 +128,7 @@ export function CrmReportsModal({ isOpen, onClose, leads, settings }: CrmReports
             const label = typeof s === 'string' ? s : s.label;
             sourceCount[label] = 0;
         });
-        leads.forEach(l => {
+        filteredLeads.forEach(l => {
             if (l.source) sourceCount[l.source] = (sourceCount[l.source] || 0) + 1;
         });
         const sourceData = Object.entries(sourceCount)
@@ -121,7 +143,7 @@ export function CrmReportsModal({ isOpen, onClose, leads, settings }: CrmReports
             const label = typeof c === 'string' ? c : c.label;
             categoryCount[label] = 0;
         });
-        leads.forEach(l => {
+        filteredLeads.forEach(l => {
             const category = l.custom_field || l.custom;
             if (category) categoryCount[category] = (categoryCount[category] || 0) + 1;
         });
@@ -141,7 +163,7 @@ export function CrmReportsModal({ isOpen, onClose, leads, settings }: CrmReports
         let unassignedWon = 0;
         let unassignedLost = 0;
 
-        leads.forEach(l => {
+        filteredLeads.forEach(l => {
             if (l.responsible) {
                 if (!respCount[l.responsible]) respCount[l.responsible] = { won: 0, lost: 0, assigned: 0 };
                 respCount[l.responsible].assigned++;
@@ -177,10 +199,20 @@ export function CrmReportsModal({ isOpen, onClose, leads, settings }: CrmReports
         });
 
         // --- Timeline ---
-        const leadsWithDate = leads.filter(l => (l.created_at || l.date) && (l.created_at || l.date) !== 'Pending');
+        const leadsWithDate = filteredLeads.filter(l => (l.created_at || l.date) && (l.created_at || l.date) !== 'Pending');
+
+        // Dynamic timeline interval based on selection
+        let intervalStart = startOfMonth(new Date());
+        let intervalEnd = endOfMonth(new Date());
+
+        if (date?.from) {
+            intervalStart = date.from;
+            intervalEnd = date.to || date.from;
+        }
+
         const days = eachDayOfInterval({
-            start: startOfMonth(new Date()),
-            end: endOfMonth(new Date())
+            start: intervalStart,
+            end: intervalEnd
         });
         const timelineData = days.map(day => {
             const count = leadsWithDate.filter(l => isSameDay(new Date(l.created_at || l.date), day)).length;
@@ -192,7 +224,7 @@ export function CrmReportsModal({ isOpen, onClose, leads, settings }: CrmReports
 
         // --- Lost Reasons ---
         const lostReasonsCount: Record<string, number> = {};
-        leads.filter(l => l.status === 'Lost' && l.lost_reason).forEach(l => {
+        filteredLeads.filter(l => l.status === 'Lost' && l.lost_reason).forEach(l => {
             const r = l.lost_reason!;
             lostReasonsCount[r] = (lostReasonsCount[r] || 0) + 1;
         });
@@ -200,6 +232,50 @@ export function CrmReportsModal({ isOpen, onClose, leads, settings }: CrmReports
             .map(([name, value]) => ({ name, value }))
             .sort((a, b) => b.value - a.value);
         const mainLostReason = lostReasonsData.length > 0 ? lostReasonsData[0] : null;
+
+        // --- Touchpoint Distribution ---
+        const tpCount = {
+            'TP 1': 0,
+            'TP 2': 0,
+            'TP 3': 0,
+            'TP 4': 0,
+            'Break-up Msg': 0,
+            'In Progress': 0
+        };
+
+        // --- Engagement Level ---
+        const engagementCount = {
+            'Initial': 0,      // <= 2 messages
+            'Developing': 0,   // 3-5 messages
+            'Advanced': 0      // >= 6 messages
+        };
+
+        filteredLeads.forEach(l => {
+            const p = l.nextStep?.progress || 0;
+            if (p === 1) tpCount['TP 1']++;
+            else if (p === 2) tpCount['TP 2']++;
+            else if (p === 3) tpCount['TP 3']++;
+            else if (p === 4) tpCount['TP 4']++;
+            else if (p === 5) tpCount['Break-up Msg']++;
+            else if (p > 5) {
+                tpCount['In Progress']++;
+
+                // Count engagement for In Progress leads
+                const msgCount = l.history?.length || 0;
+                if (msgCount <= 2) engagementCount['Initial']++;
+                else if (msgCount <= 5) engagementCount['Developing']++;
+                else engagementCount['Advanced']++;
+            }
+        });
+        const tpData = Object.entries(tpCount)
+            .filter(([name]) => name !== 'In Progress')
+            .map(([name, value]) => ({ name, value }));
+
+        const engagementData = [
+            { name: 'Conversation Starter', value: engagementCount['Initial'] }, // <= 2
+            { name: 'Developing Conversation', value: engagementCount['Developing'] }, // 3-5
+            { name: 'Advanced Conversation', value: engagementCount['Advanced'] } // >= 6
+        ];
 
         return {
             total,
@@ -213,9 +289,11 @@ export function CrmReportsModal({ isOpen, onClose, leads, settings }: CrmReports
             responsibleData,
             timelineData,
             lostReasonsData,
-            mainLostReason
+            mainLostReason,
+            tpData,
+            engagementData
         };
-    }, [leads, settings]);
+    }, [leads, settings, date]);
 
     const containerVariants = {
         hidden: { opacity: 0 },
@@ -249,9 +327,61 @@ export function CrmReportsModal({ isOpen, onClose, leads, settings }: CrmReports
                                 </DialogDescription>
                             </div>
                         </div>
-                        <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-full transition-colors">
-                            <X size={20} className="text-gray-400" />
-                        </button>
+                        <div className="flex items-center gap-2">
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                className="text-gray-400 hover:text-white hover:bg-white/10"
+                                onClick={() => setDate({
+                                    from: startOfMonth(new Date()),
+                                    to: endOfMonth(new Date()),
+                                })}
+                            >
+                                Clear Filter
+                            </Button>
+                            <div className={cn("grid gap-2")}>
+                                <Popover>
+                                    <PopoverTrigger asChild>
+                                        <Button
+                                            id="date"
+                                            variant={"outline"}
+                                            className={cn(
+                                                "w-[260px] justify-start text-left font-normal bg-[#0a0a0a] border-white/10 text-white hover:bg-white/5 hover:text-white",
+                                                !date && "text-muted-foreground"
+                                            )}
+                                        >
+                                            <CalendarIcon className="mr-2 h-4 w-4" />
+                                            {date?.from ? (
+                                                date.to ? (
+                                                    <>
+                                                        {format(date.from, "LLL dd, y")} -{" "}
+                                                        {format(date.to, "LLL dd, y")}
+                                                    </>
+                                                ) : (
+                                                    format(date.from, "LLL dd, y")
+                                                )
+                                            ) : (
+                                                <span>Pick a date</span>
+                                            )}
+                                        </Button>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-auto p-0 bg-[#0f0f0f] border-white/10" align="end">
+                                        <Calendar
+                                            initialFocus
+                                            mode="range"
+                                            defaultMonth={date?.from}
+                                            selected={date}
+                                            onSelect={setDate}
+                                            numberOfMonths={2}
+                                            className="bg-[#0f0f0f] text-white"
+                                        />
+                                    </PopoverContent>
+                                </Popover>
+                            </div>
+                            <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-full transition-colors">
+                                <X size={20} className="text-gray-400" />
+                            </button>
+                        </div>
                     </div>
                 </DialogHeader>
 
@@ -315,7 +445,7 @@ export function CrmReportsModal({ isOpen, onClose, leads, settings }: CrmReports
                         <motion.div variants={itemVariants} className="w-full bg-[#141414] p-6 rounded-2xl border border-white/5 flex flex-col h-[350px]">
                             <h3 className="text-lg font-semibold text-white mb-6 flex items-center gap-2">
                                 <LineChart size={18} className="text-green-500" />
-                                Acquisition Timeline (Current Month)
+                                Acquisition Timeline
                             </h3>
                             <div className="flex-1 w-full min-w-0">
                                 <ResponsiveContainer width="100%" height="100%">
@@ -431,34 +561,26 @@ export function CrmReportsModal({ isOpen, onClose, leads, settings }: CrmReports
                                 </h3>
                                 <div className="flex-1 w-full relative min-w-0">
                                     <ResponsiveContainer width="100%" height="100%">
-                                        <RePieChart>
-                                            <Pie
-                                                data={stats.productData}
-                                                cx="50%"
-                                                cy="50%"
-                                                innerRadius={60}
-                                                outerRadius={80}
-                                                paddingAngle={5}
-                                                dataKey="value"
-                                            >
-                                                {stats.productData.map((entry, index) => (
-                                                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                                                ))}
-                                            </Pie>
+                                        <BarChart layout="vertical" data={stats.productData} margin={{ top: 5, right: 30, left: 40, bottom: 5 }}>
+                                            <CartesianGrid strokeDasharray="3 3" stroke="#333" horizontal={false} />
+                                            <XAxis type="number" hide />
+                                            <YAxis
+                                                dataKey="name"
+                                                type="category"
+                                                width={100}
+                                                tick={{ fill: '#9ca3af', fontSize: 11 }}
+                                                axisLine={false}
+                                                tickLine={false}
+                                            />
                                             <RechartsTooltip
                                                 contentStyle={{ backgroundColor: '#1f1f1f', borderColor: '#333', borderRadius: '8px', color: '#fff' }}
                                                 itemStyle={{ color: '#fff' }}
+                                                cursor={{ fill: 'rgba(255,255,255,0.05)' }}
                                             />
-                                            <Legend
-                                                verticalAlign="bottom"
-                                                height={36}
-                                                formatter={(value, entry: any) => (
-                                                    <span style={{ color: '#9ca3af', fontSize: '12px' }}>
-                                                        {value} <span style={{ color: '#fff', marginLeft: '4px' }}>({entry.payload.value})</span>
-                                                    </span>
-                                                )}
-                                            />
-                                        </RePieChart>
+                                            <Bar dataKey="value" fill="#a855f7" radius={[0, 4, 4, 0]} barSize={20}>
+                                                <LabelList dataKey="value" position="right" fill="#fff" />
+                                            </Bar>
+                                        </BarChart>
                                     </ResponsiveContainer>
                                 </div>
                             </motion.div>
@@ -471,39 +593,105 @@ export function CrmReportsModal({ isOpen, onClose, leads, settings }: CrmReports
                                 </h3>
                                 <div className="flex-1 w-full relative min-w-0">
                                     <ResponsiveContainer width="100%" height="100%">
-                                        <RePieChart>
-                                            <Pie
-                                                data={stats.categoryData}
-                                                cx="50%"
-                                                cy="50%"
-                                                innerRadius={60}
-                                                outerRadius={80}
-                                                paddingAngle={5}
-                                                dataKey="value"
-                                            >
-                                                {stats.categoryData.map((entry, index) => (
-                                                    <Cell key={`cell-${index}`} fill={COLORS[(index + 2) % COLORS.length]} />
-                                                ))}
-                                            </Pie>
+                                        <BarChart layout="vertical" data={stats.categoryData} margin={{ top: 5, right: 30, left: 40, bottom: 5 }}>
+                                            <CartesianGrid strokeDasharray="3 3" stroke="#333" horizontal={false} />
+                                            <XAxis type="number" hide />
+                                            <YAxis
+                                                dataKey="name"
+                                                type="category"
+                                                width={120}
+                                                tick={{ fill: '#9ca3af', fontSize: 11 }}
+                                                axisLine={false}
+                                                tickLine={false}
+                                            />
                                             <RechartsTooltip
                                                 contentStyle={{ backgroundColor: '#1f1f1f', borderColor: '#333', borderRadius: '8px', color: '#fff' }}
                                                 itemStyle={{ color: '#fff' }}
+                                                cursor={{ fill: 'rgba(255,255,255,0.05)' }}
                                             />
-                                            <Legend
-                                                verticalAlign="bottom"
-                                                height={36}
-                                                formatter={(value, entry: any) => (
-                                                    <span style={{ color: '#9ca3af', fontSize: '12px' }}>
-                                                        {value} <span style={{ color: '#fff', marginLeft: '4px' }}>({entry.payload.value})</span>
-                                                    </span>
-                                                )}
-                                            />
-                                        </RePieChart>
+                                            <Bar dataKey="value" fill="#f97316" radius={[0, 4, 4, 0]} barSize={20}>
+                                                <LabelList dataKey="value" position="right" fill="#fff" />
+                                            </Bar>
+                                        </BarChart>
                                     </ResponsiveContainer>
                                 </div>
                             </motion.div>
                         </div>
 
+
+                        {/* Row 3: Touchpoints & Engagement */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
+
+                            {/* Touchpoint Distribution */}
+                            <motion.div variants={itemVariants} className="bg-[#141414] p-6 rounded-2xl border border-white/5 flex flex-col h-[400px]">
+                                <h3 className="text-lg font-semibold text-white mb-1 flex items-center gap-2">
+                                    <Target size={18} className="text-indigo-500" />
+                                    Leads by Touchpoint
+                                </h3>
+                                <p className="text-xs text-gray-500 mb-6 ml-7">
+                                    Volume of leads at each automated touchpoint.
+                                </p>
+                                <div className="flex-1 w-full relative min-w-0">
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <BarChart data={stats.tpData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                                            <CartesianGrid strokeDasharray="3 3" stroke="#333" vertical={false} />
+                                            <XAxis
+                                                dataKey="name"
+                                                axisLine={false}
+                                                tickLine={false}
+                                                tick={{ fill: '#9ca3af', fontSize: 12 }}
+                                            />
+                                            <YAxis
+                                                hide
+                                            />
+                                            <RechartsTooltip
+                                                contentStyle={{ backgroundColor: '#1f1f1f', borderColor: '#333', borderRadius: '8px', color: '#fff' }}
+                                                itemStyle={{ color: '#fff' }}
+                                                cursor={{ fill: 'rgba(255,255,255,0.05)' }}
+                                            />
+                                            <Bar dataKey="value" fill="#6366f1" radius={[4, 4, 0, 0]} barSize={50}>
+                                                <LabelList dataKey="value" position="top" fill="#fff" fontSize={12} />
+                                            </Bar>
+                                        </BarChart>
+                                    </ResponsiveContainer>
+                                </div>
+                            </motion.div>
+
+                            {/* Engagement Level Distribution */}
+                            <motion.div variants={itemVariants} className="bg-[#141414] p-6 rounded-2xl border border-white/5 flex flex-col h-[400px]">
+                                <h3 className="text-lg font-semibold text-white mb-1 flex items-center gap-2">
+                                    <MessageSquare size={18} className="text-pink-500" />
+                                    Engagement Level (In Progress)
+                                </h3>
+                                <p className="text-xs text-gray-500 mb-6 ml-7">
+                                    Conversation maturity based on message count.
+                                </p>
+                                <div className="flex-1 w-full relative min-w-0">
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <BarChart layout="vertical" data={stats.engagementData} margin={{ top: 5, right: 30, left: 40, bottom: 5 }}>
+                                            <CartesianGrid strokeDasharray="3 3" stroke="#333" horizontal={false} />
+                                            <XAxis type="number" hide />
+                                            <YAxis
+                                                dataKey="name"
+                                                type="category"
+                                                width={160}
+                                                tick={{ fill: '#9ca3af', fontSize: 11 }}
+                                                axisLine={false}
+                                                tickLine={false}
+                                            />
+                                            <RechartsTooltip
+                                                contentStyle={{ backgroundColor: '#1f1f1f', borderColor: '#333', borderRadius: '8px', color: '#fff' }}
+                                                itemStyle={{ color: '#fff' }}
+                                                cursor={{ fill: 'rgba(255,255,255,0.05)' }}
+                                            />
+                                            <Bar dataKey="value" fill="#ec4899" radius={[0, 4, 4, 0]} barSize={30}>
+                                                <LabelList dataKey="value" position="right" fill="#fff" />
+                                            </Bar>
+                                        </BarChart>
+                                    </ResponsiveContainer>
+                                </div>
+                            </motion.div>
+                        </div>
 
                         {/* Row 3: Lost Reasons & Responsible Stats */}
                         <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 w-full">

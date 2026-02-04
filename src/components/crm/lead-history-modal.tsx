@@ -2,7 +2,6 @@
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { useState } from "react";
 import { format } from "date-fns";
 import { Send } from "lucide-react";
@@ -30,12 +29,7 @@ export function LeadHistoryModal({ isOpen, onClose, leadName, history, onAddMess
         setNewMessage("");
     };
 
-    const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-        if (e.key === 'Enter') {
-            e.preventDefault();
-            handleSubmit();
-        }
-    }
+
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
@@ -67,12 +61,28 @@ export function LeadHistoryModal({ isOpen, onClose, leadName, history, onAddMess
 
                     {/* New Message Input */}
                     <div className="flex items-center gap-2 pt-4 border-t border-white/10">
-                        <Input
+                        <textarea
                             placeholder="Type a new message..."
-                            className="bg-black/20 border-white/10 h-10 text-sm text-white focus-visible:ring-[#1C73E8] flex-1"
+                            className="bg-black/20 border-white/10 text-sm text-white focus-visible:ring-[#1C73E8] flex-1 rounded-md px-3 py-2 min-h-[40px] max-h-[120px] resize-none focus:outline-none focus:ring-1 custom-scrollbar"
                             value={newMessage}
                             onChange={(e) => setNewMessage(e.target.value)}
-                            onKeyDown={handleKeyDown}
+                            onInput={(e) => {
+                                const target = e.target as HTMLTextAreaElement;
+                                target.style.height = "auto";
+                                target.style.height = `${target.scrollHeight}px`;
+                            }}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter' && !e.shiftKey) {
+                                    e.preventDefault();
+                                    handleSubmit();
+                                    // Reset height after submit
+                                    const target = e.target as HTMLTextAreaElement;
+                                    setTimeout(() => {
+                                        target.style.height = "auto";
+                                    }, 0);
+                                }
+                            }}
+                            rows={1}
                         />
                         <Button
                             onClick={handleSubmit}

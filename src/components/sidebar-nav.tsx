@@ -93,9 +93,35 @@ export function SidebarNav({ agents, activeAgents, user }: SidebarNavProps) {
                 </div>
 
                 {
-                    visibleAgents.filter(a => a.category === 'orchestration').map(agent => (
-                        <AgentLink key={agent.id} agent={agent} pathname={pathname} isCollapsed={sidebarCollapsed} />
-                    ))
+                    visibleAgents.filter(a => a.category === 'orchestration').map(agent => {
+                        if (agent.id === 'professional-gabriel') {
+                            return (
+                                <GabrielExpertiseDialog key={agent.id}>
+                                    <button className={`w-full flex items-center gap-3 px-4 py-2 rounded-lg transition-all duration-200 group text-left ${sidebarCollapsed ? 'justify-center px-2' : ''} hover:bg-slate-800`}>
+                                        <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0 border border-white/10 group-hover:border-white/30 transition-all">
+                                            <img
+                                                src={agent.avatar}
+                                                alt={agent.name}
+                                                className="w-full h-full object-cover"
+                                            />
+                                        </div>
+
+                                        {!sidebarCollapsed && (
+                                            <div className="flex flex-col overflow-hidden">
+                                                <span className="truncate text-sm font-medium text-slate-200 group-hover:text-white transition-colors">
+                                                    {agent.name}
+                                                </span>
+                                                <span className="text-xs text-slate-500 group-hover:text-slate-400 transition-colors whitespace-normal leading-tight">
+                                                    {agent.role}
+                                                </span>
+                                            </div>
+                                        )}
+                                    </button>
+                                </GabrielExpertiseDialog>
+                            )
+                        }
+                        return <AgentLink key={agent.id} agent={agent} pathname={pathname} isCollapsed={sidebarCollapsed} />
+                    })
                 }
 
             </div>
@@ -149,57 +175,22 @@ export function SidebarNav({ agents, activeAgents, user }: SidebarNavProps) {
             )}
 
             {/* PROFESSIONAL SERVICES */}
-            {visibleAgents.some(a => a.id === 'professional-gabriel') && (
+            {visibleAgents.some(a => a.category === 'professional-services') && (
                 <div className="space-y-2">
                     {!sidebarCollapsed && (
                         <div className="px-4 text-[10px] font-medium text-slate-500 uppercase tracking-wider">
                             Professional Services
                         </div>
                     )}
-
-                    <GabrielExpertiseDialog>
-                        <button className={`w-full flex items-center gap-3 px-4 py-2 rounded-lg transition-all duration-200 group text-left ${sidebarCollapsed ? 'justify-center px-2' : ''} hover:bg-slate-800`}>
-                            <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0 border border-white/10 group-hover:border-white/30 transition-all">
-                                <img
-                                    src="/gabriel-santos.png"
-                                    alt={user.name}
-                                    className="w-full h-full object-cover"
-                                />
-                            </div>
-
-                            {!sidebarCollapsed && (
-                                <div className="flex flex-col overflow-hidden">
-                                    <span className="truncate text-sm font-medium text-slate-200 group-hover:text-white transition-colors">
-                                        Gabriel Santos
-                                    </span>
-                                    <span className="text-xs text-slate-500 group-hover:text-slate-400 transition-colors whitespace-normal leading-tight">
-                                        Fractional Full-Stack Marketer and Sales Dev
-                                    </span>
-                                </div>
-                            )}
-                        </button>
-                    </GabrielExpertiseDialog>
+                    {
+                        visibleAgents.filter(a => a.category === 'professional-services').map(agent => (
+                            <AgentLink key={agent.id} agent={agent} pathname={pathname} isCollapsed={sidebarCollapsed} />
+                        ))
+                    }
                 </div>
             )}
 
-            {/* FOOTER */}
-            <div className="pt-4 mt-2 border-t border-white/5 px-2 pb-8">
-                <div className={`flex flex-col gap-2 opacity-50 hover:opacity-100 transition-opacity ${sidebarCollapsed ? 'items-center' : ''}`}>
-                    <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.4)]" />
-                        {!sidebarCollapsed && (
-                            <span className="text-[10px] font-medium text-slate-400 uppercase tracking-widest">
-                                System Operational
-                            </span>
-                        )}
-                    </div>
-                    {!sidebarCollapsed && (
-                        <div className="text-[10px] text-slate-600 font-medium">
-                            g4 AI Agents v0.1.13
-                        </div>
-                    )}
-                </div>
-            </div>
+
 
         </nav>
     )

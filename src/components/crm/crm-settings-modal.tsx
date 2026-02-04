@@ -3,13 +3,28 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Trash2, Edit2, Check, X, Plus, Save } from "lucide-react";
-import { useState, useEffect } from "react";
+import { Trash2, Edit2, Check, X, Plus, Save, GripVertical } from "lucide-react";
+import { useState, useEffect, useRef, useCallback } from "react";
+import { Reorder } from "framer-motion";
+
 import { CrmSettings } from "@/actions/crm/get-crm-settings";
 import { updateCrmSettings } from "@/actions/crm/update-crm-settings";
+import { transferLeadsTag } from "@/actions/crm/transfer-leads-tag";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface TagItem {
     label: string;
@@ -35,17 +50,6 @@ const COLORS = [
     { bg: "bg-pink-900", text: "text-pink-100" },
     { bg: "bg-rose-900", text: "text-rose-100" },
 ];
-import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { Label } from "@/components/ui/label";
 
 interface CrmSettingsModalProps {
     isOpen: boolean;
@@ -53,11 +57,123 @@ interface CrmSettingsModalProps {
     settings: CrmSettings;
 }
 
+// Internal component for editing a Tag (Name + Color)
+function TagEditor({
+    tag,
+    onSave,
+    onDelete,
+    children
+}: {
+    tag: TagItem,
+    onSave: (newLabel: string, newBg: string, newText: string) => void,
+    onDeleteRaw?: () => void,
+    onDelete?: () => void,
+    children: React.ReactNode
+}) {
+    const [label, setLabel] = useState(tag.label);
+    const [color, setColor] = useState({ bg: tag.bg, text: tag.text });
+    const [open, setOpen] = useState(false);
 
+    // Reset state when popover opens or tag changes
+    useEffect(() => {
+        if (open) {
+            setLabel(tag.label);
+            setColor({ bg: tag.bg, text: tag.text });
+        }
+    }, [open, tag]);
+
+    const handleSave = () => {
+        if (label.trim()) {
+            onSave(label, color.bg, color.text);
+            setOpen(false);
+        }
+    };
+
+    const handleKeyDown = (e: React.KeyboardEvent) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            handleSave();
+        }
+    };
+
+    return (
+        <Popover open={open} onOpenChange={setOpen}>
+            <PopoverTrigger asChild>
+                {children}
+            </PopoverTrigger>
+            <PopoverContent className="w-[220px] p-3 bg-[#1a1a1a] border-white/10 flex flex-col gap-3 z-[9999]">
+                <div className="space-y-1">
+                    <Label className="text-[10px] text-gray-500 uppercase font-semibold">Label</Label>
+                    <Input
+                        value={label}
+                        onChange={(e) => setLabel(e.target.value)}
+                        className="h-8 text-xs bg-black/50 border-white/20 text-white"
+                        onKeyDown={handleKeyDown}
+                        autoFocus
+                    />
+                </div>
+                <div className="space-y-1">
+                    <Label className="text-[10px] text-gray-500 uppercase font-semibold">Color</Label>
+                    <div className="grid grid-cols-5 gap-2">
+                        {COLORS.map((c, idx) => (
+                            <button
+                                key={idx}
+                                className={`w-6 h-6 rounded-full ${c.bg} border border-white/20 hover:scale-110 transition-transform ${color.bg === c.bg ? 'ring-2 ring-white scale-110' : ''}`}
+                                onClick={() => setColor(c)}
+                            />
+                        ))}
+                    </div>
+                </div>
+                <div className="pt-2 border-t border-white/10 flex justify-end gap-2">
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 text-xs text-gray-400 hover:text-white"
+                        onClick={() => setOpen(false)}
+                    >
+                        Cancel
+                    </Button>
+                    <Button
+                        size="sm"
+                        className="h-7 text-xs bg-blue-600 hover:bg-blue-500 text-white"
+                        onClick={handleSave}
+                    >
+                        Save
+                    </Button>
+                </div>
+            </PopoverContent>
+        </Popover>
+    );
+}
 
 export function CrmSettingsModal({ isOpen, onClose, settings }: CrmSettingsModalProps) {
     const router = useRouter();
     const [loading, setLoading] = useState(false);
+
+    // Debounce Ref
+    const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+    const debouncedSave = (
+        overrideProducts?: any[],
+        overrideStatuses?: any[],
+        overrideResponsibles?: any[],
+        overrideSources?: any[],
+        overrideCustomOptions?: any[],
+        overrideLostReasons?: any[]
+    ) => {
+        if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+        saveTimeoutRef.current = setTimeout(() => {
+            saveSettings(
+                overrideProducts,
+                overrideStatuses,
+                overrideResponsibles,
+                overrideSources,
+                overrideCustomOptions,
+                overrideLostReasons,
+                true // silent save
+            );
+        }, 1000);
+    };
 
     // Initialize state from props
     const [products, setProducts] = useState(settings?.products || []);
@@ -88,6 +204,26 @@ export function CrmSettingsModal({ isOpen, onClose, settings }: CrmSettingsModal
     const [editingProductData, setEditingProductData] = useState({ name: "", price: "" });
     const [itemToDelete, setItemToDelete] = useState<{ type: 'product' | 'status' | 'responsible' | 'source' | 'lostReason' | 'customOption', index: number } | null>(null);
 
+    // Transfer State
+    const [transferTarget, setTransferTarget] = useState<string>("");
+
+    // Get available options for transfer based on itemToDelete
+    const getTransferOptions = () => {
+        if (!itemToDelete) return [];
+        const { type, index } = itemToDelete;
+
+        const filter = (arr: TagItem[]) => arr.filter((_, idx) => idx !== index);
+
+        switch (type) {
+            case 'status': return filter(statuses);
+            case 'responsible': return filter(responsibles);
+            case 'source': return filter(sources);
+            case 'lostReason': return filter(lostReasons);
+            case 'customOption': return filter(customOptions);
+            default: return [];
+        }
+    };
+
     // Sync state when settings prop updates
     useEffect(() => {
         if (!settings) return;
@@ -99,6 +235,11 @@ export function CrmSettingsModal({ isOpen, onClose, settings }: CrmSettingsModal
         setCustomFieldName(settings.custom_fields?.name || "Category");
         setCustomOptions(normalizeTags(settings.custom_fields?.options || []));
     }, [settings]);
+
+    // Reset transfer target when delete modal opens
+    useEffect(() => {
+        setTransferTarget("");
+    }, [itemToDelete]);
 
 
     const saveSettings = async (overrideProducts?: any[], overrideStatuses?: any[], overrideResponsibles?: any[], overrideSources?: any[], overrideCustomOptions?: any[], overrideLostReasons?: any[], silent: boolean = false) => {
@@ -123,7 +264,6 @@ export function CrmSettingsModal({ isOpen, onClose, settings }: CrmSettingsModal
                     toast.success("Saved successfully!");
                 }
                 router.refresh();
-                // We typically verify via refresh, but keeping local state in sync is good
             } else {
                 toast.error("Failed to save.");
             }
@@ -143,74 +283,98 @@ export function CrmSettingsModal({ isOpen, onClose, settings }: CrmSettingsModal
         await saveSettings(updatedProducts);
     };
 
-    const startEditingProduct = (index: number) => {
-        setEditingProductIndex(index);
-        setEditingProductData({ name: products[index].name, price: products[index].price });
-    };
-
-    const cancelEditingProduct = () => {
-        setEditingProductIndex(null);
-        setEditingProductData({ name: "", price: "" });
-    };
-
-    const saveEditedProduct = async (index: number) => {
-        const updatedProducts = [...products];
-        updatedProducts[index] = { ...updatedProducts[index], ...editingProductData };
-        setProducts(updatedProducts);
-        setEditingProductIndex(null);
-        await saveSettings(updatedProducts);
-    };
-
     const confirmDeleteProduct = (index: number) => {
         setItemToDelete({ type: 'product', index });
     };
 
+    // Generic Delete handler with Transfer Logic
     const handleConfirmDelete = async () => {
         if (!itemToDelete) return;
+        setLoading(true);
 
         const { type, index } = itemToDelete;
 
-        if (type === 'product') {
-            const updatedProducts = [...products];
-            updatedProducts.splice(index, 1);
-            setProducts(updatedProducts);
-            await saveSettings(updatedProducts, undefined, undefined, undefined, undefined, undefined, true);
-        } else if (type === 'status') {
-            const updatedStatuses = [...statuses];
-            updatedStatuses.splice(index, 1);
-            setStatuses(updatedStatuses);
-            await saveSettings(undefined, updatedStatuses, undefined, undefined, undefined, undefined, true);
-        } else if (type === 'responsible') {
-            const updated = [...responsibles];
-            updated.splice(index, 1);
-            setResponsibles(updated);
-            await saveSettings(undefined, undefined, updated, undefined, undefined, undefined, true);
-        } else if (type === 'source') {
-            const updated = [...sources];
-            updated.splice(index, 1);
-            setSources(updated);
-            await saveSettings(undefined, undefined, undefined, updated, undefined, undefined, true);
-        } else if (type === 'lostReason') {
-            const updated = [...lostReasons];
-            updated.splice(index, 1);
-            setLostReasons(updated);
-            await saveSettings(undefined, undefined, undefined, undefined, undefined, updated, true);
-        } else if (type === 'customOption') {
-            const updated = [...customOptions];
-            updated.splice(index, 1);
-            setCustomOptions(updated);
-            await saveSettings(undefined, undefined, undefined, undefined, updated, undefined, true);
-        }
+        try {
+            // 1. Transfer leads if needed (Products don't have lead association in this context usually, skipping for simplicity unless requested)
+            if (type !== 'product' && transferTarget) {
+                let oldValue = "";
+                let column = "";
 
-        toast.error("Deleted!", {
-            style: {
-                background: '#ef4444',
-                color: 'white',
-                border: 'none'
+                if (type === 'status') {
+                    oldValue = statuses[index].label;
+                    column = 'status';
+                } else if (type === 'responsible') {
+                    oldValue = responsibles[index].label;
+                    column = 'responsible';
+                } else if (type === 'source') {
+                    oldValue = sources[index].label;
+                    column = 'source';
+                } else if (type === 'lostReason') {
+                    oldValue = lostReasons[index].label;
+                    column = 'lost_reason';
+                } else if (type === 'customOption') {
+                    oldValue = customOptions[index].label;
+                    column = 'custom_field';
+                }
+
+                if (oldValue && column) {
+                    const transferResult = await transferLeadsTag(oldValue, transferTarget, column);
+                    if (!transferResult.success) {
+                        toast.error("Failed to transfer leads. Delete aborted.");
+                        setLoading(false);
+                        return;
+                    }
+                    toast.success(`Leads transferred to ${transferTarget}`);
+                }
             }
-        });
-        router.refresh();
-        setItemToDelete(null);
+
+
+            // 2. Perform local deletion and save
+            if (type === 'product') {
+                const updatedProducts = [...products];
+                updatedProducts.splice(index, 1);
+                setProducts(updatedProducts);
+                await saveSettings(updatedProducts, undefined, undefined, undefined, undefined, undefined, true);
+            } else if (type === 'status') {
+                const updatedStatuses = [...statuses];
+                updatedStatuses.splice(index, 1);
+                setStatuses(updatedStatuses);
+                await saveSettings(undefined, updatedStatuses, undefined, undefined, undefined, undefined, true);
+            } else if (type === 'responsible') {
+                const updated = [...responsibles];
+                updated.splice(index, 1);
+                setResponsibles(updated);
+                await saveSettings(undefined, undefined, updated, undefined, undefined, undefined, true);
+            } else if (type === 'source') {
+                const updated = [...sources];
+                updated.splice(index, 1);
+                setSources(updated);
+                await saveSettings(undefined, undefined, undefined, updated, undefined, undefined, true);
+            } else if (type === 'lostReason') {
+                const updated = [...lostReasons];
+                updated.splice(index, 1);
+                setLostReasons(updated);
+                await saveSettings(undefined, undefined, undefined, undefined, undefined, updated, true);
+            } else if (type === 'customOption') {
+                const updated = [...customOptions];
+                updated.splice(index, 1);
+                setCustomOptions(updated);
+                await saveSettings(undefined, undefined, undefined, undefined, updated, undefined, true);
+            }
+
+            toast.error("Tag deleted!", {
+                style: { background: '#ef4444', color: 'white', border: 'none' }
+            });
+            router.refresh();
+            setItemToDelete(null);
+            setTransferTarget("");
+
+        } catch (e) {
+            console.error(e);
+            toast.error("An error occurred during deletion.");
+        } finally {
+            setLoading(false);
+        }
     };
 
     // Helper to get random color
@@ -232,9 +396,9 @@ export function CrmSettingsModal({ isOpen, onClose, settings }: CrmSettingsModal
         setItemToDelete({ type: 'status', index });
     };
 
-    const updateStatusColor = async (index: number, bg: string, text: string) => {
+    const updateStatus = async (index: number, label: string, bg: string, text: string) => {
         const updatedStatuses = [...statuses];
-        updatedStatuses[index] = { ...updatedStatuses[index], bg, text };
+        updatedStatuses[index] = { ...updatedStatuses[index], label, bg, text };
         setStatuses(updatedStatuses);
         await saveSettings(undefined, updatedStatuses, undefined, undefined, undefined, undefined, true);
     }
@@ -253,9 +417,9 @@ export function CrmSettingsModal({ isOpen, onClose, settings }: CrmSettingsModal
         setItemToDelete({ type: 'responsible', index });
     };
 
-    const updateResponsibleColor = async (index: number, bg: string, text: string) => {
+    const updateResponsible = async (index: number, label: string, bg: string, text: string) => {
         const updated = [...responsibles];
-        updated[index] = { ...updated[index], bg, text };
+        updated[index] = { ...updated[index], label, bg, text };
         setResponsibles(updated);
         await saveSettings(undefined, undefined, updated, undefined, undefined, undefined, true);
     }
@@ -273,9 +437,9 @@ export function CrmSettingsModal({ isOpen, onClose, settings }: CrmSettingsModal
         setItemToDelete({ type: 'source', index });
     };
 
-    const updateSourceColor = async (index: number, bg: string, text: string) => {
+    const updateSource = async (index: number, label: string, bg: string, text: string) => {
         const updated = [...sources];
-        updated[index] = { ...updated[index], bg, text };
+        updated[index] = { ...updated[index], label, bg, text };
         setSources(updated);
         await saveSettings(undefined, undefined, undefined, updated, undefined, undefined, true);
     }
@@ -294,9 +458,9 @@ export function CrmSettingsModal({ isOpen, onClose, settings }: CrmSettingsModal
         setItemToDelete({ type: 'lostReason', index });
     };
 
-    const updateLostReasonColor = async (index: number, bg: string, text: string) => {
+    const updateLostReason = async (index: number, label: string, bg: string, text: string) => {
         const updated = [...lostReasons];
-        updated[index] = { ...updated[index], bg, text };
+        updated[index] = { ...updated[index], label, bg, text };
         setLostReasons(updated);
         await saveSettings(undefined, undefined, undefined, undefined, undefined, updated, true);
     }
@@ -315,9 +479,9 @@ export function CrmSettingsModal({ isOpen, onClose, settings }: CrmSettingsModal
         setItemToDelete({ type: 'customOption', index });
     }
 
-    const updateCustomOptionColor = async (index: number, bg: string, text: string) => {
+    const updateCustomOption = async (index: number, label: string, bg: string, text: string) => {
         const updated = [...customOptions];
-        updated[index] = { ...updated[index], bg, text };
+        updated[index] = { ...updated[index], label, bg, text };
         setCustomOptions(updated);
         await saveSettings(undefined, undefined, undefined, undefined, updated, undefined, true);
     }
@@ -330,19 +494,6 @@ export function CrmSettingsModal({ isOpen, onClose, settings }: CrmSettingsModal
         }
     };
 
-    // Color Picker Component
-    const ColorPicker = ({ currentColor, onSelect }: { currentColor: string, onSelect: (bg: string, text: string) => void }) => (
-        <div className="grid grid-cols-5 gap-2 p-2 w-[180px]">
-            {COLORS.map((color, idx) => (
-                <button
-                    key={idx}
-                    className={`w-6 h-6 rounded-full ${color.bg} border border-white/20 hover:scale-110 transition-transform ${currentColor === color.bg ? 'ring-2 ring-white' : ''}`}
-                    onClick={() => onSelect(color.bg, color.text)}
-                />
-            ))}
-        </div>
-    );
-
     // --- Render ---
     return (
         <>
@@ -353,12 +504,13 @@ export function CrmSettingsModal({ isOpen, onClose, settings }: CrmSettingsModal
                         <DialogDescription className="text-gray-400">Manage your CRM products, statuses, and options.</DialogDescription>
                     </DialogHeader>
 
+                    {/* ... (Existing Grid Structure unchanged) ... */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                         {/* Products Column */}
                         <div className="space-y-6">
                             <div className="space-y-4">
                                 <h3 className="text-lg font-semibold border-b border-white/10 pb-2">Products / Services</h3>
-
+                                {/* Avoid duplicating product add UI code for brevity, it's same as before */}
                                 <div className="space-y-3 p-4 bg-white/5 rounded-md border border-white/10">
                                     <Label className="text-sm text-gray-300">Add New Product</Label>
                                     <div className="flex flex-col gap-2">
@@ -388,7 +540,6 @@ export function CrmSettingsModal({ isOpen, onClose, settings }: CrmSettingsModal
                                         </Button>
                                     </div>
                                 </div>
-
                                 <div className="flex flex-col gap-2 pr-2">
                                     {products.map((product, index) => (
                                         <div key={index} className="flex items-center justify-between p-2 bg-white/5 rounded border border-white/10 group hover:bg-white/10 transition-colors">
@@ -397,64 +548,6 @@ export function CrmSettingsModal({ isOpen, onClose, settings }: CrmSettingsModal
                                                 <span className="text-xs text-gray-400 border-l border-white/10 pl-3">${Number(product.price).toLocaleString()}</span>
                                             </div>
                                             <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                <Popover open={editingProductIndex === index} onOpenChange={(open) => setEditingProductIndex(open ? index : null)}>
-                                                    <PopoverTrigger asChild>
-                                                        <Button size="icon" variant="ghost" className="h-6 w-6 text-gray-400 hover:text-white hover:bg-white/10">
-                                                            <Edit2 className="h-3 w-3" />
-                                                        </Button>
-                                                    </PopoverTrigger>
-                                                    <PopoverContent className="w-96 bg-[#1a1a1a] border-white/10 p-4">
-                                                        <div className="space-y-3">
-                                                            <h4 className="font-medium text-sm text-gray-300">Edit Product</h4>
-                                                            <div className="flex flex-col gap-3">
-                                                                <div className="flex gap-2">
-                                                                    <div className="flex-1 space-y-1">
-                                                                        <Label className="text-xs text-gray-500">Name</Label>
-                                                                        <Input
-                                                                            defaultValue={product.name}
-                                                                            className="bg-black/50 border-white/20 text-white h-8"
-                                                                            onChange={(e) => {
-                                                                                const updated = [...products];
-                                                                                updated[index] = { ...updated[index], name: e.target.value };
-                                                                                setProducts(updated);
-                                                                            }}
-                                                                            onKeyDown={(e) => handleKeyDown(e, () => {
-                                                                                saveSettings(products);
-                                                                                setEditingProductIndex(null);
-                                                                            })}
-                                                                        />
-                                                                    </div>
-                                                                    <div className="w-24 space-y-1">
-                                                                        <Label className="text-xs text-gray-500">Price</Label>
-                                                                        <Input
-                                                                            defaultValue={product.price}
-                                                                            className="bg-black/50 border-white/20 text-white h-8"
-                                                                            type="number"
-                                                                            onChange={(e) => {
-                                                                                const updated = [...products];
-                                                                                updated[index] = { ...updated[index], price: e.target.value };
-                                                                                setProducts(updated);
-                                                                            }}
-                                                                            onKeyDown={(e) => handleKeyDown(e, () => {
-                                                                                saveSettings(products);
-                                                                                setEditingProductIndex(null);
-                                                                            })}
-                                                                        />
-                                                                    </div>
-                                                                </div>
-                                                                <Button
-                                                                    className="bg-blue-600 hover:bg-blue-700 text-white h-8 text-xs px-4 w-fit"
-                                                                    onClick={() => {
-                                                                        saveSettings(products);
-                                                                        setEditingProductIndex(null);
-                                                                    }}
-                                                                >
-                                                                    Save Changes
-                                                                </Button>
-                                                            </div>
-                                                        </div>
-                                                    </PopoverContent>
-                                                </Popover>
                                                 <Button
                                                     size="icon"
                                                     variant="ghost"
@@ -490,11 +583,24 @@ export function CrmSettingsModal({ isOpen, onClose, settings }: CrmSettingsModal
                                         <Plus className="h-4 w-4" />
                                     </Button>
                                 </div>
-                                <div className="flex flex-wrap gap-2">
+                                <Reorder.Group
+                                    axis="x"
+                                    values={statuses}
+                                    onReorder={(newOrder) => {
+                                        setStatuses(newOrder);
+                                        debouncedSave(undefined, newOrder);
+                                    }}
+                                    className="flex flex-nowrap overflow-x-auto gap-2 w-full list-none p-1 pb-2 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent"
+                                >
                                     {statuses.map((status, index) => (
-                                        <Popover key={index}>
-                                            <PopoverTrigger asChild>
+                                        <Reorder.Item key={status.id || status.label} value={status}>
+                                            <TagEditor
+                                                tag={status}
+                                                onSave={(l, b, t) => updateStatus(index, l, b, t)}
+                                                onDelete={() => removeStatus(index)}
+                                            >
                                                 <div className={`flex items-center gap-1 px-2 py-1 rounded text-xs border border-white/10 ${status.bg} ${status.text} cursor-pointer hover:opacity-80 transition-opacity`}>
+                                                    <GripVertical className="h-3 w-3 opacity-50 mr-1 cursor-grab active:cursor-grabbing" />
                                                     {status.label}
                                                     <button
                                                         onClick={(e) => { e.stopPropagation(); removeStatus(index); }}
@@ -503,16 +609,10 @@ export function CrmSettingsModal({ isOpen, onClose, settings }: CrmSettingsModal
                                                         <X className="h-3 w-3" />
                                                     </button>
                                                 </div>
-                                            </PopoverTrigger>
-                                            <PopoverContent className="w-auto p-0 bg-[#1a1a1a] border-white/10">
-                                                <ColorPicker
-                                                    currentColor={status.bg}
-                                                    onSelect={(bg, text) => updateStatusColor(index, bg, text)}
-                                                />
-                                            </PopoverContent>
-                                        </Popover>
+                                            </TagEditor>
+                                        </Reorder.Item>
                                     ))}
-                                </div>
+                                </Reorder.Group>
                             </div>
 
                             {/* Responsibles */}
@@ -537,38 +637,47 @@ export function CrmSettingsModal({ isOpen, onClose, settings }: CrmSettingsModal
                                         <Plus className="h-4 w-4" />
                                     </Button>
                                 </div>
-                                <div className="flex flex-col gap-2">
-                                    {responsibles.map((person, index) => (
-                                        <div key={index} className="flex items-center justify-between p-2 bg-white/5 rounded border border-white/10">
-                                            <div className="flex items-center gap-2">
-                                                <Popover>
-                                                    <PopoverTrigger asChild>
-                                                        <div className={`flex items-center gap-1 px-2 py-1 rounded text-xs border border-white/10 ${typeof person === 'string' ? 'bg-blue-900/30 text-blue-200' : `${person.bg} ${person.text}`} cursor-pointer hover:opacity-80 transition-opacity`}>
-                                                            {typeof person === 'string' ? person : person.label}
-                                                        </div>
-                                                    </PopoverTrigger>
-                                                    <PopoverContent className="w-auto p-0 bg-[#1a1a1a] border-white/10">
-                                                        <ColorPicker
-                                                            currentColor={typeof person === 'string' ? 'bg-blue-900' : person.bg}
-                                                            onSelect={(bg, text) => updateResponsibleColor(index, bg, text)}
-                                                        />
-                                                    </PopoverContent>
-                                                </Popover>
-                                                {typeof person !== 'string' && person.email && (
-                                                    <span className="text-xs text-gray-500">{person.email}</span>
-                                                )}
-                                            </div>
-                                            <Button
-                                                size="icon"
-                                                variant="ghost"
-                                                className="h-6 w-6 text-red-500 hover:text-red-400 hover:bg-white/10"
-                                                onClick={() => removeResponsible(index)}
-                                            >
-                                                <Trash2 className="h-3.5 w-3.5" />
-                                            </Button>
-                                        </div>
-                                    ))}
-                                </div>
+                                <Reorder.Group
+                                    axis="y"
+                                    values={responsibles}
+                                    onReorder={(newOrder) => {
+                                        setResponsibles(newOrder);
+                                        debouncedSave(undefined, undefined, newOrder);
+                                    }}
+                                    className="flex flex-col gap-2 list-none p-0"
+                                >
+                                    {responsibles.map((person, index) => {
+                                        const tag = typeof person === 'string' ? { label: person, bg: 'bg-blue-900', text: 'text-blue-100' } : person;
+                                        return (
+                                            <Reorder.Item key={tag.label} value={person}>
+                                                <div className="flex items-center justify-between p-2 bg-white/5 rounded border border-white/10">
+                                                    <div className="flex items-center gap-2">
+                                                        <GripVertical className="h-4 w-4 text-gray-500 cursor-grab active:cursor-grabbing" />
+                                                        <TagEditor
+                                                            tag={tag}
+                                                            onSave={(l, b, t) => updateResponsible(index, l, b, t)}
+                                                        >
+                                                            <div className={`flex items-center gap-1 px-2 py-1 rounded text-xs border border-white/10 ${tag.bg} ${tag.text} cursor-pointer hover:opacity-80 transition-opacity`}>
+                                                                {tag.label}
+                                                            </div>
+                                                        </TagEditor>
+                                                        {typeof person !== 'string' && person.email && (
+                                                            <span className="text-xs text-gray-500">{person.email}</span>
+                                                        )}
+                                                    </div>
+                                                    <Button
+                                                        size="icon"
+                                                        variant="ghost"
+                                                        className="h-6 w-6 text-red-500 hover:text-red-400 hover:bg-white/10"
+                                                        onClick={() => removeResponsible(index)}
+                                                    >
+                                                        <Trash2 className="h-3.5 w-3.5" />
+                                                    </Button>
+                                                </div>
+                                            </Reorder.Item>
+                                        )
+                                    })}
+                                </Reorder.Group>
                             </div>
 
                             {/* Lost Reasons */}
@@ -586,12 +695,25 @@ export function CrmSettingsModal({ isOpen, onClose, settings }: CrmSettingsModal
                                         <Plus className="h-4 w-4" />
                                     </Button>
                                 </div>
-                                <div className="flex flex-wrap gap-2">
+                                <Reorder.Group
+                                    axis="x"
+                                    values={lostReasons}
+                                    onReorder={(newOrder) => {
+                                        setLostReasons(newOrder);
+                                        debouncedSave(undefined, undefined, undefined, undefined, undefined, newOrder);
+                                    }}
+                                    className="flex flex-nowrap overflow-x-auto gap-2 w-full list-none p-1 pb-2 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent"
+                                >
                                     {lostReasons.map((reason, index) => (
-                                        <Popover key={index}>
-                                            <PopoverTrigger asChild>
-                                                <div className={`flex items-center gap-1 px-2 py-1 rounded text-xs border border-white/10 ${typeof reason === 'string' ? 'bg-red-900/30 text-red-200' : `${reason.bg} ${reason.text}`} cursor-pointer hover:opacity-80 transition-opacity`}>
-                                                    {typeof reason === 'string' ? reason : reason.label}
+                                        <Reorder.Item key={reason.label} value={reason}>
+                                            <TagEditor
+                                                tag={reason}
+                                                onSave={(l, b, t) => updateLostReason(index, l, b, t)}
+                                                onDelete={() => removeLostReason(index)}
+                                            >
+                                                <div className={`flex items-center gap-1 px-2 py-1 rounded text-xs border border-white/10 ${reason.bg} ${reason.text} cursor-pointer hover:opacity-80 transition-opacity`}>
+                                                    <GripVertical className="h-3 w-3 opacity-50 mr-1 cursor-grab active:cursor-grabbing" />
+                                                    {reason.label}
                                                     <button
                                                         onClick={(e) => { e.stopPropagation(); removeLostReason(index); }}
                                                         className="hover:text-white ml-1 opacity-70 hover:opacity-100"
@@ -599,16 +721,10 @@ export function CrmSettingsModal({ isOpen, onClose, settings }: CrmSettingsModal
                                                         <X className="h-3 w-3" />
                                                     </button>
                                                 </div>
-                                            </PopoverTrigger>
-                                            <PopoverContent className="w-auto p-0 bg-[#1a1a1a] border-white/10">
-                                                <ColorPicker
-                                                    currentColor={typeof reason === 'string' ? 'bg-red-900' : reason.bg}
-                                                    onSelect={(bg, text) => updateLostReasonColor(index, bg, text)}
-                                                />
-                                            </PopoverContent>
-                                        </Popover>
+                                            </TagEditor>
+                                        </Reorder.Item>
                                     ))}
-                                </div>
+                                </Reorder.Group>
                             </div>
 
                             {/* Sources */}
@@ -626,12 +742,25 @@ export function CrmSettingsModal({ isOpen, onClose, settings }: CrmSettingsModal
                                         <Plus className="h-4 w-4" />
                                     </Button>
                                 </div>
-                                <div className="flex flex-wrap gap-2">
+                                <Reorder.Group
+                                    axis="x"
+                                    values={sources}
+                                    onReorder={(newOrder) => {
+                                        setSources(newOrder);
+                                        debouncedSave(undefined, undefined, undefined, newOrder);
+                                    }}
+                                    className="flex flex-nowrap overflow-x-auto gap-2 w-full list-none p-1 pb-2 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent"
+                                >
                                     {sources.map((source, index) => (
-                                        <Popover key={index}>
-                                            <PopoverTrigger asChild>
-                                                <div className={`flex items-center gap-1 px-2 py-1 rounded text-xs border border-white/10 ${typeof source === 'string' ? 'bg-purple-900/30 text-purple-200' : `${source.bg} ${source.text}`} cursor-pointer hover:opacity-80 transition-opacity`}>
-                                                    {typeof source === 'string' ? source : source.label}
+                                        <Reorder.Item key={source.label} value={source}>
+                                            <TagEditor
+                                                tag={source}
+                                                onSave={(l, b, t) => updateSource(index, l, b, t)}
+                                                onDelete={() => removeSource(index)}
+                                            >
+                                                <div className={`flex items-center gap-1 px-2 py-1 rounded text-xs border border-white/10 ${source.bg} ${source.text} cursor-pointer hover:opacity-80 transition-opacity`}>
+                                                    <GripVertical className="h-3 w-3 opacity-50 mr-1 cursor-grab active:cursor-grabbing" />
+                                                    {source.label}
                                                     <button
                                                         onClick={(e) => { e.stopPropagation(); removeSource(index); }}
                                                         className="hover:text-white ml-1 opacity-70 hover:opacity-100"
@@ -639,26 +768,17 @@ export function CrmSettingsModal({ isOpen, onClose, settings }: CrmSettingsModal
                                                         <X className="h-3 w-3" />
                                                     </button>
                                                 </div>
-                                            </PopoverTrigger>
-                                            <PopoverContent className="w-auto p-0 bg-[#1a1a1a] border-white/10">
-                                                <ColorPicker
-                                                    currentColor={typeof source === 'string' ? 'bg-purple-900' : source.bg}
-                                                    onSelect={(bg, text) => updateSourceColor(index, bg, text)}
-                                                />
-                                            </PopoverContent>
-                                        </Popover>
+                                            </TagEditor>
+                                        </Reorder.Item>
                                     ))}
-                                </div>
+                                </Reorder.Group>
                             </div>
-
-
 
                             {/* Custom Field */}
                             <div className="space-y-4">
                                 <h3 className="text-lg font-semibold border-b border-white/10 pb-2">Custom Field</h3>
                                 <div className="space-y-3">
                                     <div className="grid grid-cols-2 gap-4">
-                                        {/* Col 1: Field Name */}
                                         <div className="flex flex-col gap-1">
                                             <Label className="text-xs text-gray-500">Field Name</Label>
                                             <div className="flex gap-2">
@@ -678,7 +798,6 @@ export function CrmSettingsModal({ isOpen, onClose, settings }: CrmSettingsModal
                                             </div>
                                         </div>
 
-                                        {/* Col 2: Field Options */}
                                         <div className="flex flex-col gap-1">
                                             <Label className="text-xs text-gray-500">Field Options</Label>
                                             <div className="flex gap-2">
@@ -696,13 +815,24 @@ export function CrmSettingsModal({ isOpen, onClose, settings }: CrmSettingsModal
                                         </div>
                                     </div>
 
-                                    {/* Options List (Full Width or below options input) */}
-                                    <div className="flex flex-wrap gap-2 mt-2">
+                                    <Reorder.Group
+                                        axis="x"
+                                        values={customOptions}
+                                        onReorder={(newOrder) => {
+                                            setCustomOptions(newOrder);
+                                            debouncedSave(undefined, undefined, undefined, undefined, newOrder);
+                                        }}
+                                        className="flex flex-nowrap overflow-x-auto gap-2 mt-2 w-full list-none p-1 pb-2 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent"
+                                    >
                                         {customOptions.map((opt, index) => (
-                                            <Popover key={index}>
-                                                <PopoverTrigger asChild>
-                                                    <div className={`flex items-center gap-1 px-2 py-1 rounded text-xs border border-white/10 ${typeof opt === 'string' ? 'bg-white/10 text-gray-200' : `${opt.bg} ${opt.text}`} cursor-pointer hover:opacity-80 transition-opacity`}>
-                                                        {typeof opt === 'string' ? opt : opt.label}
+                                            <Reorder.Item key={opt.label} value={opt}>
+                                                <TagEditor
+                                                    tag={opt}
+                                                    onSave={(l, b, t) => updateCustomOption(index, l, b, t)}
+                                                >
+                                                    <div className={`flex items-center gap-1 px-2 py-1 rounded text-xs border border-white/10 ${opt.bg} ${opt.text} cursor-pointer hover:opacity-80 transition-opacity`}>
+                                                        <GripVertical className="h-3 w-3 opacity-50 mr-1 cursor-grab active:cursor-grabbing" />
+                                                        {opt.label}
                                                         <button
                                                             onClick={(e) => { e.stopPropagation(); removeCustomOption(index); }}
                                                             className="hover:text-white ml-1 opacity-70 hover:opacity-100"
@@ -710,16 +840,10 @@ export function CrmSettingsModal({ isOpen, onClose, settings }: CrmSettingsModal
                                                             <X className="h-3 w-3" />
                                                         </button>
                                                     </div>
-                                                </PopoverTrigger>
-                                                <PopoverContent className="w-auto p-0 bg-[#1a1a1a] border-white/10">
-                                                    <ColorPicker
-                                                        currentColor={typeof opt === 'string' ? 'bg-slate-800' : opt.bg}
-                                                        onSelect={(bg, text) => updateCustomOptionColor(index, bg, text)}
-                                                    />
-                                                </PopoverContent>
-                                            </Popover>
+                                                </TagEditor>
+                                            </Reorder.Item>
                                         ))}
-                                    </div>
+                                    </Reorder.Group>
                                 </div>
                             </div>
 
@@ -737,7 +861,7 @@ export function CrmSettingsModal({ isOpen, onClose, settings }: CrmSettingsModal
                     <AlertDialogHeader>
                         <AlertDialogTitle>Are you sure?</AlertDialogTitle>
                         <AlertDialogDescription className="text-gray-400">
-                            Are you sure you want to delete
+                            Delete
                             {itemToDelete?.type === 'product' && <span className="font-semibold text-white"> {products[itemToDelete.index]?.name}</span>}
                             {itemToDelete?.type === 'status' && <span className="font-semibold text-white"> {statuses[itemToDelete.index]?.label}</span>}
                             {itemToDelete?.type === 'responsible' && <span className="font-semibold text-white"> {responsibles[itemToDelete.index]?.label}</span>}
@@ -747,9 +871,35 @@ export function CrmSettingsModal({ isOpen, onClose, settings }: CrmSettingsModal
                             ?
                         </AlertDialogDescription>
                     </AlertDialogHeader>
-                    <AlertDialogFooter className="gap-2 sm:space-x-0">
+
+                    {itemToDelete && itemToDelete.type !== 'product' && getTransferOptions().length > 0 && (
+                        <div className="py-2 space-y-2">
+                            <Label className="text-xs text-gray-400">Transfer leads to a new tag:</Label>
+                            <Select value={transferTarget} onValueChange={setTransferTarget}>
+                                <SelectTrigger className="w-full h-8 bg-black/50 border-white/20 text-white text-xs">
+                                    <SelectValue placeholder="Select replacement tag..." />
+                                </SelectTrigger>
+                                <SelectContent className="bg-[#1a1a1a] border-white/10 text-white z-[10001]">
+                                    {getTransferOptions().map((opt, idx) => (
+                                        <SelectItem key={idx} value={opt.label}>{opt.label}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                            <p className="text-[10px] text-yellow-500/80">
+                                Warning: Leads using this tag will be transferred to the selected tag.
+                            </p>
+                        </div>
+                    )}
+
+                    <AlertDialogFooter className="gap-2 sm:space-x-0 mt-2">
                         <AlertDialogCancel className="bg-transparent border-white/10 text-white hover:bg-white/10 h-8 text-xs">Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleConfirmDelete} className="bg-red-600 hover:bg-red-700 text-white border-0 h-8 text-xs">Delete</AlertDialogAction>
+                        <AlertDialogAction
+                            onClick={handleConfirmDelete}
+                            className="bg-red-600 hover:bg-red-700 text-white border-0 h-8 text-xs"
+                            disabled={loading || !!(itemToDelete && itemToDelete.type !== 'product' && getTransferOptions().length > 0 && !transferTarget)}
+                        >
+                            {loading ? "Processing..." : "Confirm Delete"}
+                        </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>

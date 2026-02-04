@@ -14,15 +14,19 @@ export interface Agent {
 export const AGENTS: Agent[] = [
     // ORCHESTRATION
     {
-        id: 'bi-agatha',
-        name: 'Agatha',
-        role: 'BI & Dashboard',
-        slug: 'bi-data-analysis',
+        id: 'professional-gabriel',
+        name: 'Gabriel Santos',
+        role: 'Fractional CMO',
+        slug: 'professional-services',
         category: 'orchestration',
-        avatar: 'https://i.pinimg.com/736x/cc/2e/4f/cc2e4f757b5e72abcd6a76ad9254b000.jpg',
-        externalUrl: 'https://bi.startg4.com',
-        description: 'I monitor metrics and provide growth insights.',
-        keywords: ['dados', 'metricas', 'analise', 'dashboard', 'relatorios']
+        // Using a placeholder or potentially the user's avatar dynamically in the UI, but here we need a string.
+        // We'll use a generic transparent one or a placeholder, as the Sidebar uses the user's avatar.
+        // Ideally we should use the same image as the user profile if possible, or a specific one for Gabriel.
+        // Given the sidebar uses `user.avatar`, let's use a similar placeholder or the same one if static.
+        avatar: '/gabriel-santos.png',
+        externalUrl: '#',
+        description: 'Fractional Full-Stack Marketer and Sales Dev.',
+        keywords: ['consultoria', 'ajuda', 'suporte', 'gabriel']
     },
     // STRATEGY
     {
@@ -206,6 +210,17 @@ export const AGENTS: Agent[] = [
         description: 'I nurture leads and handle support questions.',
         keywords: ['qualificacao', 'suporte', 'atendimento', 'nurturing']
     },
+    {
+        id: 'bi-agatha',
+        name: 'Agatha',
+        role: 'BI & Dashboard',
+        slug: 'bi-data-analysis',
+        category: 'execution',
+        avatar: 'https://i.pinimg.com/736x/cc/2e/4f/cc2e4f757b5e72abcd6a76ad9254b000.jpg',
+        externalUrl: 'https://bi.startg4.com',
+        description: 'I monitor metrics and provide growth insights.',
+        keywords: ['dados', 'metricas', 'analise', 'dashboard', 'relatorios']
+    },
     // The Gold Mine
     {
         id: 'crm-emily',
@@ -219,20 +234,5 @@ export const AGENTS: Agent[] = [
         description: 'I manage your pipeline and deal flow.',
         keywords: ['vendas', 'pipeline', 'funil', 'negocios', 'fechamento']
     },
-    // PROFESSIONAL SERVICES
-    {
-        id: 'professional-gabriel',
-        name: 'Gabriel Santos',
-        role: 'Fractional CMO',
-        slug: 'professional-services',
-        category: 'professional-services',
-        // Using a placeholder or potentially the user's avatar dynamically in the UI, but here we need a string.
-        // We'll use a generic transparent one or a placeholder, as the Sidebar uses the user's avatar.
-        // Ideally we should use the same image as the user profile if possible, or a specific one for Gabriel.
-        // Given the sidebar uses `user.avatar`, let's use a similar placeholder or the same one if static.
-        avatar: 'https://i.pinimg.com/736x/5f/40/6a/5f406ab25e8942cbe0da6485afd26b71.jpg',
-        externalUrl: '#',
-        description: 'Fractional Full-Stack Marketer and Sales Dev.',
-        keywords: ['consultoria', 'ajuda', 'suporte', 'gabriel']
-    }
+
 ]
