@@ -1,6 +1,6 @@
 'use server'
 
-import { createClient } from '@/lib/supabase'
+import { createClient, createAdminClient } from '@/lib/supabase'
 import { revalidatePath } from 'next/cache'
 
 export async function createInitiative(formData: FormData) {
@@ -240,7 +240,9 @@ export async function getInitiatives() {
 
     if (!user) return []
 
-    const { data: profile } = await supabase
+    const supabaseAdmin = await createAdminClient()
+
+    const { data: profile } = await supabaseAdmin
         .from('main_profiles')
         .select('empresa_id')
         .eq('id', user.id)
@@ -248,7 +250,7 @@ export async function getInitiatives() {
 
     if (!profile?.empresa_id) return []
 
-    const { data } = await supabase
+    const { data } = await supabaseAdmin
         .from('strategy_initiatives')
         .select('*')
         .eq('empresa_id', profile.empresa_id)

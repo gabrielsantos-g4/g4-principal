@@ -1,5 +1,5 @@
 import { Prospect, deleteProspect, updateProspect } from "@/actions/outreach-actions"
-import { Users, Plus, Loader2, ChevronLeft, ChevronRight, Search, Trash2, Edit, MoreHorizontal } from "lucide-react"
+import { Users, Plus, Loader2, ChevronLeft, ChevronRight, Search, Trash2, Edit, MoreHorizontal, ExternalLink } from "lucide-react"
 import { useState, useTransition, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
@@ -161,8 +161,9 @@ export function ProspectsGrid({ data }: ProspectsGridProps) {
                             <option value="All">All</option>
                             <option value="Pending">Pending</option>
                             <option value="Needs Review">Needs Review</option>
-                            <option value="Approved">Approved</option>
-                            <option value="Rejected">Rejected</option>
+                            <option value="Contact">Contact</option>
+                            <option value="Approved">Approved, move to CRM</option>
+                            <option value="Rejected">Rejected, delete</option>
                         </select>
                     </div>
                 </div>
@@ -181,6 +182,7 @@ export function ProspectsGrid({ data }: ProspectsGridProps) {
                                 <th className="px-6 py-3 font-bold text-gray-300">Email 1</th>
                                 <th className="px-6 py-3 font-bold text-gray-300">Email 2</th>
                                 <th className="px-6 py-3 font-bold text-gray-300">LinkedIn Profile</th>
+                                <th className="px-6 py-3 font-bold text-gray-300">Signal</th>
                                 <th className="px-6 py-3 font-bold text-gray-300">Date</th>
                                 <th className="px-6 py-3 font-bold text-gray-300">Status</th>
                                 <th className="px-6 py-3 font-bold text-gray-300 w-[50px]">Actions</th>
@@ -210,6 +212,23 @@ export function ProspectsGrid({ data }: ProspectsGridProps) {
                                         ) : (
                                             <span className="text-gray-500">-</span>
                                         )}
+                                    </td>
+                                    <td className="px-6 py-3">
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-gray-300 text-xs truncate max-w-[250px]" title={prospect.signal || ''}>
+                                                {prospect.signal || '-'}
+                                            </span>
+                                            {prospect.signal_link && (
+                                                <a
+                                                    href={prospect.signal_link.startsWith('http') ? prospect.signal_link : `https://${prospect.signal_link}`}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="text-blue-400 hover:text-blue-300"
+                                                >
+                                                    <ExternalLink className="w-4 h-4" />
+                                                </a>
+                                            )}
+                                        </div>
                                     </td>
                                     <td className="px-6 py-3 text-gray-400">
                                         {prospect.created_at ? new Date(prospect.created_at).toLocaleDateString() : '-'}
@@ -338,6 +357,10 @@ function StatusSelect({ id, currentStatus }: { id: string, currentStatus: string
     const [isPending, startTransition] = useTransition()
     const [status, setStatus] = useState(currentStatus)
 
+    useEffect(() => {
+        setStatus(currentStatus)
+    }, [currentStatus])
+
     const handleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
         const newStatus = e.target.value
         setStatus(newStatus) // Optimistic update
@@ -361,6 +384,7 @@ function StatusSelect({ id, currentStatus }: { id: string, currentStatus: string
         switch (val) {
             case 'Approved': return 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20'
             case 'Rejected': return 'text-red-400 bg-red-500/10 border-red-500/20'
+            case 'Contact': return 'text-blue-400 bg-blue-500/10 border-blue-500/20'
             case 'Pending': return 'text-gray-400 bg-gray-500/10 border-gray-500/20'
             case 'Needs Review':
             default: return 'text-amber-400 bg-amber-500/10 border-amber-500/20'
@@ -377,8 +401,9 @@ function StatusSelect({ id, currentStatus }: { id: string, currentStatus: string
             >
                 <option value="Pending" className="bg-slate-900 text-gray-400">Pending</option>
                 <option value="Needs Review" className="bg-slate-900 text-amber-400">Needs Review</option>
-                <option value="Approved" className="bg-slate-900 text-emerald-400">Approved</option>
-                <option value="Rejected" className="bg-slate-900 text-red-400">Rejected</option>
+                <option value="Contact" className="bg-slate-900 text-blue-400">Contact</option>
+                <option value="Approved" className="bg-slate-900 text-emerald-400">Approved, move to CRM</option>
+                <option value="Rejected" className="bg-slate-900 text-red-400">Rejected, delete</option>
             </select>
             {isPending && (
                 <Loader2 className="w-3 h-3 absolute -right-4 top-1.5 animate-spin text-gray-500" />

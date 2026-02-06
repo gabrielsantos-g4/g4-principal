@@ -3,6 +3,8 @@
 import { createClient } from "@/lib/supabase";
 import { revalidatePath } from "next/cache";
 
+import { logAction } from "@/actions/audit";
+
 interface UpdateLeadParams {
     status?: string;
     source?: string;
@@ -16,6 +18,13 @@ interface UpdateLeadParams {
 export async function updateLead(id: number, data: UpdateLeadParams) {
     const supabase = await createClient();
 
+    // Fetch current lead data for audit logging
+    const { data: currentLead } = await supabase
+        .from('main_crm')
+        .select('status, name')
+        .eq('id', id)
+        .single();
+
     const { error } = await supabase
         .from('main_crm')
         .update(data)
@@ -27,5 +36,13 @@ export async function updateLead(id: number, data: UpdateLeadParams) {
     }
 
     revalidatePath('/dashboard/crm');
+
+    await logAction('LEAD_UPDATED', {
+        lead_id: id,
+        name: currentLead?.name,
+        old_status: currentLead?.status,
+        updates: data
+    });
+
     return { success: true };
 }

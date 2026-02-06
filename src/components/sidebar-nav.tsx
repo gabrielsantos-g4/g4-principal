@@ -6,7 +6,6 @@ import { usePathname } from 'next/navigation'
 import { Agent } from '@/lib/agents'
 import { GabrielExpertiseDialog } from '@/components/gabriel-expertise-dialog'
 import { PricingModal } from '@/components/pricing-modal'
-import { AgentsOverviewDialog } from '@/components/dashboard/agents-overview-dialog'
 import { useState, useEffect } from 'react'
 import {
     DropdownMenu,

@@ -107,7 +107,17 @@ export async function searchCompanies(query: string): Promise<CompanySearchResul
  * Uploads a list of prospects for a specific company.
  */
 export async function uploadProspects(empresaId: string, prospects: any[]) {
-    const supabase = await createClient()
+    // Use Admin Client to bypass RLS (avoid recursion in main_profiles policies)
+    const adminSupabase = createSupabaseClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!,
+        {
+            auth: {
+                autoRefreshToken: false,
+                persistSession: false
+            }
+        }
+    )
 
     if (!empresaId) return { error: 'Company ID is required' }
     if (!prospects || prospects.length === 0) return { error: 'No prospects to upload' }
@@ -123,11 +133,14 @@ export async function uploadProspects(empresaId: string, prospects: any[]) {
         email_1: p.email_1,
         email_2: p.email_2,
         linkedin_profile: p.linkedin_profile,
+        signal: p.signal,
+        signal_link: p.signal_link,
         status: p.status || 'Pending',
+        active: true
         // created_at will be default now()
     }))
 
-    const { error } = await supabase
+    const { error } = await adminSupabase
         .from('outreach_prospects')
         .insert(rows)
 

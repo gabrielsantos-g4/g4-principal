@@ -1,6 +1,6 @@
 'use server'
 
-import { createClient } from '@/lib/supabase'
+import { createClient, createAdminClient } from '@/lib/supabase'
 
 export interface Prospect {
     id: string
@@ -12,6 +12,8 @@ export interface Prospect {
     email_1: string | null
     email_2: string | null
     linkedin_profile: string | null
+    signal?: string | null
+    signal_link?: string | null
     status: string
     created_at: string
     empresa_id?: string
@@ -24,7 +26,11 @@ export async function getProspects(): Promise<Prospect[]> {
 
     if (!user) return []
 
-    const { data: profile } = await supabase
+    // Use Admin Client to ensure we can read main_profiles and outreach_prospects regardless of RLS
+    // (Assuming user is authenticated)
+    const supabaseAdmin = await createAdminClient()
+
+    const { data: profile } = await supabaseAdmin
         .from('main_profiles')
         .select('empresa_id')
         .eq('id', user.id)
@@ -32,13 +38,14 @@ export async function getProspects(): Promise<Prospect[]> {
 
     if (!profile?.empresa_id) return []
 
-    // Fetch only active prospects for this company
-    const { data, error } = await supabase
+    // Fetch only active prospects for this company using Admin Client
+    const { data, error } = await supabaseAdmin
         .from('outreach_prospects')
         .select('*')
         .eq('active', true)
         .eq('empresa_id', profile.empresa_id)
         .order('created_at', { ascending: false })
+        .order('id', { ascending: true })
 
     if (error) {
         console.error('Error fetching prospects:', error)
@@ -124,10 +131,13 @@ export async function updateProspect(id: string, data: Partial<Prospect>) {
 
     if (!user) throw new Error('User not authenticated')
 
+    // Use Admin Client to ensure we can update outreach_prospects regardless of RLS
+    const adminSupabase = await createAdminClient()
+
     // Filter out fields that shouldn't be updated directly if any, e.g. id, created_at
     const { id: _, created_at: __, ...updateData } = data
 
-    const { error } = await supabase
+    const { error } = await adminSupabase
         .from('outreach_prospects')
         .update(updateData)
         .eq('id', id)

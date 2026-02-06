@@ -3,6 +3,8 @@
 import { createClient } from "@/lib/supabase";
 import { revalidatePath } from "next/cache";
 
+import { logAction } from "@/actions/audit";
+
 export async function transferLeadsTag(oldValue: string, newValue: string, column: string) {
     const supabase = await createClient();
 
@@ -28,6 +30,14 @@ export async function transferLeadsTag(oldValue: string, newValue: string, colum
 
 
         revalidatePath('/dashboard/crm');
+
+        await logAction('LEADS_TRANSFERRED', {
+            column,
+            from: oldValue,
+            to: newValue,
+            count
+        });
+
         return { success: true, count };
     } catch (e) {
         console.error("Transfer exception:", e);

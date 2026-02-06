@@ -76,7 +76,8 @@ export async function signup(formData: FormData) {
             id: adminData.user.id,
             empresa_id: companyData.id,
             name: name,
-            role: 'admin' // First user is Admin
+            role: 'admin', // First user is Admin
+            active_agents: []
         })
 
     if (profileError) {

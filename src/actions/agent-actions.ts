@@ -1,17 +1,18 @@
 'use server'
 
-import { createClient } from '@/lib/supabase'
+import { createAdminClient, createClient } from '@/lib/supabase'
 import { revalidatePath } from 'next/cache'
 
 export async function updateActiveAgents(activeAgentIds: string[]) {
     const supabase = await createClient()
+    const supabaseAdmin = await createAdminClient()
     const { data: { user } } = await supabase.auth.getUser()
 
     if (!user) {
         return { error: 'Unauthorized' }
     }
 
-    const { error } = await supabase
+    const { error } = await supabaseAdmin
         .from('main_profiles')
         .update({ active_agents: activeAgentIds })
         .eq('id', user.id)
@@ -21,6 +22,6 @@ export async function updateActiveAgents(activeAgentIds: string[]) {
         return { error: error.message }
     }
 
-    revalidatePath('/dashboard')
+    revalidatePath('/', 'layout')
     return { success: true }
 }

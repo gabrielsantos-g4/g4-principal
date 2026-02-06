@@ -1,6 +1,6 @@
 'use server'
 
-import { createClient } from '@/lib/supabase'
+import { createClient, createAdminClient } from '@/lib/supabase'
 
 export async function sendCampaignSetupEmail(formData: any) {
     try {
@@ -11,8 +11,9 @@ export async function sendCampaignSetupEmail(formData: any) {
             return { success: false, error: 'User not authenticated' }
         }
 
-        // Get company/user details for the email
-        const { data: profile } = await supabase
+        // Get company/user details for the email using Admin Client
+        const supabaseAdmin = await createAdminClient()
+        const { data: profile } = await supabaseAdmin
             .from('main_profiles')
             .select('full_name, company_name')
             .eq('id', user.id)

@@ -1,16 +1,19 @@
 'use server'
 
-import { createClient } from '@/lib/supabase'
+import { createClient, createAdminClient } from '@/lib/supabase'
 import { revalidatePath } from 'next/cache'
 
+// Fetches the most recently created ICP to pre-fill the form
 export async function getICP() {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
 
     if (!user) return null
 
+    const supabaseAdmin = await createAdminClient()
+
     // Get the main_profile to find the empresa_id
-    const { data: profile } = await supabase
+    const { data: profile } = await supabaseAdmin
         .from('main_profiles')
         .select('empresa_id')
         .eq('id', user.id)
@@ -18,13 +21,41 @@ export async function getICP() {
 
     if (!profile?.empresa_id) return null
 
-    const { data: icp } = await supabase
+    const { data: icp } = await supabaseAdmin
         .from('outreach_icp')
         .select('*')
         .eq('empresa_id', profile.empresa_id)
+        .order('created_at', { ascending: false })
+        .limit(1)
         .single()
 
     return icp
+}
+
+// Fetches all saved ICPs for the "Saved Configurations" list
+export async function getSavedICPs() {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) return []
+
+    const supabaseAdmin = await createAdminClient()
+
+    const { data: profile } = await supabaseAdmin
+        .from('main_profiles')
+        .select('empresa_id')
+        .eq('id', user.id)
+        .single()
+
+    if (!profile?.empresa_id) return []
+
+    const { data: icps } = await supabaseAdmin
+        .from('outreach_icp')
+        .select('*')
+        .eq('empresa_id', profile.empresa_id)
+        .order('created_at', { ascending: false })
+
+    return icps || []
 }
 
 export async function saveICP(formData: FormData) {
@@ -36,7 +67,9 @@ export async function saveICP(formData: FormData) {
     console.log('--- Save ICP Debug ---')
     console.log('Auth User ID:', user.id)
 
-    const { data: profile } = await supabase
+    const supabaseAdmin = await createAdminClient()
+
+    const { data: profile } = await supabaseAdmin
         .from('main_profiles')
         .select('empresa_id')
         .eq('id', user.id)
@@ -51,6 +84,7 @@ export async function saveICP(formData: FormData) {
 
     const data = {
         empresa_id: profile.empresa_id,
+        name: formData.get('name') as string || 'Untitled Configuration',
         // Parse JSON strings for multi-select fields (sent as stringified arrays from client)
         company_headcount: JSON.parse(formData.get('company_headcount') as string || '[]'),
         company_type: JSON.parse(formData.get('company_type') as string || '[]'),
@@ -64,9 +98,11 @@ export async function saveICP(formData: FormData) {
         additional_instruction: formData.get('additional_instruction') as string,
     }
 
-    const { error } = await supabase
+    // Always insert a new record for now (Save As logic)
+    // Future improvement: Pass an ID to update an existing preset
+    const { error } = await supabaseAdmin
         .from('outreach_icp')
-        .upsert(data, { onConflict: 'empresa_id' })
+        .insert(data)
 
     if (error) {
         console.error('Error saving ICP:', error)

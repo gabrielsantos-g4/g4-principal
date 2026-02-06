@@ -54,6 +54,7 @@ import { updateLead } from "@/actions/crm/update-lead";
 import { deleteLead } from "@/actions/crm/delete-lead";
 import { toast } from "sonner";
 import { CrmSettings } from "@/actions/crm/get-crm-settings";
+import { updateLeadQualification } from "@/actions/crm/update-lead-qualification";
 
 // ... existing imports ...
 
@@ -79,6 +80,7 @@ interface LeadType {
     history: { id: string; message: string; date: Date }[];
     date: string; // Creation date required by Modals
     lost_reason?: string;
+    qualification_status?: string;
 }
 
 interface CrmTableProps {
@@ -168,7 +170,8 @@ export function CrmTable({ initialLeads, settings, filters }: CrmTableProps) {
             ...h,
             date: h.date ? new Date(h.date) : new Date()
         })) : [],
-        date: l.created_at || new Date().toISOString()
+        date: l.created_at || new Date().toISOString(),
+        qualification_status: l.qualification_status?.toLowerCase()
     })), [initialLeads]);
 
     const [leads, setLeads] = useState<LeadType[]>(transformedLeads);
@@ -250,6 +253,9 @@ export function CrmTable({ initialLeads, settings, filters }: CrmTableProps) {
                     if (nextStepDate < tomorrowStart || nextStepDate >= dayAfterTomorrowStart) return false;
                 }
             }
+
+            // Qualification Filter
+            if (filters.qualification && lead.qualification_status !== filters.qualification) return false;
 
             return true;
         });
@@ -626,6 +632,15 @@ export function CrmTable({ initialLeads, settings, filters }: CrmTableProps) {
                                         </Tooltip>
                                     </TooltipProvider>
                                 </th>
+                                {/* Qualification */}
+                                <th className="px-3 py-1.5 text-left min-w-[110px]">
+                                    <TooltipProvider>
+                                        <Tooltip>
+                                            <TooltipTrigger asChild><span>Qualification</span></TooltipTrigger>
+                                            <TooltipContent><p>Lead Qualification Status (MQL, SQL, etc)</p></TooltipContent>
+                                        </Tooltip>
+                                    </TooltipProvider>
+                                </th>
                                 {/* Source */}
                                 <th className="px-3 py-1.5 text-left min-w-[110px]">
                                     <TooltipProvider>
@@ -985,6 +1000,66 @@ export function CrmTable({ initialLeads, settings, filters }: CrmTableProps) {
                                                     >
                                                         <Settings size={12} />
                                                         Manage...
+                                                    </DropdownMenuItem>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
+                                        </td>
+                                        {/* Qualification Column */}
+                                        <td className="px-3 py-1">
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                    <button
+                                                        className={`flex items-center justify-between text-[11px] px-2 py-0.5 rounded outline-none transition-colors border w-fit ${(() => {
+                                                            if (!lead.qualification_status || lead.qualification_status === 'pending') {
+                                                                return 'text-gray-500 border-transparent hover:bg-white/5 hover:text-white';
+                                                            }
+                                                            switch (lead.qualification_status?.toLowerCase()) {
+                                                                case 'mql': return "bg-blue-500/10 text-blue-400 border-blue-500/20 font-bold tracking-wider";
+                                                                case 'sql': return "bg-emerald-500/10 text-emerald-400 border-emerald-500/20 font-bold tracking-wider";
+                                                                case 'nq': return "bg-red-500/10 text-red-400 border-red-500/20 font-bold tracking-wider";
+                                                                default: return 'text-gray-400 border-transparent';
+                                                            }
+                                                        })()}`}
+                                                        onClick={(e) => e.stopPropagation()}
+                                                    >
+                                                        <span className="whitespace-nowrap uppercase">
+                                                            {lead.qualification_status?.replace('_', ' ') || <span className="text-gray-600 italic font-normal normal-case">-</span>}
+                                                        </span>
+                                                        <ChevronDown size={12} className="ml-2 shrink-0 opacity-50" />
+                                                    </button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent className="w-[150px] p-1 bg-[#1A1A1A] border-white/10 text-white" align="start">
+                                                    {[
+                                                        { label: 'MQL', value: 'mql', className: 'text-blue-400' },
+                                                        { label: 'SQL', value: 'sql', className: 'text-emerald-400' },
+                                                        { label: 'NQ', value: 'nq', className: 'text-red-400' }
+                                                    ].map((option) => (
+                                                        <DropdownMenuItem
+                                                            key={option.value}
+                                                            className={`w-full text-left px-2 py-1.5 text-[12px] hover:bg-white/10 rounded-sm transition-colors cursor-pointer focus:bg-white/10 focus:text-white ${option.className}`}
+                                                            onClick={async () => {
+                                                                // Optimistic update
+                                                                setLeads(prev => prev.map(l => l.id === lead.id ? { ...l, qualification_status: option.value } : l));
+
+                                                                const result = await updateLeadQualification(lead.id, option.value);
+                                                                if (!result.success) {
+                                                                    toast.error("Failed to update qualifcation");
+                                                                    // Revert if needed, but rarely fails
+                                                                }
+                                                            }}
+                                                        >
+                                                            {option.label}
+                                                        </DropdownMenuItem>
+                                                    ))}
+                                                    <DropdownMenuSeparator className="bg-white/10 my-1" />
+                                                    <DropdownMenuItem
+                                                        className="w-full text-left px-2 py-1.5 text-[12px] hover:bg-white/10 rounded-sm transition-colors text-gray-500 hover:text-gray-300 cursor-pointer focus:bg-white/10"
+                                                        onClick={async () => {
+                                                            setLeads(prev => prev.map(l => l.id === lead.id ? { ...l, qualification_status: 'pending' } : l));
+                                                            await updateLeadQualification(lead.id, 'pending');
+                                                        }}
+                                                    >
+                                                        Clear / Pending
                                                     </DropdownMenuItem>
                                                 </DropdownMenuContent>
                                             </DropdownMenu>

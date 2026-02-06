@@ -19,6 +19,7 @@ export interface CrmFilterState {
     responsible: string;
     customField: string;
     contactFilter: 'overdue' | 'today' | 'tomorrow' | null;
+    qualification: string;
 }
 
 interface CrmContainerProps {
@@ -69,7 +70,8 @@ export function CrmContainer({ initialLeads, stats: initialStats, settings }: Cr
         source: '',
         responsible: '',
         customField: '',
-        contactFilter: null
+        contactFilter: null,
+        qualification: ''
     });
 
     // 1. Transform Leads (Mirroring CrmTable logic for consistency)
@@ -81,11 +83,12 @@ export function CrmContainer({ initialLeads, stats: initialStats, settings }: Cr
         custom: l.custom_field || "",
         responsible: l.responsible || "",
         nextStep: l.next_step || { date: "Pending", progress: 0, total: 6 },
-        amount: l.amount ? parseFloat(l.amount.toString().replace(/[^0-9.-]+/g, "")) : 0
+        amount: l.amount ? parseFloat(l.amount.toString().replace(/[^0-9.-]+/g, "")) : 0,
+        qualification_status: l.qualification_status?.toLowerCase() // Normalize to lowercase
     })), [initialLeads]);
 
-    // 2. Filter Leads
-    const filteredLeads = useMemo(() => {
+    // 2. Base Filter (Everything EXCEPT Qualification) - Used for Stats
+    const baseFilteredLeads = useMemo(() => {
         return transformedLeads.filter(lead => {
             // Tab Filter
             if (filters.tab === 'active') {
@@ -146,19 +149,28 @@ export function CrmContainer({ initialLeads, stats: initialStats, settings }: Cr
         });
     }, [transformedLeads, filters]);
 
-    // 3. Calculate Header Stats
+    // 3. Final Filter (Base + Qualification) - Used for Table
+    const finalFilteredLeads = useMemo(() => {
+        if (!filters.qualification) return baseFilteredLeads;
+        return baseFilteredLeads.filter(lead => lead.qualification_status === filters.qualification);
+    }, [baseFilteredLeads, filters.qualification]);
+
+    // 4. Calculate Header Stats (Based on Base Filters)
     const headerStats = useMemo(() => {
         let pipelineValue = 0;
         let overdue = 0;
         let today = 0;
         let tomorrow = 0;
+        let mql = 0;
+        let sql = 0;
+        let not_qualified = 0;
 
         const now = new Date();
         const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
         const tomorrowStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
         const dayAfterTomorrowStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 2);
 
-        filteredLeads.forEach(lead => {
+        baseFilteredLeads.forEach(lead => {
             pipelineValue += lead.amount || 0;
 
             const nextStepDate = parseDateStr(lead.nextStep?.date);
@@ -172,14 +184,20 @@ export function CrmContainer({ initialLeads, stats: initialStats, settings }: Cr
                     tomorrow++;
                 }
             }
+
+            // Qualification Stats
+            if (lead.qualification_status === 'mql') mql++;
+            else if (lead.qualification_status === 'sql') sql++;
+            else if (lead.qualification_status === 'nq') not_qualified++;
         });
 
         return {
-            totalLeads: filteredLeads.length,
+            totalLeads: baseFilteredLeads.length,
             pipelineValue,
+            qualification: { mql, sql, not_qualified },
             contacts: { overdue, today, tomorrow }
         };
-    }, [filteredLeads]);
+    }, [baseFilteredLeads]);
 
 
     return (

@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { uploadTrainingFile } from "@/actions/training-actions";
 
 interface KnowledgeBaseUploadProps {
     companyId: string;
@@ -71,43 +72,21 @@ export function KnowledgeBaseUpload({ companyId }: KnowledgeBaseUploadProps) {
             formData.append("tabela_nome", companyId);
             formData.append("titulo", name);
 
-            const response = await fetch("https://hook.startg4.com/webhook/6cfc997c-e210-43d4-86a7-f5ffc718a685", {
-                method: "POST",
-                body: formData,
-            });
+            const result = await uploadTrainingFile(formData);
 
-            if (!response.ok) {
-                throw new Error("Upload failed");
+            if (!result.success) {
+                throw new Error(result.error || "Upload failed");
             }
 
-            let data: any = {};
-            try {
-                const text = await response.text();
-                if (text) {
-                    data = JSON.parse(text);
-                }
-            } catch (e) {
-                console.warn("Failed to parse JSON response:", e);
-            }
+            toast.success("Training uploaded successfully!", { id: toastId });
+            setIsOpen(false);
+            setFile(null);
+            setName("");
+            router.refresh();
 
-            if (data.treinamento_criado) {
-                toast.success("Training uploaded successfully!", { id: toastId });
-                setIsOpen(false);
-                setFile(null);
-                setName("");
-                router.refresh();
-            } else {
-                // Fallback if structure is different or empty body
-                toast.success("Training uploaded!", { id: toastId });
-                setIsOpen(false);
-                setFile(null);
-                setName("");
-                router.refresh();
-            }
-
-        } catch (error) {
+        } catch (error: any) {
             console.error(error);
-            toast.error("Failed to upload training.", { id: toastId });
+            toast.error(error.message || "Failed to upload training.", { id: toastId });
         } finally {
             setIsUploading(false);
         }

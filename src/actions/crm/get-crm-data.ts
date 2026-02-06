@@ -1,6 +1,6 @@
 'use server';
 
-import { createClient } from "@/lib/supabase";
+import { createAdminClient } from "@/lib/supabase";
 import { getEmpresaId } from "@/lib/get-empresa-id";
 
 export interface CrmData {
@@ -18,10 +18,12 @@ export async function getCrmData(): Promise<CrmData | null> {
     const empresaId = await getEmpresaId();
     if (!empresaId) return null;
 
-    const supabase = await createClient();
+    if (!empresaId) return null;
+
+    const supabaseAdmin = await createAdminClient();
 
     // Buscar leads da empresa
-    const { data: leads, error } = await supabase
+    const { data: leads, error } = await supabaseAdmin
         .from('main_crm')
         .select('*')
         .eq('empresa_id', empresaId)

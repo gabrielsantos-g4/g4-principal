@@ -42,6 +42,11 @@ interface CrmFiltersProps {
     headerStats: {
         totalLeads: number;
         pipelineValue: number;
+        qualification: {
+            mql: number;
+            sql: number;
+            not_qualified: number;
+        };
         contacts: {
             overdue: number;
             today: number;
@@ -72,7 +77,8 @@ export function CrmFilters({ settings, filters, setFilters, leads, headerStats }
             source: '',
             responsible: '',
             customField: '',
-            contactFilter: null
+            contactFilter: null,
+            qualification: ''
         });
     };
 
@@ -168,18 +174,84 @@ export function CrmFilters({ settings, filters, setFilters, leads, headerStats }
             <div className="flex items-center gap-3 lg:gap-4 px-2 overflow-x-auto no-scrollbar mask-gradient flex-1 min-w-0 justify-end xl:justify-center">
                 <div className="hidden xl:flex items-center gap-3 lg:gap-4">
 
-                    {/* Total Leads */}
-                    <TooltipProvider>
-                        <Tooltip>
-                            <TooltipTrigger asChild>
-                                <div className="flex items-center gap-1.5 text-gray-400 cursor-default">
-                                    <Users size={14} />
-                                    <span className="text-xs font-medium text-white">{headerStats.totalLeads}</span>
-                                </div>
-                            </TooltipTrigger>
-                            <TooltipContent><p>Total Leads</p></TooltipContent>
-                        </Tooltip>
-                    </TooltipProvider>
+                    {/* Qualification Toggles Group */}
+                    <div className="flex items-center gap-2 bg-[#0c0c0c] p-1 rounded-lg border border-white/5">
+                        {/* Total Leads (Clear Filter) */}
+                        <TooltipProvider>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <button
+                                        onClick={() => updateFilter('qualification', '')}
+                                        className={cn(
+                                            "flex items-center gap-1.5 px-2 py-1 rounded transition-colors",
+                                            !filters.qualification ? "bg-white/10 text-white" : "text-gray-400 hover:text-white hover:bg-white/5"
+                                        )}
+                                    >
+                                        <Users size={13} />
+                                        <span className="text-[10px] font-bold">{headerStats.totalLeads}</span>
+                                    </button>
+                                </TooltipTrigger>
+                                <TooltipContent><p>All Leads</p></TooltipContent>
+                            </Tooltip>
+                        </TooltipProvider>
+
+                        {/* MQL */}
+                        <TooltipProvider>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <button
+                                        onClick={() => updateFilter('qualification', filters.qualification === 'mql' ? '' : 'mql')}
+                                        className={cn(
+                                            "flex items-center gap-1.5 px-2 py-1 rounded transition-colors",
+                                            filters.qualification === 'mql' ? "bg-blue-500/20 text-blue-400 ring-1 ring-blue-500" : "text-gray-500 hover:text-blue-400 hover:bg-blue-500/10"
+                                        )}
+                                    >
+                                        <span className="text-[10px] font-bold">MQL</span>
+                                        <span className={cn("text-[10px] font-medium opacity-80", filters.qualification === 'mql' ? "text-blue-300" : "text-gray-600")}>{headerStats.qualification.mql}</span>
+                                    </button>
+                                </TooltipTrigger>
+                                <TooltipContent><p>Filter MQL</p></TooltipContent>
+                            </Tooltip>
+                        </TooltipProvider>
+
+                        {/* SQL */}
+                        <TooltipProvider>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <button
+                                        onClick={() => updateFilter('qualification', filters.qualification === 'sql' ? '' : 'sql')}
+                                        className={cn(
+                                            "flex items-center gap-1.5 px-2 py-1 rounded transition-colors",
+                                            filters.qualification === 'sql' ? "bg-emerald-500/20 text-emerald-400 ring-1 ring-emerald-500" : "text-gray-500 hover:text-emerald-400 hover:bg-emerald-500/10"
+                                        )}
+                                    >
+                                        <span className="text-[10px] font-bold">SQL</span>
+                                        <span className={cn("text-[10px] font-medium opacity-80", filters.qualification === 'sql' ? "text-emerald-300" : "text-gray-600")}>{headerStats.qualification.sql}</span>
+                                    </button>
+                                </TooltipTrigger>
+                                <TooltipContent><p>Filter SQL</p></TooltipContent>
+                            </Tooltip>
+                        </TooltipProvider>
+
+                        {/* Not Qualified */}
+                        <TooltipProvider>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <button
+                                        onClick={() => updateFilter('qualification', filters.qualification === 'nq' ? '' : 'nq')}
+                                        className={cn(
+                                            "flex items-center gap-1.5 px-2 py-1 rounded transition-colors",
+                                            filters.qualification === 'nq' ? "bg-red-500/20 text-red-400 ring-1 ring-red-500" : "text-gray-500 hover:text-red-400 hover:bg-red-500/10"
+                                        )}
+                                    >
+                                        <span className="text-[10px] font-bold">NQ</span>
+                                        <span className={cn("text-[10px] font-medium opacity-80", filters.qualification === 'nq' ? "text-red-300" : "text-gray-600")}>{headerStats.qualification.not_qualified}</span>
+                                    </button>
+                                </TooltipTrigger>
+                                <TooltipContent><p>Filter NQ</p></TooltipContent>
+                            </Tooltip>
+                        </TooltipProvider>
+                    </div>
 
                     <div className="w-px h-3 bg-white/10 shrink-0" />
 

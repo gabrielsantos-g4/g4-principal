@@ -1,6 +1,6 @@
 'use server'
 
-import { createClient } from '@/lib/supabase'
+import { createClient, createAdminClient } from '@/lib/supabase'
 import { Resend } from 'resend'
 import { revalidatePath } from 'next/cache'
 
@@ -24,8 +24,9 @@ export async function requestResearch(icpData?: any) {
         return { error: 'Unauthorized' }
     }
 
-    // Get company ID from profile
-    const { data: profile } = await supabase
+    // Use admin client for consistent profile access (matches fix in other files)
+    const supabaseAdmin = await createAdminClient()
+    const { data: profile } = await supabaseAdmin
         .from('main_profiles')
         .select('empresa_id, name')
         .eq('id', user.id)
@@ -43,13 +44,13 @@ export async function requestResearch(icpData?: any) {
     if (icpData) {
         // Use passed data
         icpName = icpData.example_ideal_companies || 'New Research Request'
-        const { data: companyRes } = await supabase.from('main_empresas').select('name').eq('id', profile.empresa_id).single()
+        const { data: companyRes } = await supabaseAdmin.from('main_empresas').select('name').eq('id', profile.empresa_id).single()
         companyName = companyRes?.name || 'Unknown Company'
     } else {
         // Fallback to fetching from DB
         const [companyRes, icpRes] = await Promise.all([
-            supabase.from('main_empresas').select('name').eq('id', profile.empresa_id).single(),
-            supabase.from('outreach_icp').select('example_ideal_companies').eq('empresa_id', profile.empresa_id).single()
+            supabaseAdmin.from('main_empresas').select('name').eq('id', profile.empresa_id).single(),
+            supabaseAdmin.from('outreach_icp').select('example_ideal_companies').eq('empresa_id', profile.empresa_id).single()
         ])
         companyName = companyRes.data?.name || 'Unknown Company'
         icpName = icpRes.data?.example_ideal_companies || 'New Research Request'
@@ -66,7 +67,8 @@ export async function requestResearch(icpData?: any) {
         request_date: now.toISOString(),
         deadline: deadline.toISOString(),
         email_to_send: user.email,
-        status: 'Pending'
+        status: 'Pending',
+        request_parameters: icpData // Save the full parameters for history/restore
     }
 
 
@@ -107,7 +109,7 @@ export async function requestResearch(icpData?: any) {
         console.error('Error sending to webhook:', e)
     }
 
-    const { error } = await supabase
+    const { error } = await supabaseAdmin
         .from('outreach_demands')
         .insert(demandData)
 

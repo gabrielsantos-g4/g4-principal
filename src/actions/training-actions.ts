@@ -62,3 +62,39 @@ export async function deleteTraining(uid: string) {
 
     revalidatePath("/dashboard/customer-support");
 }
+
+export async function uploadTrainingFile(formData: FormData) {
+    const WEBHOOK_URL = "https://hook.startg4.com/webhook/6cfc997c-e210-43d4-86a7-f5ffc718a685";
+
+    try {
+        const response = await fetch(WEBHOOK_URL, {
+            method: "POST",
+            body: formData,
+            // fetch with FormData in Node.js sets headers automatically (multipart/form-data)
+        });
+
+        if (!response.ok) {
+            const text = await response.text();
+            console.error("Webhook Error:", text);
+            return { success: false, error: "Upload failed via webhook" };
+        }
+
+        let data: any = {};
+        try {
+            const text = await response.text();
+            if (text) data = JSON.parse(text);
+        } catch (e) {
+            // Ignore parse error if sucess but empty body
+        }
+
+        // Wait 2 seconds to ensure Webhook/DB consistency before revalidating
+        await new Promise(resolve => setTimeout(resolve, 2000));
+
+        revalidatePath("/dashboard/customer-support");
+        return { success: true, data };
+
+    } catch (error: any) {
+        console.error("Server Action Upload Error:", error);
+        return { success: false, error: error.message };
+    }
+}

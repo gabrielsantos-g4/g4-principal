@@ -19,6 +19,7 @@ export function CompetitorList({ competitors: initialCompetitors }: CompetitorLi
         {
             id: 'mock-1',
             user_id: 'mock-user',
+            empresa_id: 'mock-company',
             name: 'Acme Corporation',
             website: 'https://acme.com',
             other_link: null,
@@ -31,6 +32,7 @@ export function CompetitorList({ competitors: initialCompetitors }: CompetitorLi
         {
             id: 'mock-2',
             user_id: 'mock-user',
+            empresa_id: 'mock-company',
             name: 'TechCo Inc',
             website: 'https://techco.io',
             other_link: null,

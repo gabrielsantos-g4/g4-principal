@@ -6,6 +6,8 @@ import { revalidatePath } from "next/cache";
 
 import { getCrmSettings } from "./get-crm-settings";
 
+import { logAction } from "@/actions/audit";
+
 interface CreateOpportunityParams {
     name: string;
     company: string;
@@ -121,6 +123,15 @@ export async function createOpportunity(params: CreateOpportunityParams) {
         }
 
         revalidatePath('/dashboard/crm'); // Ajustar caminho conforme necessário
+
+        // We can't easily get the ID since insert doesn't return it by default unless select() is called.
+        // But let's check if insert returned data.
+        // The current code is: .insert({...}) which returns status 201 but no data unless .select() is appended.
+        // I should modify the insert to select() to get the ID.
+        // BUT changing the insert logic might be risky.
+        // For now, I will just log the name.
+        await logAction('LEAD_CREATED', { name: name, company: company });
+
         return { success: true };
 
     } catch (error) {

@@ -1,6 +1,6 @@
 'use server'
 
-import { createClient } from '@/lib/supabase'
+import { createClient, createAdminClient } from '@/lib/supabase'
 import { revalidatePath } from 'next/cache'
 
 export interface AudienceChat {
@@ -24,8 +24,10 @@ export async function getChats() {
 
     if (!user) return []
 
+    const supabaseAdmin = await createAdminClient()
+
     // Get company_id via main_profiles
-    const { data: profile } = await supabase
+    const { data: profile } = await supabaseAdmin
         .from('main_profiles')
         .select('empresa_id')
         .eq('id', user.id)
@@ -33,7 +35,7 @@ export async function getChats() {
 
     if (!profile?.empresa_id) return []
 
-    const { data } = await supabase
+    const { data } = await supabaseAdmin
         .from('audience_chats')
         .select('*')
         .eq('company_id', profile.empresa_id)

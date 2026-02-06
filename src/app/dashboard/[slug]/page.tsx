@@ -7,9 +7,9 @@ import { redirect } from 'next/navigation'
 import { getProspects } from '@/actions/outreach-actions'
 import { getDemands } from '@/actions/outreach/get-demands'
 import { ProspectsGrid } from '@/components/outreach/prospects-grid'
-import { createClient } from '@/lib/supabase'
+import { createClient, createAdminClient } from '@/lib/supabase'
 
-import { getICP } from '@/actions/outreach-icp-actions'
+import { getICP, getSavedICPs } from '@/actions/outreach-icp-actions'
 import { ICPForm } from '@/components/outreach/icp-form'
 import { OutreachTabs } from '@/components/outreach/outreach-tabs'
 import { getCompanyDNA } from '@/actions/company-actions'
@@ -49,31 +49,67 @@ export default async function AgentPage({ params, searchParams }: AgentPageProps
     const { chatId, competitorId } = await searchParams
     const agent = AGENTS.find(a => a.slug === slug)
     // Debug: Force Rebuild 12345
-    const isOrchestrator = slug === 'orchestrator'
+    const isOrchestrator = !slug || slug === 'orchestrator'
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
 
-    // Agent-specific data fetching
     const isOutreach = slug === 'outreach'
-    const isAudience = slug === 'audience-channels'
-    const isCrm = slug === 'crm'
+    const isAudience = slug === 'jess-audience'
+    const isBi = slug === 'emily-bi'
+
+    // Declare variables at top scope
+    let outreachData = null
+    let outreachDemands: any[] = []
+    let initialSavedIcps: any[] = []
+    let icpData: any = null
+    let hasICP = false
+    let audienceChats: any[] = []
+    let competitors: any[] = []
+    let selectedCompetitor: any = null
+
+    // Fetch data if needed based on the page
+    if (isOrchestrator || isOutreach) {
+        // We might want to show demands in orchestrator too, or just safely pass []
+        // For now, let's keep fetching logic as is, but ensure variables exist.
+        // If we want Orchestrator to have this data, we need to fetch it here or earlier.
+
+        // Actually, looking at the code, fetching happens inside `if (isOutreach)`.
+        // If isOrchestrator is true, these will remain empty arrays.
+    }
     const isSupport = slug === 'customer-support'
     const isDesign = slug === 'design-video'
     const isCompetitors = slug === 'competitors-analysis'
-    const isBi = slug === 'bi-data-analysis'
+    const isCrm = slug === 'crm'
 
     // Get company_id (Needed for all agents)
-    const { data: profile } = await supabase
+    const supabaseAdmin = await createAdminClient()
+    const { data: profile } = await supabaseAdmin
         .from('main_profiles')
-        .select('empresa_id, active_agents, name, avatar_url')
+        .select('empresa_id, active_agents, name, avatar_url, role, email')
+        .eq('id', user?.id)
         .eq('id', user?.id)
         .single()
+
+    // RBAC: If member, inherit agents from Admin
+    if (profile?.role === 'member' && profile?.empresa_id) {
+        const { data: adminProfile } = await supabaseAdmin
+            .from('main_profiles')
+            .select('active_agents')
+            .eq('empresa_id', profile.empresa_id)
+            .in('role', ['admin', 'owner'])
+            .limit(1)
+            .maybeSingle()
+
+        if (adminProfile?.active_agents) {
+            profile.active_agents = adminProfile.active_agents
+        }
+    }
 
 
     const companyId = profile?.empresa_id
 
     const { data: companyData } = companyId
-        ? await supabase.from('main_empresas').select('name').eq('id', companyId).single()
+        ? await supabaseAdmin.from('main_empresas').select('name').eq('id', companyId).single()
         : { data: null }
 
     const companyName = companyData?.name || 'Unknown Company'
@@ -85,7 +121,11 @@ export default async function AgentPage({ params, searchParams }: AgentPageProps
             <div className="flex-1 min-h-0 bg-black text-white font-sans flex flex-col overflow-hidden">
                 <DashboardHeader />
                 <div className="flex-1 w-full h-full overflow-y-auto bg-black p-8">
-                    <OrchestratorTabs company={company} activeAgents={profile?.active_agents || null} userProfile={profile} />
+                    <OrchestratorTabs
+                        company={company}
+                        activeAgents={profile?.active_agents || null}
+                        userProfile={profile}
+                    />
                 </div>
             </div>
         )
@@ -95,22 +135,23 @@ export default async function AgentPage({ params, searchParams }: AgentPageProps
         redirect('/dashboard')
     }
 
-    let outreachData = null
-    let outreachDemands: any[] = []
-    let hasICP = false
-    let audienceChats: any[] = []
-    let competitors: any[] = []
-    let selectedCompetitor: any = null
-
     if (isOutreach) {
         // Parallel fetching for performance
-        const [prospects, icp, demands] = await Promise.all([
+        const [prospects, icp, demands, savedIcps] = await Promise.all([
             getProspects(),
             getICP(),
-            getDemands()
+            getDemands(),
+            getSavedICPs()
         ])
+        console.log('DEBUG: AgentPage - Fetched demands:', demands?.length)
+        console.log('DEBUG: AgentPage - Fetched saved ICPs:', savedIcps?.length)
+
         outreachData = prospects
+        icpData = icp
         outreachDemands = demands
+        // savedIcps will be passed to OrchestratorTabs -> OutreachTabs -> ICPForm
+        // We'll need to update the prop drilling
+        initialSavedIcps = savedIcps
         hasICP = !!icp
     }
 
@@ -294,7 +335,7 @@ export default async function AgentPage({ params, searchParams }: AgentPageProps
                         />
                     }
                 >
-                    <div className="flex-1 w-full h-full overflow-hidden">
+                    <div className="flex-1 w-full h-full overflow-y-auto">
                         <SupportDashboard agent={agent} trainings={trainings} companyId={companyId} />
                     </div>
                 </MobileDashboardLayout>
@@ -518,15 +559,14 @@ export default async function AgentPage({ params, searchParams }: AgentPageProps
                     </div>
                 ) : (
                     // Default View (Outreach, etc)
-                    <div className="flex-1 min-w-0 overflow-y-auto bg-black p-6 flex flex-col h-full">
-
-
+                    <>
                         {/* Conditional Content based on Agent */}
                         {isOutreach ? (
                             <OutreachTabs
-                                initialIcp={hasICP ? await getICP() : null}
+                                initialIcp={icpData}
                                 initialProspects={outreachData || []}
                                 initialDemands={outreachDemands || []}
+                                initialSavedIcps={initialSavedIcps || []}
                             />
                         ) : (
                             // Default Print View for other agents
@@ -544,7 +584,7 @@ export default async function AgentPage({ params, searchParams }: AgentPageProps
                                 )}
                             </div>
                         )}
-                    </div>
+                    </>
                 )}
             </MobileDashboardLayout>
         </div>

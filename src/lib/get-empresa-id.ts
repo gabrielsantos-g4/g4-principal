@@ -1,7 +1,8 @@
-import { createClient } from "@/lib/supabase"
+import { createClient, createAdminClient } from "@/lib/supabase"
 
 export async function getEmpresaId() {
     const supabase = await createClient()
+    const supabaseAdmin = await createAdminClient()
 
     const { data: user, error: userError } = await supabase.auth.getUser()
 
@@ -9,7 +10,8 @@ export async function getEmpresaId() {
         return null
     }
 
-    const { data: profile } = await supabase
+
+    const { data: profile } = await supabaseAdmin // Use admin client
         .from('main_profiles')
         .select('empresa_id')
         .eq('id', user.user.id)

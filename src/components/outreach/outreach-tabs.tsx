@@ -9,11 +9,12 @@ import { LayoutList, Target, RefreshCw } from "lucide-react"
 
 interface OutreachTabsProps {
     initialIcp: any
-    initialProspects: any[]
+    initialProspects: any[] | null
     initialDemands?: any[]
+    initialSavedIcps?: any[]
 }
 
-export function OutreachTabs({ initialIcp, initialProspects, initialDemands = [] }: OutreachTabsProps) {
+export function OutreachTabs({ initialIcp, initialProspects, initialDemands = [], initialSavedIcps = [] }: OutreachTabsProps) {
     const router = useRouter();
     const hasLeads = initialProspects && initialProspects.length > 0
     const [activeTab, setActiveTab] = useState<"targeting" | "leads">((initialIcp || hasLeads) ? "leads" : "targeting")
@@ -69,11 +70,16 @@ export function OutreachTabs({ initialIcp, initialProspects, initialDemands = []
             {/* Tab Content */}
             <div className="flex-1">
                 {activeTab === "targeting" ? (
-                    <ICPForm key={hasICP ? 'edit' : 'create'} initialData={initialIcp} initialDemands={initialDemands} />
+                    <ICPForm
+                        key={hasICP ? 'edit' : 'create'}
+                        initialData={initialIcp}
+                        initialDemands={initialDemands}
+                        initialSavedIcps={initialSavedIcps}
+                    />
                 ) : (
                     <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
                         {(hasICP || hasLeads) ? (
-                            <ProspectsGrid data={initialProspects} />
+                            <ProspectsGrid data={initialProspects || []} />
                         ) : (
                             <div className="flex flex-col items-center justify-center p-12 text-center border border-dashed border-white/10 rounded-xl bg-white/5">
                                 <Target size={48} className="text-gray-600 mb-4" />

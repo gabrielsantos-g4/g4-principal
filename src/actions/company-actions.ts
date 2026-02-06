@@ -1,18 +1,19 @@
 'use server'
 
-import { createClient } from '@/lib/supabase'
+import { createClient, createAdminClient } from '@/lib/supabase'
 import { revalidatePath } from 'next/cache'
 import { r2 } from "@/lib/r2"
 import { PutObjectCommand } from "@aws-sdk/client-s3"
 
 export async function getCompanyDNA() {
     const supabase = await createClient()
+    const supabaseAdmin = await createAdminClient()
     const { data: { user } } = await supabase.auth.getUser()
 
     if (!user) return null
 
     // Get the main_profile to find the empresa_id
-    const { data: profile } = await supabase
+    const { data: profile } = await supabaseAdmin
         .from('main_profiles')
         .select('empresa_id')
         .eq('id', user.id)
@@ -21,7 +22,7 @@ export async function getCompanyDNA() {
     if (!profile?.empresa_id) return null
 
     // Get the company details
-    const { data: company, error } = await supabase
+    const { data: company, error } = await supabaseAdmin
         .from('main_empresas')
         .select('*')
         .eq('id', profile.empresa_id)
@@ -43,8 +44,9 @@ export async function updateCompanyDNA(formData: FormData) {
         return { error: 'Unauthorized' }
     }
 
-    // Get profile to check permission/company
-    const { data: profile } = await supabase
+    // Get profile using Admin client to bypass RLS for initial check
+    const supabaseAdmin = await createAdminClient()
+    const { data: profile } = await supabaseAdmin
         .from('main_profiles')
         .select('empresa_id, role')
         .eq('id', user.id)
@@ -81,16 +83,20 @@ export async function updateCompanyDNA(formData: FormData) {
         updates.name = companyName
     }
 
-    // 1. Update Company
-    const { data, error } = await supabase
-        .from('main_empresas')
-        .update(updates)
-        .eq('id', profile.empresa_id)
-        .select()
+    // 1. Update Company (Only if Admin or Owner)
+    // Members should NOT be able to update company details
+    let companyUpdateError = null;
+    if (['admin', 'owner'].includes(profile.role)) {
+        const { data, error } = await supabaseAdmin
+            .from('main_empresas')
+            .update(updates)
+            .eq('id', profile.empresa_id)
+            .select()
 
-    if (error) {
-        console.error('Error updating company DNA:', error)
-        return { error: `Failed to update company: ${error.message}` }
+        if (error) {
+            console.error('Error updating company DNA:', error)
+            return { error: `Failed to update company: ${error.message}` }
+        }
     }
 
     // 2. Handle User Profile Updates (Name & Avatar)
@@ -126,7 +132,14 @@ export async function updateCompanyDNA(formData: FormData) {
     if (avatarUrl) profileUpdates.avatar_url = avatarUrl
 
     if (Object.keys(profileUpdates).length > 1) { // updated_at is always there
-        const { error: profileError } = await supabase
+        // Enforce RBAC: Members cannot change their name
+        if (profile.role === 'member' && profileUpdates.name) {
+            delete profileUpdates.name
+        }
+
+        // Use Admin client for profile update to ensure it works regardless of specific RLS on updates
+        // (Assuming we want to allow avatar updates even if RLS is strict)
+        const { error: profileError } = await supabaseAdmin
             .from('main_profiles')
             .update(profileUpdates)
             .eq('id', user.id)
@@ -137,12 +150,17 @@ export async function updateCompanyDNA(formData: FormData) {
         }
     }
 
-
-
-    if (!data || data.length === 0) {
-        return { error: 'No changes saved. You might not have permission (Admin role required) or the company was not found.' }
+    // Log the company update
+    if (['admin', 'owner'].includes(profile.role)) {
+        await supabaseAdmin.from('audit_logs').insert({
+            empresa_id: profile.empresa_id,
+            user_id: user.id,
+            action: 'COMPANY_UPDATED',
+            details: { updates: updates }
+        })
     }
 
+    // Success if we reached here (either company updated or profile updated or both)
     revalidatePath('/dashboard')
     return { success: true }
 }

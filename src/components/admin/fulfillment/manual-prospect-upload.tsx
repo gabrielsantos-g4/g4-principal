@@ -64,6 +64,8 @@ export function ManualProspectUpload({ empresaId }: ManualProspectUploadProps) {
                         email_1: findValue('email_1', 'Email 1', 'Email', 'E-mail'),
                         email_2: findValue('email_2', 'Email 2'),
                         linkedin_profile: findValue('linkedin_profile', 'LinkedIn Profile', 'LinkedIn', 'Perfil LinkedIn', 'Url', 'URL'),
+                        signal: findValue('signal', 'Signal', 'Sinal', 'Description', 'Descricao', 'Info'),
+                        signal_link: findValue('signal_link', 'Signal Link', 'Link do Sinal', 'External Link', 'Link Externo'),
                         status: 'Pending'
                     }
                 })

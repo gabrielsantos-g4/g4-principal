@@ -1,11 +1,12 @@
 'use server'
 
-import { createClient } from '@/lib/supabase'
+import { createClient, createAdminClient } from '@/lib/supabase'
 import { revalidatePath } from 'next/cache'
 
 export interface Competitor {
     id: string
     user_id: string
+    empresa_id: string // Add empresa_id to interface
     name: string
     website: string | null
     other_link: string | null
@@ -18,10 +19,24 @@ export interface Competitor {
 
 export async function getCompetitors(): Promise<Competitor[]> {
     const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
 
-    const { data, error } = await supabase
+    if (!user) return []
+
+    const supabaseAdmin = await createAdminClient()
+
+    const { data: profile } = await supabaseAdmin
+        .from('main_profiles')
+        .select('empresa_id')
+        .eq('id', user.id)
+        .single()
+
+    if (!profile?.empresa_id) return []
+
+    const { data, error } = await supabaseAdmin
         .from('competitors')
         .select('*')
+        .eq('empresa_id', profile.empresa_id)
         .order('created_at', { ascending: false })
 
     if (error) {
@@ -58,11 +73,25 @@ export async function createCompetitor(name: string): Promise<Competitor | null>
         return null
     }
 
-    const { data, error } = await supabase
+    const supabaseAdmin = await createAdminClient()
+
+    const { data: profile } = await supabaseAdmin
+        .from('main_profiles')
+        .select('empresa_id')
+        .eq('id', user.id)
+        .single()
+
+    if (!profile?.empresa_id) {
+        console.error('No company found for user')
+        return null
+    }
+
+    const { data, error } = await supabaseAdmin
         .from('competitors')
         .insert([
             {
                 user_id: user.id,
+                empresa_id: profile.empresa_id,
                 name
             }
         ])

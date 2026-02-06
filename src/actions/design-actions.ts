@@ -1,6 +1,6 @@
 'use server'
 
-import { createClient } from '@/lib/supabase'
+import { createClient, createAdminClient } from '@/lib/supabase'
 import { Resend } from 'resend'
 import { revalidatePath } from 'next/cache'
 import { createClient as createSupabaseClient } from '@supabase/supabase-js'
@@ -138,7 +138,9 @@ export async function getDesignRequests() {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return []
 
-    const { data: profile } = await supabase
+    const supabaseAdmin = await createAdminClient()
+
+    const { data: profile } = await supabaseAdmin
         .from('main_profiles')
         .select('empresa_id')
         .eq('id', user.id)
@@ -146,7 +148,7 @@ export async function getDesignRequests() {
 
     if (!profile?.empresa_id) return []
 
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
         .from('main_design')
         .select('*')
         .eq('empresa_id', profile.empresa_id)

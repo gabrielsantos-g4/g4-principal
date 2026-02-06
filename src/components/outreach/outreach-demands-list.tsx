@@ -10,6 +10,7 @@ interface Demand {
     deadline: string;
     email_to_send: string;
     status: string;
+    request_parameters?: any;
 }
 
 interface OutreachDemandsListProps {
@@ -18,7 +19,11 @@ interface OutreachDemandsListProps {
 
 export function OutreachDemandsList({ demands }: OutreachDemandsListProps) {
     if (!demands || demands.length === 0) {
-        return null;
+        return (
+            <div className="w-full mt-8 p-4 border border-dashed border-white/20 rounded-lg text-gray-500 text-center text-sm">
+                No request history found. Create a request to see it here.
+            </div>
+        )
     }
 
     return (
@@ -59,6 +64,6 @@ export function OutreachDemandsList({ demands }: OutreachDemandsListProps) {
                     </tbody>
                 </table>
             </div>
-        </div>
+        </div >
     );
 }
