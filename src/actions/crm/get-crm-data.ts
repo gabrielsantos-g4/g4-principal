@@ -1,6 +1,6 @@
 'use server';
 
-import { createAdminClient } from "@/lib/supabase";
+import { createClient, createAdminClient } from "@/lib/supabase";
 import { getEmpresaId } from "@/lib/get-empresa-id";
 
 export interface CrmData {
@@ -18,15 +18,36 @@ export async function getCrmData(): Promise<CrmData | null> {
     const empresaId = await getEmpresaId();
     if (!empresaId) return null;
 
-    if (!empresaId) return null;
-
+    const supabase = await createClient();
     const supabaseAdmin = await createAdminClient();
 
-    // Buscar leads da empresa
-    const { data: leads, error } = await supabaseAdmin
+    // 1. Get current user and role
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return null;
+
+    const { data: profile } = await supabaseAdmin
+        .from('main_profiles')
+        .select('name, role')
+        .eq('id', user.id)
+        .single();
+
+    if (!profile) return null;
+
+    // 2. Build Query
+    let query = supabaseAdmin
         .from('main_crm')
         .select('*')
-        .eq('empresa_id', empresaId)
+        .eq('empresa_id', empresaId);
+
+    const isAdmin = profile.role === 'admin' || profile.role === 'owner';
+
+    // RBAC: If not admin/owner, only see assigned leads
+    if (!isAdmin) {
+        query = query.eq('responsible', profile.name);
+    }
+
+    // Buscar leads da empresa
+    const { data: leads, error } = await query
         .order('created_at', { ascending: false });
 
     if (error || !leads) {

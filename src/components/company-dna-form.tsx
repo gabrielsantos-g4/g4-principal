@@ -151,13 +151,18 @@ export function CompanyDNAForm({ company, userProfile, mode }: CompanyDNAFormPro
                         <div className="flex-1 space-y-3">
                             <div className="space-y-1">
                                 <label className="text-xs font-bold text-gray-500 uppercase tracking-wider block">User Name</label>
-                                <input
-                                    name="user_name"
-                                    defaultValue={userProfile?.name || ''}
-                                    placeholder="John Doe"
-                                    disabled={userProfile?.role === 'member'}
-                                    className={`${userProfile?.role === 'member' ? 'text-gray-400 cursor-not-allowed' : 'text-white'} w-full bg-black/50 border border-white/10 rounded-md h-10 px-4 text-sm placeholder-gray-600 focus:outline-none focus:border-white/30 transition-colors`}
-                                />
+                                {(() => {
+                                    const isAdmin = userProfile?.role === 'admin' || userProfile?.role === 'owner';
+                                    return (
+                                        <input
+                                            name="user_name"
+                                            defaultValue={userProfile?.name || ''}
+                                            placeholder="John Doe"
+                                            disabled={!isAdmin}
+                                            className={`${!isAdmin ? 'text-gray-400 cursor-not-allowed' : 'text-white'} w-full bg-black/50 border border-white/10 rounded-md h-10 px-4 text-sm placeholder-gray-600 focus:outline-none focus:border-white/30 transition-colors`}
+                                        />
+                                    );
+                                })()}
                             </div>
                             <p className="text-xs text-gray-500">
                                 Click the avatar or drag and drop an image to update your profile picture.

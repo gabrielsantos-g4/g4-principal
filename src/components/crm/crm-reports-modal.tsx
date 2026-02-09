@@ -566,6 +566,61 @@ export function CrmReportsModal({ isOpen, onClose, leads, settings }: CrmReports
                             </div>
                         </motion.div>
 
+                        {/* Omnichannel/Messaging Metrics */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6 w-full">
+                            {/* Average Response Time */}
+                            <motion.div variants={itemVariants} className="bg-[#141414] p-6 rounded-2xl border border-white/5">
+                                <div className="flex items-center justify-between mb-3">
+                                    <MessageSquare size={18} className="text-blue-500" />
+                                    <span className="text-xs text-gray-500 font-medium">Messaging</span>
+                                </div>
+                                <div className="text-3xl font-bold text-white mb-2">2.4h</div>
+                                <div className="text-sm text-gray-400">Avg. Response Time</div>
+                                <div className="mt-3 text-xs text-gray-500">
+                                    Across all team members
+                                </div>
+                            </motion.div>
+
+                            {/* Active Conversations */}
+                            <motion.div variants={itemVariants} className="bg-[#141414] p-6 rounded-2xl border border-white/5">
+                                <div className="flex items-center justify-between mb-3">
+                                    <Users size={18} className="text-green-500" />
+                                    <span className="text-xs text-gray-500 font-medium">Messaging</span>
+                                </div>
+                                <div className="text-3xl font-bold text-white mb-2">12</div>
+                                <div className="text-sm text-gray-400">Active Conversations</div>
+                                <div className="mt-3 text-xs text-gray-500">
+                                    Currently in progress
+                                </div>
+                            </motion.div>
+
+                            {/* Total Messages */}
+                            <motion.div variants={itemVariants} className="bg-[#141414] p-6 rounded-2xl border border-white/5">
+                                <div className="flex items-center justify-between mb-3">
+                                    <BarChart3 size={18} className="text-purple-500" />
+                                    <span className="text-xs text-gray-500 font-medium">Messaging</span>
+                                </div>
+                                <div className="text-3xl font-bold text-white mb-2">847</div>
+                                <div className="text-sm text-gray-400">Total Messages</div>
+                                <div className="mt-3 text-xs text-gray-500">
+                                    Sent and received
+                                </div>
+                            </motion.div>
+
+                            {/* Resolution Rate */}
+                            <motion.div variants={itemVariants} className="bg-[#141414] p-6 rounded-2xl border border-white/5">
+                                <div className="flex items-center justify-between mb-3">
+                                    <Target size={18} className="text-emerald-500" />
+                                    <span className="text-xs text-gray-500 font-medium">Messaging</span>
+                                </div>
+                                <div className="text-3xl font-bold text-emerald-400 mb-2">87%</div>
+                                <div className="text-sm text-gray-400">Resolution Rate</div>
+                                <div className="mt-3 text-xs text-gray-500">
+                                    Conversations resolved
+                                </div>
+                            </motion.div>
+                        </div>
+
                         {/* Charts Grid */}
                         <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 w-full">
                             {/* Status Distribution */}

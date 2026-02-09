@@ -68,8 +68,11 @@ export async function createWhatsAppInstance(name: string, companyId: string) {
         .single()
 
     if (error) {
-        console.error('Error creating instance:', error)
-        return { error: 'Erro ao criar instância. Tente novamente.' }
+        console.error('Error creating instance:', JSON.stringify(error, null, 2));
+        console.error('Context:', { instanceName, companyId });
+        const safeError = error as { message?: string, details?: string, hint?: string };
+        const errorMessage = safeError.message || safeError.details || safeError.hint || JSON.stringify(error);
+        return { error: `Erro ao criar instância: ${errorMessage}` }
     }
 
     revalidatePath('/dashboard/messenger/instances')

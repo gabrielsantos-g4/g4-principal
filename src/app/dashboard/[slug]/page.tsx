@@ -37,6 +37,7 @@ import { SeoDashboard } from '@/components/organic-search/seo-dashboard'
 import { StrategyOverviewDashboard } from '@/components/strategy/strategy-overview-dashboard'
 import { NotesScratchpad } from '@/components/common/notes-scratchpad'
 import { PaidSocialDashboard } from '@/components/paid-social/paid-social-dashboard'
+import { UserInboxDashboard } from '@/components/dashboard/user-inbox-dashboard'
 
 interface AgentPageProps {
     params: Promise<{
@@ -90,8 +91,9 @@ export default async function AgentPage({ params, searchParams }: AgentPageProps
         .eq('id', user?.id)
         .single()
 
-    // RBAC: If member, inherit agents from Admin
-    if (profile?.role === 'member' && profile?.empresa_id) {
+    // RBAC: If not admin/owner, inherit agents from Admin
+    const isAdmin = profile?.role === 'admin' || profile?.role === 'owner'
+    if (!isAdmin && profile?.empresa_id) {
         const { data: adminProfile } = await supabaseAdmin
             .from('main_profiles')
             .select('active_agents')
@@ -129,6 +131,26 @@ export default async function AgentPage({ params, searchParams }: AgentPageProps
                 </div>
             </div>
         )
+    }
+
+    // --- Human Specialist Inbox ---
+    if (slug.startsWith('user-')) {
+        const targetUserId = slug.replace('user-', '')
+        const { data: targetProfile } = await supabaseAdmin
+            .from('main_profiles')
+            .select('id, name, role, avatar_url')
+            .eq('id', targetUserId)
+            .single()
+
+        if (targetProfile) {
+            return (
+                <UserInboxDashboard
+                    user={user}
+                    targetUser={targetProfile}
+                    companyId={companyId}
+                />
+            )
+        }
     }
 
     if (!agent) {

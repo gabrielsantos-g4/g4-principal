@@ -2,7 +2,7 @@ import { ArrowUpRight, Calendar } from 'lucide-react'
 import { HeaderTools } from '@/components/header-tools'
 import { HeaderWorkflows } from '@/components/header-workflows'
 
-export async function DashboardHeader() {
+export function DashboardHeader() {
 
     return (
         <div className="hidden md:flex justify-between items-center h-16 px-8 border-b border-white/10 shrink-0 bg-[#171717] sticky top-0 z-50">

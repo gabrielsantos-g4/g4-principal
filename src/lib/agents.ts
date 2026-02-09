@@ -16,7 +16,7 @@ export const AGENTS: Agent[] = [
     {
         id: 'professional-gabriel',
         name: 'Gabriel Santos',
-        role: 'Fractional CMO',
+        role: 'Fractional Growth Marketing',
         slug: 'professional-services',
         category: 'orchestration',
         // Using a placeholder or potentially the user's avatar dynamically in the UI, but here we need a string.

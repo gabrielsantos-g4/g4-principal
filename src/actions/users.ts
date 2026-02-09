@@ -84,9 +84,11 @@ export async function createCompanyUser(formData: FormData) {
                 id: targetUserId,
                 email: email,
                 name: name,
-                role: 'member',
+                role: (formData.get('role') as string) || 'member',
                 empresa_id: profile.empresa_id,
-                active_agents: [] // Default empty agents
+                active_agents: JSON.parse((formData.get('active_agents') as string) || '[]'),
+                has_messaging_access: formData.get('has_messaging_access') === 'true',
+                avatar_url: formData.get('avatar_url') as string
             })
 
         if (profileError) {
@@ -166,9 +168,20 @@ export async function updateCompanyUser(formData: FormData) {
     }
 
     // 3. Update profile
+    const profileData: any = { name, email }
+
+    if (formData.get('role')) profileData.role = formData.get('role') as string
+    if (formData.get('avatar_url')) profileData.avatar_url = formData.get('avatar_url') as string
+    if (formData.get('has_messaging_access')) {
+        profileData.has_messaging_access = formData.get('has_messaging_access') === 'true'
+    }
+    if (formData.get('active_agents')) {
+        profileData.active_agents = JSON.parse(formData.get('active_agents') as string)
+    }
+
     const { error: profileUpdateError } = await supabaseAdmin
         .from('main_profiles')
-        .update({ name, email })
+        .update(profileData)
         .eq('id', userId)
 
     if (profileUpdateError) {
@@ -192,7 +205,7 @@ export async function getCompanyUsers() {
     const supabaseAdmin = await createAdminClient()
 
     const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return []
+    if (!user) return { users: [], team_order: [] }
 
     // Use admin client for profile check
     const { data: profile } = await supabaseAdmin
@@ -201,19 +214,26 @@ export async function getCompanyUsers() {
         .eq('id', user.id)
         .single()
 
-    console.log('[getCompanyUsers] User:', user.id)
-    console.log('[getCompanyUsers] Profile:', profile)
+    if (!profile) return { users: [], team_order: [] }
 
-    if (!profile) return []
-
-    // Fetch all profiles for this company using Admin client to bypass RLS
+    // Fetch all profiles for this company
     const { data: profiles } = await supabaseAdmin
         .from('main_profiles')
-        .select('id, name, email, role, avatar_url')
+        .select('id, name, email, role, avatar_url, has_messaging_access, active_agents')
         .eq('empresa_id', profile.empresa_id)
         .order('created_at', { ascending: true })
 
-    return profiles || []
+    // Fetch team order from company
+    const { data: company } = await supabaseAdmin
+        .from('main_empresas')
+        .select('team_order')
+        .eq('id', profile.empresa_id)
+        .single()
+
+    return {
+        users: profiles || [],
+        team_order: company?.team_order || []
+    }
 }
 
 export async function deleteCompanyUser(userId: string) {
@@ -278,4 +298,37 @@ export async function deleteCompanyUser(userId: string) {
 
     revalidatePath('/settings/team')
     return { success: true }
+}
+
+export async function updateTeamOrder(order: string[]) {
+    try {
+        const supabase = await createClient()
+        const supabaseAdmin = await createAdminClient()
+
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) return { error: 'Unauthorized' }
+
+        const { data: profile } = await supabaseAdmin
+            .from('main_profiles')
+            .select('empresa_id, role')
+            .eq('id', user.id)
+            .single()
+
+        if (!profile || profile.role !== 'admin') {
+            return { error: 'Permission denied' }
+        }
+
+        const { error } = await supabaseAdmin
+            .from('main_empresas')
+            .update({ team_order: order })
+            .eq('id', profile.empresa_id)
+
+        if (error) return { error: error.message }
+
+        revalidatePath('/settings/team')
+        revalidatePath('/dashboard')
+        return { success: true }
+    } catch (err: any) {
+        return { error: err.message || 'Server error' }
+    }
 }

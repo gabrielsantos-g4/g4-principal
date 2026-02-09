@@ -708,8 +708,8 @@ export function CrmTable({ initialLeads, settings, filters }: CrmTableProps) {
                                                         <Tooltip>
                                                             <TooltipTrigger asChild>
                                                                 <PopoverTrigger asChild>
-                                                                    <div className="p-1 rounded-md hover:bg-white/10 text-gray-500 hover:text-white transition-colors cursor-pointer" onClick={(e) => e.stopPropagation()}>
-                                                                        <Phone size={13} />
+                                                                    <div className="p-1 rounded-md hover:bg-white/10 text-gray-400 hover:text-white transition-colors cursor-pointer" onClick={(e) => e.stopPropagation()}>
+                                                                        <Phone size={14} />
                                                                     </div>
                                                                 </PopoverTrigger>
                                                             </TooltipTrigger>
@@ -745,8 +745,8 @@ export function CrmTable({ initialLeads, settings, filters }: CrmTableProps) {
                                                         <Tooltip>
                                                             <TooltipTrigger asChild>
                                                                 <PopoverTrigger asChild>
-                                                                    <div className="p-1 rounded-md hover:bg-white/10 text-gray-500 hover:text-white transition-colors cursor-pointer" onClick={(e) => e.stopPropagation()}>
-                                                                        <Mail size={13} />
+                                                                    <div className="p-1 rounded-md hover:bg-white/10 text-gray-400 hover:text-white transition-colors cursor-pointer" onClick={(e) => e.stopPropagation()}>
+                                                                        <Mail size={14} />
                                                                     </div>
                                                                 </PopoverTrigger>
                                                             </TooltipTrigger>
@@ -787,10 +787,10 @@ export function CrmTable({ initialLeads, settings, filters }: CrmTableProps) {
                                                                 href={lead.linkedin}
                                                                 target="_blank"
                                                                 rel="noopener noreferrer"
-                                                                className="p-1 rounded-md block hover:bg-white/10 text-gray-500 hover:text-white transition-colors cursor-pointer"
+                                                                className="p-1 rounded-md block hover:bg-white/10 text-gray-400 hover:text-white transition-colors cursor-pointer"
                                                                 onClick={(e) => e.stopPropagation()}
                                                             >
-                                                                <Linkedin size={13} />
+                                                                <Linkedin size={14} />
                                                             </a>
                                                         </TooltipTrigger>
                                                         <TooltipContent>
@@ -810,10 +810,10 @@ export function CrmTable({ initialLeads, settings, filters }: CrmTableProps) {
                                                                     href={lead.website.startsWith('http') ? lead.website : `https://${lead.website}`}
                                                                     target="_blank"
                                                                     rel="noopener noreferrer"
-                                                                    className="p-1 rounded-md block hover:bg-white/10 text-gray-500 hover:text-white transition-colors cursor-pointer"
+                                                                    className="p-1 rounded-md block hover:bg-white/10 text-gray-400 hover:text-white transition-colors cursor-pointer"
                                                                     onClick={(e) => e.stopPropagation()}
                                                                 >
-                                                                    <Globe size={13} />
+                                                                    <Globe size={14} />
                                                                 </a>
                                                             </TooltipTrigger>
                                                             <TooltipContent>

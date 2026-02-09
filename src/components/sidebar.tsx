@@ -29,25 +29,48 @@ export async function Sidebar() {
             role,
             avatar_url,
             active_agents,
+            email,
             main_empresas (
-                name
+                name,
+                team_order
             )
         `)
         .eq('id', user?.id)
         .single()
 
     const companies = profile?.main_empresas
-    // Supabase can return an array or object depending on relation type, but typically object for M-1
-    // We treat it safely
     const companyData = Array.isArray(companies) ? companies[0] : companies
+    const teamOrder = companyData?.team_order || []
+
+    // 3. Fetch all human members of the company (to show in sidebar if reordered)
+    const { data: humanMembers } = await supabaseAdmin
+        .from('main_profiles')
+        .select('id, name, role, avatar_url, has_messaging_access, email')
+        .eq('empresa_id', profile?.empresa_id)
+
+    // 4. Identify the Principal Orchestrator (Admin/Owner)
+    // We take the first admin or owner found in the members list
+    const principalMember = humanMembers?.sort((a, b) => {
+        // Owner/Admin priority
+        const aPri = (a.role === 'admin' || a.role === 'owner') ? 0 : 1;
+        const bPri = (b.role === 'admin' || b.role === 'owner') ? 0 : 1;
+        if (aPri !== bPri) return aPri - bPri;
+        // Then by ID (created_at would be better but ID works for stable priority)
+        return a.id.localeCompare(b.id);
+    })[0];
+
+    const orchestrator = principalMember || profile;
+
     const companyName = companyData?.name || 'My Company'
-    const userName = profile?.name || 'User'
-    const userRole = profile?.role || 'User'
-    const userAvatar = profile?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(userName)}&background=random`
+    const userName = orchestrator?.name || 'User'
+    const userRole = (orchestrator?.role === 'admin' || orchestrator?.role === 'owner') ? 'Principal Orchestrator' : (orchestrator?.role || 'Orchestrator')
+    const userAvatar = orchestrator?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(userName)}&background=random`
+
     let activeAgents = profile?.active_agents || null
 
-    // RBAC: If member, inherit agents from Admin
-    if (profile?.role === 'member' && profile?.empresa_id) {
+    // RBAC: If not admin/owner, inherit agents from Admin
+    const isAdmin = profile?.role === 'admin' || profile?.role === 'owner'
+    if (!isAdmin && profile?.empresa_id) {
         const { data: adminProfile } = await supabaseAdmin
             .from('main_profiles')
             .select('active_agents')
@@ -57,16 +80,9 @@ export async function Sidebar() {
             .maybeSingle()
 
         if (adminProfile?.active_agents) {
-            console.log('[Sidebar] Inheriting agents from Admin:', adminProfile.active_agents)
             activeAgents = adminProfile.active_agents
-        } else {
-            console.log('[Sidebar] Admin has no active agents or Admin not found')
         }
-    } else {
-        console.log('[Sidebar] User is not member or no company. Role:', profile?.role)
     }
-
-    console.log('[Sidebar] Final Active Agents:', activeAgents)
 
     return (
         <SidebarWrapper>
@@ -74,12 +90,20 @@ export async function Sidebar() {
             <SidebarNav
                 agents={AGENTS}
                 activeAgents={activeAgents}
+                teamOrder={teamOrder}
+                humanMembers={humanMembers || []}
                 user={{
+                    id: orchestrator?.id || '',
                     name: userName,
                     role: userRole,
                     avatar: userAvatar,
                     companyName: companyName,
-                    email: user?.email || ''
+                    email: orchestrator?.email || ''
+                }}
+                loggedUser={{
+                    id: profile?.id || '',
+                    name: profile?.name || '',
+                    role: profile?.role || ''
                 }}
             />
         </SidebarWrapper>

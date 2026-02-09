@@ -132,8 +132,9 @@ export async function updateCompanyDNA(formData: FormData) {
     if (avatarUrl) profileUpdates.avatar_url = avatarUrl
 
     if (Object.keys(profileUpdates).length > 1) { // updated_at is always there
-        // Enforce RBAC: Members cannot change their name
-        if (profile.role === 'member' && profileUpdates.name) {
+        // Enforce RBAC: Non-admins cannot change their name
+        const isAdmin = profile?.role === 'admin' || profile?.role === 'owner'
+        if (!isAdmin && profileUpdates.name) {
             delete profileUpdates.name
         }
 

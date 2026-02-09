@@ -4,10 +4,8 @@ import { useState } from "react"
 import { CompanyDNAForm } from "@/components/company-dna-form"
 import { PricingContent } from "@/components/pricing-content"
 import { signout } from '@/app/login/actions'
-import { User, Building2, BadgeDollarSign, CreditCard, ArrowUpRight, LogOut, Ban, Plus, ChevronDown, Brain, History } from "lucide-react"
-import { TeamSettings } from '@/components/profile/TeamSettings'
-import { Users } from 'lucide-react'
-import { AgentsGrid } from '@/components/dashboard/agents-grid'
+import { User, Building2, BadgeDollarSign, CreditCard, ArrowUpRight, LogOut, Ban, Plus, ChevronDown, Brain, History, Users2 } from "lucide-react"
+import { UnifiedTeam } from '@/components/profile/UnifiedTeam'
 import { AuditLogsList } from '@/components/profile/audit-logs-list'
 import {
     DropdownMenu,
@@ -24,7 +22,7 @@ interface OrchestratorTabsProps {
 }
 
 export function OrchestratorTabs({ company, activeAgents, userProfile }: OrchestratorTabsProps) {
-    const [activeTab, setActiveTab] = useState<"profile" | "company" | "pricing" | "billing" | "support" | "agents" | "humans" | "history">("profile")
+    const [activeTab, setActiveTab] = useState<"profile" | "company" | "pricing" | "billing" | "support" | "team" | "history">("profile")
     // State
     const [currency, setCurrency] = useState<'USD' | 'BRL'>('USD')
 
@@ -56,29 +54,16 @@ export function OrchestratorTabs({ company, activeAgents, userProfile }: Orchest
                     </button>
 
                     {userProfile?.role === 'admin' && (
-                        <>
-                            <button
-                                onClick={() => setActiveTab("agents")}
-                                className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${activeTab === "agents"
-                                    ? "bg-[#2a2a2a] text-white shadow-sm"
-                                    : "text-gray-400 hover:text-white hover:bg-white/5"
-                                    }`}
-                            >
-                                <Brain size={16} />
-                                Agents
-                            </button>
-
-                            <button
-                                onClick={() => setActiveTab("humans")}
-                                className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${activeTab === "humans"
-                                    ? "bg-[#2a2a2a] text-white shadow-sm"
-                                    : "text-gray-400 hover:text-white hover:bg-white/5"
-                                    }`}
-                            >
-                                <Users size={16} />
-                                Users
-                            </button>
-                        </>
+                        <button
+                            onClick={() => setActiveTab("team")}
+                            className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${activeTab === "team"
+                                ? "bg-[#2a2a2a] text-white shadow-sm"
+                                : "text-gray-400 hover:text-white hover:bg-white/5"
+                                }`}
+                        >
+                            <Users2 size={16} />
+                            Team
+                        </button>
                     )}
 
                     <button
@@ -143,8 +128,6 @@ export function OrchestratorTabs({ company, activeAgents, userProfile }: Orchest
                 </div>
             )}
 
-
-
             {activeTab === "history" && (
                 <div className="animate-in fade-in slide-in-from-bottom-2 duration-300 bg-[#171717] border border-white/10 rounded-xl p-6 h-[calc(100vh-140px)] flex flex-col">
                     <div className="mb-4 shrink-0">
@@ -167,15 +150,9 @@ export function OrchestratorTabs({ company, activeAgents, userProfile }: Orchest
                 </div>
             )}
 
-            {activeTab === "agents" && (
+            {activeTab === "team" && (
                 <div className="animate-in fade-in slide-in-from-bottom-2 duration-300 bg-[#171717] border border-white/10 rounded-xl p-6">
-                    <AgentsGrid initialActiveAgents={activeAgents} readOnly={userProfile?.role !== 'admin'} />
-                </div>
-            )}
-
-            {activeTab === "humans" && (
-                <div className="animate-in fade-in slide-in-from-bottom-2 duration-300 bg-[#171717] border border-white/10 rounded-xl p-6">
-                    <TeamSettings />
+                    <UnifiedTeam initialActiveAgents={activeAgents} readOnly={userProfile?.role !== 'admin'} />
                 </div>
             )}
 
