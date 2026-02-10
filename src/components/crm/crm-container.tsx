@@ -84,7 +84,8 @@ export function CrmContainer({ initialLeads, stats: initialStats, settings }: Cr
         responsible: l.responsible || "",
         nextStep: l.next_step || { date: "Pending", progress: 0, total: 6 },
         amount: l.amount ? parseFloat(l.amount.toString().replace(/[^0-9.-]+/g, "")) : 0,
-        qualification_status: l.qualification_status?.toLowerCase() // Normalize to lowercase
+        qualification_status: l.qualification_status?.toLowerCase(),
+        conversation_channel: l.conversation_channel || "WhatsApp"
     })), [initialLeads]);
 
     // 2. Base Filter (Everything EXCEPT Qualification) - Used for Stats

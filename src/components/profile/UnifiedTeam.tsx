@@ -16,6 +16,13 @@ import {
     DialogTrigger,
 } from '@/components/ui/dialog'
 import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select"
+import {
     Table,
     TableBody,
     TableCell,
@@ -49,6 +56,7 @@ interface UseProfile {
     name: string
     email: string
     role: string
+    job_title?: string
     avatar_url: string
     has_messaging_access?: boolean
     active_agents?: string[]
@@ -157,11 +165,12 @@ function TeamRow({ item, selectedAgents, toggleAgent, setEditingUser, setDeleteU
                             <>
                                 <ShieldCheck size={13} className="text-purple-400" />
                                 <span className="text-sm font-bold text-slate-300">Admin</span>
+                                {data.job_title && <span className="text-xs text-slate-500 border-l border-white/10 pl-2 ml-1">{data.job_title}</span>}
                             </>
                         ) : type === 'human' ? (
                             <>
                                 <Shield size={13} className="text-slate-500" />
-                                <span className="text-sm text-slate-300 capitalize">{data.role}</span>
+                                <span className="text-sm text-slate-300 capitalize">{data.job_title || 'Member'}</span>
                             </>
                         ) : (
                             <span className="text-sm text-slate-300">{data.role}</span>
@@ -663,10 +672,22 @@ function UserForm({ mode, initialData, onSuccess, onClose }: { mode: 'create' | 
                         />
                     </div>
                     <div className="space-y-2">
-                        <Label className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Department / Role</Label>
+                        <Label className="text-[10px] font-bold uppercase tracking-widest text-slate-500">System Permission</Label>
+                        <Select name="role" defaultValue={initialData?.role || 'member'}>
+                            <SelectTrigger className="bg-white/5 border-white/10 text-white focus:bg-white/10">
+                                <SelectValue placeholder="Select role" />
+                            </SelectTrigger>
+                            <SelectContent className="bg-[#111] border-white/10 text-white">
+                                <SelectItem value="member">Member</SelectItem>
+                                <SelectItem value="admin">Admin</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    <div className="space-y-2">
+                        <Label className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Job Title / Role</Label>
                         <Input
-                            name="role"
-                            defaultValue={initialData?.role}
+                            name="job_title"
+                            defaultValue={initialData?.job_title || initialData?.role}
                             placeholder="e.g. Sales Specialist"
                             className="bg-white/5 border-white/10 text-white focus:bg-white/10"
                             required

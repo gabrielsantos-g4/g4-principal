@@ -1,5 +1,7 @@
-import { useState } from "react";
-import { Search, Filter, Phone, Mail, MoreVertical, Send, Paperclip, Mic, Smile, Check, CheckCheck, Clock, User, Building2, Tag, Calendar, MessageSquare } from "lucide-react";
+import { useState, useEffect } from "react";
+import { getConversations } from "@/actions/inbox/get-conversations";
+import { getMessagingUsers, MessagingUser } from "@/actions/users/get-messaging-users";
+import { Search, Filter, Phone, Mail, MoreVertical, Send, Paperclip, Mic, Smile, Check, CheckCheck, Clock, User, Building2, Tag, MessageSquare, MessageCircle, Linkedin, Instagram, Facebook, Smartphone, ChevronDown } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,10 +9,32 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { createBrowserClient } from "@supabase/ssr";
 
 // --- Types & Mock Data ---
 
-type ChannelType = "whatsapp" | "instagram" | "email" | "web";
+type ChannelType = "whatsapp" | "linkedin" | "instagram" | "facebook" | "email" | "sms" | "web" | "phone";
+
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { format } from "date-fns";
+
+const CHANNELS_ORDER: ChannelType[] = ["whatsapp", "linkedin", "web", "instagram", "facebook", "email", "sms"];
+
+function ChannelIcon({ type, status = "Open" }: { type: ChannelType, status?: string }) {
+    switch (type) {
+        case "whatsapp": return <div className="bg-white p-1 rounded-full shadow-[0_1px_2px_rgba(0,0,0,0.1)]"><MessageCircle size={14} className="text-[#25D366] fill-current" /></div>;
+        case "linkedin": return <div className="bg-white p-1 rounded-full shadow-[0_1px_2px_rgba(0,0,0,0.1)]"><Linkedin size={14} className="text-[#0A66C2] fill-current" /></div>;
+        case "instagram": return <div className="bg-white p-1 rounded-full shadow-[0_1px_2px_rgba(0,0,0,0.1)]"><Instagram size={14} className="text-[#E4405F]" /></div>;
+        case "facebook": return <div className="bg-white p-1 rounded-full shadow-[0_1px_2px_rgba(0,0,0,0.1)]"><Facebook size={14} className="text-[#1877F2] fill-current" /></div>;
+        case "email": return <div className="bg-white p-1 rounded-full shadow-[0_1px_2px_rgba(0,0,0,0.1)]"><Mail size={14} className="text-orange-500 fill-current" /></div>;
+        case "sms": return <div className="bg-white p-1 rounded-full shadow-[0_1px_2px_rgba(0,0,0,0.1)]"><MessageSquare size={14} className="text-purple-500 fill-current" /></div>;
+        case "phone": return <div className="bg-white p-1 rounded-full shadow-[0_1px_2px_rgba(0,0,0,0.1)]"><Phone size={14} className="text-blue-500 fill-current" /></div>;
+        default: return <div className="bg-white p-1 rounded-full shadow-[0_1px_2px_rgba(0,0,0,0.1)]"><MessageSquare size={14} className="text-gray-400 fill-current" /></div>;
+    }
+}
 
 interface Contact {
     id: string;
@@ -40,94 +64,226 @@ interface Conversation {
     lastMessage: string;
     lastMessageAt: string;
     unreadCount: number;
-    status: "open" | "closed" | "snoozed";
     messages: Message[];
+    // CRM Fields
+    status: "New" | "Won" | "Lost" | "Talk to" | "Talking" | "Talk Later" | "Not interested" | "Client";
+    nextStep: { date: string; progress: number; total: number };
+    amount: string;
+    product: string;
+    qualification_status: "mql" | "sql" | "nq" | "pending";
+    source: string;
+    history: { id: string; message: string; date: Date }[];
+    custom?: string;
 }
 
-const MOCK_CONVERSATIONS: Conversation[] = [
-    {
-        id: "1",
-        channel: "whatsapp",
-        contact: {
-            id: "c1",
-            name: "Alice Johnson",
-            avatar: "https://i.pravatar.cc/150?u=alice",
-            company: "TechCorp",
-            role: "CTO",
-            phone: "+55 11 99999-8888",
-            email: "alice@techcorp.com",
-            tags: ["VIP", "Interested"],
-        },
-        lastMessage: "Sounds good, send me the proposal.",
-        lastMessageAt: "10:30 AM",
-        unreadCount: 2,
-        status: "open",
-        messages: [
-            { id: "m1", content: "Hi Alice, checking in on our last meeting.", senderId: "me", timestamp: "10:00 AM", status: "read", type: "text" },
-            { id: "m2", content: "Hey! Yes, I discussed it with the board.", senderId: "c1", timestamp: "10:15 AM", status: "read", type: "text" },
-            { id: "m3", content: "Sounds good, send me the proposal.", senderId: "c1", timestamp: "10:30 AM", status: "read", type: "text" },
-        ],
-    },
-    {
-        id: "2",
-        channel: "instagram",
-        contact: {
-            id: "c2",
-            name: "Bob Smith",
-            avatar: "https://i.pravatar.cc/150?u=bob",
-            company: "DesignStudio",
-            tags: ["Lead", "Cold"],
-        },
-        lastMessage: "How much for the premium plan?",
-        lastMessageAt: "Yesterday",
-        unreadCount: 0,
-        status: "open",
-        messages: [
-            { id: "m4", content: "Love your new features!", senderId: "c2", timestamp: "Yesterday", status: "read", type: "text" },
-            { id: "m5", content: "Thanks Bob! Glad you like them.", senderId: "me", timestamp: "Yesterday", status: "read", type: "text" },
-            { id: "m6", content: "How much for the premium plan?", senderId: "c2", timestamp: "Yesterday", status: "read", type: "text" },
-        ],
-    },
-    {
-        id: "3",
-        channel: "web",
-        contact: {
-            id: "c3",
-            name: "Visitor #492",
-            company: "Unknown",
-        },
-        lastMessage: "I need help with my invoice.",
-        lastMessageAt: "2 days ago",
-        unreadCount: 0,
-        status: "closed",
-        messages: [
-            { id: "m7", content: "I need help with my invoice.", senderId: "c3", timestamp: "2 days ago", status: "read", type: "text" },
-        ],
-    },
-];
 
-// --- Components ---
 
-function ChannelIcon({ type }: { type: ChannelType }) {
-    switch (type) {
-        case "whatsapp": return <div className="bg-green-500/20 p-1 rounded-full"><Phone size={12} className="text-green-500" /></div>;
-        case "instagram": return <div className="bg-pink-500/20 p-1 rounded-full"><div className="w-3 h-3 bg-pink-500 rounded-sm" /></div>; // Replace with proper icon
-        case "email": return <div className="bg-blue-500/20 p-1 rounded-full"><Mail size={12} className="text-blue-500" /></div>;
-        case "web": return <div className="bg-purple-500/20 p-1 rounded-full"><div className="w-3 h-3 bg-purple-500 rounded-full" /></div>;
+// Helper functions (copied from crm-table.tsx)
+function parseDateStr(str: string): Date {
+    if (!str || str === "Pending") return new Date(8640000000000000); // Far future
+    // Try ISO format first
+    const isoDate = new Date(str);
+    if (!isNaN(isoDate.getTime()) && str.includes('-')) return isoDate;
+
+    // Try "EEE, dd/MMM" format (e.g., "Mon, 12/Oct")
+    try {
+        const parts = str.split(',');
+        if (parts.length < 2) return new Date();
+        const dateParts = parts[1].trim().split('/');
+        if (dateParts.length < 2) return new Date();
+
+        const day = parseInt(dateParts[0], 10);
+        const months: Record<string, number> = {
+            'Jan': 0, 'Feb': 1, 'Mar': 2, 'Apr': 3, 'May': 4, 'Jun': 5,
+            'Jul': 6, 'Aug': 7, 'Sep': 8, 'Oct': 9, 'Nov': 10, 'Dec': 11
+        };
+        const month = months[dateParts[1]] ?? 0;
+
+        // Assume current year
+        const date = new Date();
+        date.setFullYear(new Date().getFullYear(), month, day);
+        date.setHours(0, 0, 0, 0);
+        return date;
+    } catch (e) {
+        return new Date();
     }
 }
 
-export function OmnichannelInbox({ targetUserId, targetUser, mode = 'individual' }: { targetUserId?: string, targetUser?: any, mode?: 'individual' | 'global' }) {
-    const [selectedConversationId, setSelectedConversationId] = useState<string | null>(MOCK_CONVERSATIONS[0].id);
-    const selectedConversation = MOCK_CONVERSATIONS.find(c => c.id === selectedConversationId);
+function getDaysRemaining(dateStr: string): number | null {
+    if (!dateStr || dateStr === "Pending") return null;
+    const date = parseDateStr(dateStr);
 
-    // In a real scenario, we would fetch conversations filtered by targetUserId here
-    console.log("[OmnichannelInbox] Filtering for User ID:", targetUserId)
+    // Check if it's the "far future" dummy date
+    if (date.getTime() >= 8640000000000000) return null;
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const target = new Date(date);
+    target.setHours(0, 0, 0, 0);
+
+    const diffTime = target.getTime() - today.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays;
+}
+
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { LostLeadModal } from "@/components/crm/lost-lead-modal";
+import { LeadHistoryModal } from "@/components/crm/lead-history-modal";
+import { LeadAmountModal } from "@/components/crm/lead-amount-modal";
+import { CrmProductSelect } from "@/components/crm/crm-product-select";
+import { toast } from "sonner";
+
+export function OmnichannelInbox({ targetUserId, targetUser, mode = 'individual', crmSettings }: { targetUserId?: string, targetUser?: any, mode?: 'individual' | 'global', crmSettings?: any }) {
+    const [conversations, setConversations] = useState<Conversation[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
+    const [messagingUsers, setMessagingUsers] = useState<MessagingUser[]>([]);
+    const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+
+    useEffect(() => {
+        const supabase = createBrowserClient(
+            process.env.NEXT_PUBLIC_SUPABASE_URL!,
+            process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+        );
+        const getUser = async () => {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (user) setCurrentUserId(user.id);
+        }
+        getUser();
+    }, []);
+
+    useEffect(() => {
+        let isMounted = true;
+        async function fetchData() {
+            setIsLoading(true);
+            try {
+                // Fetch real data in parallel
+                const [convData, usersData] = await Promise.all([
+                    getConversations(targetUserId),
+                    getMessagingUsers()
+                ]);
+
+                if (isMounted) {
+                    setConversations(convData as Conversation[]);
+                    setMessagingUsers(usersData);
+
+                    // Select first if none selected
+                    if (convData.length > 0 && !selectedConversationId) {
+                        setSelectedConversationId(convData[0].id);
+                    }
+                }
+            } catch (error) {
+                console.error("Failed to fetch data", error);
+                toast.error("Failed to load inbox");
+            } finally {
+                if (isMounted) setIsLoading(false);
+            }
+        }
+        fetchData();
+        return () => { isMounted = false; };
+    }, [targetUserId]);
+
+    const selectedConversation = conversations.find(c => c.id === selectedConversationId);
+
+    // State for Lost Lead Modal
+    const [isLostModalOpen, setIsLostModalOpen] = useState(false);
+
+    // CRM Modal States
+    const [historyLead, setHistoryLead] = useState<any | null>(null);
+    const [amountLead, setAmountLead] = useState<any | null>(null);
+
+    // Derived settings for dropdowns (using crmSettings or defaults)
+    const STATUSES = crmSettings?.statuses || [
+        { label: "New", bg: "bg-blue-500/10", text: "text-blue-500" },
+        { label: "Talking", bg: "bg-green-500/10", text: "text-green-500" },
+        { label: "Won", bg: "bg-green-500/10", text: "text-green-500" },
+        { label: "Lost", bg: "bg-red-500/10", text: "text-red-500" }
+    ];
+    const SOURCES = crmSettings?.sources || ["Instagram", "LinkedIn", "Google Ads"];
+
+    // Mock handlers
+    const handleDateSelect = (date: Date | undefined) => { if (date) toast.success(`Date updated to ${format(date, "EEE, dd/MMM")}`); };
+    const handleProgressClick = (step: number) => { toast.success(`Progress updated to step ${step}`); };
+    const handleProductChange = (products: string[], total: number) => { toast.success("Product updated"); };
+    const handleSaveAmount = (amount: string) => { setAmountLead(null); toast.success(`Amount saved: ${amount}`); };
+    const handleAddHistoryMessage = (msg: string) => { setHistoryLead(null); toast.success("History note added"); };
+
+
+
+    const handleResolve = (action: 'Won' | 'Lost') => {
+        if (!selectedConversation) return;
+
+        if (action === 'Won') {
+            toast.success("Nice! Deal won.");
+            // In a real app: await updateLead(selectedConversation.id, { status: 'Won' });
+            // For now, we just update local mock state visualization or remove it
+        } else {
+            setIsLostModalOpen(true);
+        }
+    };
+
+    const handleConfirmLost = (reason: string) => {
+        setIsLostModalOpen(false);
+        toast.error("No problem. Let’s move forward.", {
+            description: `Reason: ${reason}`
+        });
+        // In a real app: await updateLead(selectedConversation.id, { status: 'Lost', lost_reason: reason });
+    };
+
+    const handleStatusChange = async (newStatus: string) => {
+        if (!selectedConversation) return;
+
+        // Optimistic update
+        const oldStatus = selectedConversation.status;
+        setConversations(prev => prev.map(c =>
+            c.id === selectedConversation.id
+                ? { ...c, status: newStatus as any }
+                : c
+        ));
+
+        const toastId = toast.loading(`Updating status to ${newStatus}...`);
+
+        try {
+            const { updateLead } = await import('@/actions/crm/update-lead');
+            // Ensure ID is number if needed, but safe check
+            const leadId = parseInt(selectedConversation.id);
+            if (isNaN(leadId)) throw new Error("Invalid Lead ID");
+
+            const result = await updateLead(leadId, { status: newStatus });
+
+            if (result.success) {
+                toast.success(`Status updated to ${newStatus}`, { id: toastId });
+            } else {
+                throw new Error(result.error);
+            }
+        } catch (err: any) {
+            toast.error("Failed to update status", { id: toastId, description: err.message });
+            // Revert optimistic update
+            setConversations(prev => prev.map(c =>
+                c.id === selectedConversation.id
+                    ? { ...c, status: oldStatus }
+                    : c
+            ));
+        }
+    }
 
     return (
-        <div className="flex h-[calc(100vh-120px)] w-full border border-white/10 rounded-xl overflow-hidden bg-[#111]">
+        <div className="flex h-full w-full bg-[#111]">
+            <LostLeadModal
+                isOpen={isLostModalOpen}
+                onClose={() => setIsLostModalOpen(false)}
+                onConfirm={handleConfirmLost}
+                reasons={crmSettings?.lost_reasons || ["Price too high", "Competitor", "Features missing", "Bad timing"]}
+            />
             {/* 1. Left Sidebar: Conversation List */}
             <div className="w-80 border-r border-white/10 flex flex-col bg-[#111]">
+                {/* ... existing sidebar code ... */}
                 {/* Header / Search */}
                 <div className="p-4 border-b border-white/10 space-y-4">
                     {mode === 'global' ? (
@@ -147,8 +303,8 @@ export function OmnichannelInbox({ targetUserId, targetUser, mode = 'individual'
                                 <AvatarFallback>{targetUser.name[0]}</AvatarFallback>
                             </Avatar>
                             <div className="flex-1 min-w-0">
-                                <h3 className="text-sm font-bold text-white truncate leading-none mb-1">{targetUser.name}</h3>
-                                <p className="text-[10px] text-slate-400 truncate leading-none uppercase tracking-wider font-medium">{targetUser.role}</p>
+                                <h3 className="text-xs font-bold text-white truncate leading-tight">All conversations of</h3>
+                                <p className="text-sm text-[#1C73E8] truncate leading-tight font-bold">{targetUser.name}</p>
                             </div>
                         </div>
                     ) : (
@@ -181,44 +337,50 @@ export function OmnichannelInbox({ targetUserId, targetUser, mode = 'individual'
                 {/* List */}
                 <ScrollArea className="flex-1">
                     <div className="flex flex-col">
-                        {MOCK_CONVERSATIONS.map(conv => (
-                            <button
-                                key={conv.id}
-                                onClick={() => setSelectedConversationId(conv.id)}
-                                className={cn(
-                                    "flex items-start gap-3 p-4 text-left transition-colors border-b border-white/5",
-                                    selectedConversationId === conv.id ? "bg-white/5" : "hover:bg-white/[0.02]"
-                                )}
-                            >
-                                <div className="relative">
-                                    <Avatar>
-                                        <AvatarImage src={conv.contact.avatar} />
-                                        <AvatarFallback>{conv.contact.name[0]}</AvatarFallback>
-                                    </Avatar>
-                                    <div className="absolute -bottom-1 -right-1">
-                                        <ChannelIcon type={conv.channel} />
+                        {isLoading ? (
+                            <div className="p-4 text-center text-gray-500 text-xs">Loading conversations...</div>
+                        ) : conversations.length === 0 ? (
+                            <div className="p-4 text-center text-gray-500 text-xs">No conversations found.</div>
+                        ) : (
+                            conversations.map(conv => (
+                                <button
+                                    key={conv.id}
+                                    onClick={() => setSelectedConversationId(conv.id)}
+                                    className={cn(
+                                        "flex items-start gap-3 p-4 text-left transition-colors border-b border-white/5",
+                                        selectedConversationId === conv.id ? "bg-white/5" : "hover:bg-white/[0.02]"
+                                    )}
+                                >
+                                    <div className="relative">
+                                        <Avatar>
+                                            <AvatarImage src={conv.contact.avatar} />
+                                            <AvatarFallback>{conv.contact.name[0]}</AvatarFallback>
+                                        </Avatar>
+                                        <div className="absolute -bottom-1 -right-1 z-10">
+                                            <ChannelIcon type={conv.channel} status={conv.status === 'open' ? 'In-progress' : conv.status === 'closed' ? 'Resolved' : 'Snoozed'} />
+                                        </div>
                                     </div>
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                    <div className="flex justify-between items-baseline mb-1">
-                                        <span className={cn("font-medium truncate", conv.unreadCount > 0 ? "text-white" : "text-gray-300")}>
-                                            {conv.contact.name}
-                                        </span>
-                                        <span className="text-[10px] text-gray-500 whitespace-nowrap ml-2">
-                                            {conv.lastMessageAt}
-                                        </span>
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex justify-between items-baseline mb-1">
+                                            <span className={cn("font-medium truncate", conv.unreadCount > 0 ? "text-white" : "text-gray-300")}>
+                                                {conv.contact.name}
+                                            </span>
+                                            <span className="text-[10px] text-gray-500 whitespace-nowrap ml-2">
+                                                {conv.lastMessageAt}
+                                            </span>
+                                        </div>
+                                        <p className={cn("text-xs truncate", conv.unreadCount > 0 ? "text-gray-200 font-medium" : "text-gray-500")}>
+                                            {conv.lastMessage}
+                                        </p>
                                     </div>
-                                    <p className={cn("text-xs truncate", conv.unreadCount > 0 ? "text-gray-200 font-medium" : "text-gray-500")}>
-                                        {conv.lastMessage}
-                                    </p>
-                                </div>
-                                {conv.unreadCount > 0 && (
-                                    <div className="w-5 h-5 rounded-full bg-[#1C73E8] text-[10px] text-white flex items-center justify-center font-bold">
-                                        {conv.unreadCount}
-                                    </div>
-                                )}
-                            </button>
-                        ))}
+                                    {conv.unreadCount > 0 && (
+                                        <div className="w-5 h-5 rounded-full bg-[#1C73E8] text-[10px] text-white flex items-center justify-center font-bold">
+                                            {conv.unreadCount}
+                                        </div>
+                                    )}
+                                </button>
+                            ))
+                        )}
                     </div>
                 </ScrollArea>
             </div>
@@ -237,26 +399,28 @@ export function OmnichannelInbox({ targetUserId, targetUser, mode = 'individual'
                                 <div>
                                     <h4 className="text-sm font-bold text-white flex items-center gap-2">
                                         {selectedConversation.contact.name}
-                                        <Badge variant="outline" className="text-[10px] h-4 px-1 border-white/20 text-gray-400">
-                                            {selectedConversation.channel}
-                                        </Badge>
                                     </h4>
-                                    <p className="text-xs text-green-400 flex items-center gap-1">
-                                        <div className="w-1.5 h-1.5 rounded-full bg-green-500" />
-                                        Online
+                                    <p className="text-xs text-gray-400 flex items-center gap-1">
+                                        Talking on <Badge variant="secondary" className="bg-white/10 hover:bg-white/20 text-white border-0">{selectedConversation.channel}</Badge>
                                     </p>
                                 </div>
                             </div>
                             <div className="flex items-center gap-2">
-                                <Button variant="ghost" size="icon" className="text-gray-400">
-                                    <Phone size={18} />
-                                </Button>
-                                <Button variant="ghost" size="icon" className="text-gray-400">
-                                    <MoreVertical size={18} />
-                                </Button>
-                                <Button size="sm" className="bg-[#1C73E8] hover:bg-[#1557b0] ml-2">
-                                    Resolve
-                                </Button>
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <Button size="sm" className="bg-[#1C73E8] hover:bg-[#1557b0] ml-2">
+                                            Resolve
+                                        </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end" className="bg-[#1A1A1A] border-white/10 text-white">
+                                        <DropdownMenuItem onClick={() => handleResolve('Won')} className="focus:bg-white/10 cursor-pointer">
+                                            Move to Won
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem onClick={() => handleResolve('Lost')} className="focus:bg-white/10 cursor-pointer text-red-400 focus:text-red-400">
+                                            Move to Lost
+                                        </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
                             </div>
                         </div>
 
@@ -292,9 +456,8 @@ export function OmnichannelInbox({ targetUserId, targetUser, mode = 'individual'
                             </div>
                         </ScrollArea>
 
-                        {/* Input Area */}
-                        <div className="p-4 bg-[#111] border-t border-white/10">
-                            <div className="bg-white/5 rounded-xl flex items-end p-2 border border-white/5 focus-within:border-white/20 transition-colors">
+                        <div className="p-4 bg-[#111] border-t border-white/10 flex gap-4 items-end">
+                            <div className="bg-white/5 rounded-xl flex items-end p-2 border border-white/5 focus-within:border-white/20 transition-colors flex-1">
                                 <div className="flex gap-1 pb-1">
                                     <Button variant="ghost" size="icon" className="text-gray-400 hover:text-white h-8 w-8 rounded-full">
                                         <Smile size={18} />
@@ -317,6 +480,15 @@ export function OmnichannelInbox({ targetUserId, targetUser, mode = 'individual'
                                     </Button>
                                 </div>
                             </div>
+
+                            {(targetUser?.name === 'Jess' || targetUser?.name === 'Jess AI') && (
+                                <Button
+                                    variant="outline"
+                                    className="h-[50px] border-red-500/20 bg-red-500/10 text-red-400 hover:bg-red-500/20 hover:text-red-300 font-bold px-6 whitespace-nowrap"
+                                >
+                                    Take Over Conversation
+                                </Button>
+                            )}
                         </div>
                     </>
                 ) : (
@@ -339,70 +511,258 @@ export function OmnichannelInbox({ targetUserId, targetUser, mode = 'individual'
                                 <AvatarFallback className="text-lg">{selectedConversation.contact.name[0]}</AvatarFallback>
                             </Avatar>
                             <h3 className="font-bold text-white text-lg">{selectedConversation.contact.name}</h3>
-                            <p className="text-sm text-gray-400">{selectedConversation.contact.role} at {selectedConversation.contact.company}</p>
+                            <p className="text-sm text-gray-400 font-medium mb-1">{selectedConversation.contact.company}</p>
 
-                            <div className="flex justify-center gap-2 mt-4">
-                                <Button size="sm" variant="outline" className="h-8 border-white/10 text-gray-300">
-                                    <User size={14} className="mr-2" />
-                                    Profile
-                                </Button>
-                                <Button size="sm" variant="outline" className="h-8 border-white/10 text-gray-300">
-                                    <Building2 size={14} className="mr-2" />
-                                    Deal
-                                </Button>
-                            </div>
+                            {/* Channel specific info */}
+                            <p className="text-xs text-gray-500">
+                                {(selectedConversation.channel === 'whatsapp' || selectedConversation.channel === 'sms') && (
+                                    <span className="flex items-center justify-center gap-2">
+                                        <Phone size={12} />
+                                        {selectedConversation.contact.phone}
+                                    </span>
+                                )}
+                                {(selectedConversation.channel === 'email') && (
+                                    <span className="flex items-center justify-center gap-2">
+                                        <Mail size={12} />
+                                        {selectedConversation.contact.email}
+                                    </span>
+                                )}
+                                {(selectedConversation.channel === 'linkedin') && (
+                                    <span className="flex items-center justify-center gap-2">
+                                        <Linkedin size={12} />
+                                        /in/{selectedConversation.contact.name.toLowerCase().replace(/\s+/g, '')}
+                                    </span>
+                                )}
+                                {(selectedConversation.channel === 'instagram') && (
+                                    <span className="flex items-center justify-center gap-2">
+                                        <Instagram size={12} />
+                                        @{selectedConversation.contact.name.toLowerCase().replace(/\s+/g, '')}
+                                    </span>
+                                )}
+                                {(selectedConversation.channel === 'facebook') && (
+                                    <span className="flex items-center justify-center gap-2">
+                                        <Facebook size={12} />
+                                        /{selectedConversation.contact.name.toLowerCase().replace(/\s+/g, '')}
+                                    </span>
+                                )}
+                                {(selectedConversation.channel === 'web') && (
+                                    <span className="flex items-center justify-center gap-2">
+                                        <MessageSquare size={12} />
+                                        Global Visitor
+                                    </span>
+                                )}
+                            </p>
                         </div>
 
                         <ScrollArea className="flex-1 p-6">
                             <div className="space-y-6">
-                                {/* Info */}
-                                <div className="space-y-3">
-                                    <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider">Contact Info</h4>
-                                    <div className="space-y-2 text-sm">
-                                        <div className="flex items-center gap-3 text-gray-300">
-                                            <Mail size={14} className="text-gray-500" />
-                                            {selectedConversation.contact.email || "No email"}
-                                        </div>
-                                        <div className="flex items-center gap-3 text-gray-300">
-                                            <Phone size={14} className="text-gray-500" />
-                                            {selectedConversation.contact.phone || "No phone"}
-                                        </div>
-                                        <div className="flex items-center gap-3 text-gray-300">
-                                            <Clock size={14} className="text-gray-500" />
-                                            Local time: 11:35 AM
-                                        </div>
-                                    </div>
-                                </div>
+                                {/* CRM Fields Mirror */}
+                                <div className="space-y-4">
+                                    <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider">Deal Info</h4>
 
-                                <Separator className="bg-white/10" />
-
-                                {/* Tags */}
-                                <div className="space-y-3">
-                                    <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider">Tags</h4>
-                                    <div className="flex flex-wrap gap-2">
-                                        {selectedConversation.contact.tags?.map(tag => (
-                                            <Badge key={tag} variant="secondary" className="bg-white/5 hover:bg-white/10 text-gray-300 font-normal">
-                                                {tag}
-                                            </Badge>
-                                        ))}
-                                        <Badge variant="outline" className="border-dashed border-white/20 text-gray-500 hover:text-gray-300 cursor-pointer">
-                                            + Add
-                                        </Badge>
-                                    </div>
-                                </div>
-
-                                <Separator className="bg-white/10" />
-
-                                {/* Agent Actions */}
-                                <div className="space-y-3">
-                                    <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider">Actions</h4>
+                                    {/* Next Step & Date */}
                                     <div className="space-y-2">
-                                        <Button className="w-full bg-[#1C73E8] hover:bg-[#1557b0] text-white">Create CRM Deal</Button>
-                                        <Button variant="outline" className="w-full border-white/10 text-gray-300">Send to Lead Gen</Button>
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-xs text-gray-400">Next Step</span>
+                                            <div className="flex items-center gap-1">
+                                                <Popover>
+                                                    <PopoverTrigger asChild>
+                                                        <button className={`text-[11px] font-semibold hover:bg-white/10 rounded px-1 transition-colors ${parseDateStr(selectedConversation.nextStep.date) < new Date(new Date().setHours(0, 0, 0, 0)) ? 'text-red-400' : 'text-gray-400'}`}>
+                                                            {selectedConversation.nextStep.date}
+                                                        </button>
+                                                    </PopoverTrigger>
+                                                    <PopoverContent className="w-auto p-0" align="end">
+                                                        <Calendar mode="single" selected={parseDateStr(selectedConversation.nextStep.date)} onSelect={handleDateSelect} initialFocus />
+                                                    </PopoverContent>
+                                                </Popover>
+                                            </div>
+                                        </div>
+
+                                        {/* Progress Dots */}
+                                        <div className="flex items-center justify-between bg-white/5 p-2 rounded-lg">
+                                            <div className="flex space-x-1.5">
+                                                {[...Array(5)].map((_, i) => {
+                                                    const stepIndex = i + 1;
+                                                    const isActive = stepIndex <= selectedConversation.nextStep.progress;
+                                                    const isMsgSaida = stepIndex === 5;
+                                                    let bgColor = 'bg-gray-700';
+                                                    let shadow = '';
+                                                    if (isActive) {
+                                                        if (isMsgSaida) { bgColor = 'bg-red-500'; shadow = 'shadow-[0_0_8px_rgba(239,68,68,0.4)]'; }
+                                                        else { bgColor = 'bg-green-500'; shadow = 'shadow-[0_0_8px_rgba(34,197,94,0.4)]'; }
+                                                    }
+                                                    return (
+                                                        <button key={i} onClick={() => handleProgressClick(stepIndex)} className={`w-2.5 h-2.5 rounded-full transition-all ${bgColor} ${shadow}`} />
+                                                    );
+                                                })}
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <button onClick={() => handleProgressClick(6)} className={`w-2.5 h-2.5 rounded-full transition-all ${selectedConversation.nextStep.progress >= 6 ? 'bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.4)]' : 'bg-gray-700'}`} />
+                                                <div className="cursor-pointer hover:bg-white/10 p-1 rounded-full text-[#1C73E8]" onClick={() => setHistoryLead(selectedConversation)}>
+                                                    <MessageCircle size={12} />
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
+
+                                    {/* Product & Amount */}
+                                    <div className="grid grid-cols-2 gap-2">
+                                        <div className="space-y-1">
+                                            <span className="text-xs text-gray-400">Product</span>
+                                            <CrmProductSelect value={selectedConversation.product || "[]"} options={crmSettings?.products || []} onChange={handleProductChange} />
+                                        </div>
+                                        <div className="space-y-1">
+                                            <span className="text-xs text-gray-400">Amount</span>
+                                            <button
+                                                className="w-full text-left font-mono text-xs bg-white/5 hover:bg-white/10 p-2 rounded text-gray-200"
+                                                onClick={() => setAmountLead(selectedConversation)}
+                                            >
+                                                {selectedConversation.amount}
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    {/* Qualification */}
+                                    <div className="space-y-1">
+                                        <span className="text-xs text-gray-400">Qualification</span>
+                                        <DropdownMenu>
+                                            <DropdownMenuTrigger asChild>
+                                                <button className={`flex items-center justify-between text-xs px-2 py-1.5 rounded w-full outline-none transition-colors border ${(() => {
+                                                    switch (selectedConversation.qualification_status?.toLowerCase()) {
+                                                        case 'mql': return "bg-blue-500/10 text-blue-400 border-blue-500/20 font-bold";
+                                                        case 'sql': return "bg-emerald-500/10 text-emerald-400 border-emerald-500/20 font-bold";
+                                                        case 'nq': return "bg-red-500/10 text-red-400 border-red-500/20 font-bold";
+                                                        default: return 'text-gray-400 border-white/5 bg-white/5';
+                                                    }
+                                                })()}`}>
+                                                    <span className="uppercase">{selectedConversation.qualification_status || "Pending"}</span>
+                                                    <ChevronDown size={12} className="opacity-50" />
+                                                </button>
+                                            </DropdownMenuTrigger>
+                                            <DropdownMenuContent className="w-[200px] bg-[#1A1A1A] border-white/10 text-white">
+                                                <DropdownMenuItem className="text-blue-400">MQL</DropdownMenuItem>
+                                                <DropdownMenuItem className="text-emerald-400">SQL</DropdownMenuItem>
+                                                <DropdownMenuItem className="text-red-400">NQ</DropdownMenuItem>
+                                            </DropdownMenuContent>
+                                        </DropdownMenu>
+                                    </div>
+
+                                    {/* Source */}
+                                    <div className="space-y-1">
+                                        <span className="text-xs text-gray-400">Source</span>
+                                        <DropdownMenu>
+                                            <DropdownMenuTrigger asChild>
+                                                <button className="flex items-center justify-between text-xs px-2 py-1.5 rounded w-full outline-none transition-colors border border-white/5 bg-white/5 text-gray-300 hover:bg-white/10">
+                                                    <span>{selectedConversation.source}</span>
+                                                    <ChevronDown size={12} className="opacity-50" />
+                                                </button>
+                                            </DropdownMenuTrigger>
+                                            <DropdownMenuContent className="w-[200px] bg-[#1A1A1A] border-white/10 text-white">
+                                                {SOURCES.map((s: any) => (
+                                                    <DropdownMenuItem key={typeof s === 'string' ? s : s.label}>
+                                                        {typeof s === 'string' ? s : s.label}
+                                                    </DropdownMenuItem>
+                                                ))}
+                                            </DropdownMenuContent>
+                                        </DropdownMenu>
+                                    </div>
+
+
                                 </div>
                             </div>
                         </ScrollArea>
+
+                        <LeadHistoryModal
+                            isOpen={!!historyLead}
+                            onClose={() => setHistoryLead(null)}
+                            leadName={historyLead?.contact.name}
+                            history={historyLead?.history || []}
+                            onAddMessage={handleAddHistoryMessage}
+                        />
+
+                        <LeadAmountModal
+                            isOpen={!!amountLead}
+                            onClose={() => setAmountLead(null)}
+                            currentAmount={amountLead?.amount || ""}
+                            onSave={handleSaveAmount}
+                        />
+
+                        {/* Footer Actions */}
+                        <div className="p-4 border-t border-white/10 bg-[#111] space-y-4">
+                            {/* Status Section */}
+                            <div className="space-y-1">
+                                <label className="text-[10px] uppercase text-gray-500 font-bold">Status</label>
+                                <Select
+                                    value={selectedConversation.status}
+                                    onValueChange={handleStatusChange}
+                                >
+                                    <SelectTrigger className="w-full bg-white/5 border-white/10 text-white h-9">
+                                        <SelectValue placeholder="Select Status" />
+                                    </SelectTrigger>
+                                    <SelectContent className="bg-[#1a1a1a] border-white/10 text-white">
+                                        {STATUSES.map((s: any) => (
+                                            <SelectItem
+                                                key={s.label}
+                                                value={s.label}
+                                                className="focus:bg-white/10 focus:text-white cursor-pointer"
+                                            >
+                                                <div className="flex items-center">
+                                                    <div className={`w-2 h-2 rounded-full mr-2 ${s.bg}`} />
+                                                    <span className="text-white">{s.label}</span>
+                                                </div>
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+
+                            <div className="space-y-1">
+                                <label className="text-[10px] uppercase text-gray-500 font-bold">Transfer conversation to</label>
+                                <Select
+                                    value={selectedConversation.contact.name === 'Jess' ? 'Jess' : ''}
+                                    onValueChange={async (value) => {
+                                        if (!selectedConversation) return;
+
+                                        const toastId = toast.loading(`Transferring to ${value}...`);
+                                        try {
+                                            const { transferConversation } = await import('@/actions/crm/transfer-conversation');
+                                            const result = await transferConversation(selectedConversation.id, value);
+
+                                            if (result.success) {
+                                                toast.success(`Transferred to ${value}`, { id: toastId });
+                                                // Remove from list or refresh
+                                                setConversations(prev => prev.filter(c => c.id !== selectedConversation.id));
+                                                setSelectedConversationId(null);
+                                            } else {
+                                                toast.error('Failed to transfer', { id: toastId });
+                                            }
+                                        } catch (err) {
+                                            toast.error('Error transferring conversation', { id: toastId });
+                                        }
+                                    }}
+                                >
+                                    <SelectTrigger className="w-full bg-white/5 border-white/10 text-white h-9">
+                                        <SelectValue placeholder="Select Responsible" />
+                                    </SelectTrigger>
+                                    <SelectContent className="bg-[#1a1a1a] border-white/10 text-white">
+                                        {messagingUsers
+                                            .filter(user => user.name !== 'Jess' && user.name !== 'Jess AI' && user.id !== currentUserId)
+                                            .map((user) => (
+                                                <SelectItem
+                                                    key={user.id}
+                                                    value={user.name}
+                                                    className="focus:bg-white/10 focus:text-white cursor-pointer"
+                                                >
+                                                    <div className="flex items-center gap-2">
+                                                        <div className="w-2 h-2 rounded-full bg-blue-500" />
+                                                        <span className="text-white">{user.name}</span>
+                                                    </div>
+                                                </SelectItem>
+                                            ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        </div>
                     </>
                 ) : (
                     <div className="p-8 text-center text-gray-500 text-sm">
@@ -410,6 +770,6 @@ export function OmnichannelInbox({ targetUserId, targetUser, mode = 'individual'
                     </div>
                 )}
             </div>
-        </div>
+        </div >
     );
 }

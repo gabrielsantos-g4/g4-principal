@@ -170,7 +170,7 @@ export function SidebarNav({ agents, activeAgents, teamOrder, humanMembers, user
                                                         {item.data.name}
                                                     </span>
                                                     <span className="text-xs text-slate-500 group-hover:text-slate-400 transition-colors whitespace-normal leading-tight">
-                                                        {item.data.role?.replace('Fractional ', '')}
+                                                        {(item.data.job_title || item.data.role)?.replace('Fractional ', '')}
                                                     </span>
                                                 </div>
                                             )}
@@ -218,7 +218,7 @@ function HumanLink({ member, pathname, isCollapsed, id, isLoggedUser }: { member
                     </TooltipTrigger>
                     <TooltipContent side="right" className="bg-[#111] border-white/10 text-white">
                         <p className="font-medium">{member.name}</p>
-                        <p className="text-xs text-slate-400">{member.role}</p>
+                        <p className="text-xs text-slate-400">{member.job_title || 'Member'}</p>
                     </TooltipContent>
                 </Tooltip>
             </TooltipProvider>
@@ -252,7 +252,7 @@ function HumanLink({ member, pathname, isCollapsed, id, isLoggedUser }: { member
                     )}
                 </div>
                 <span className={`truncate text-xs transition-colors ${isActive ? 'text-[#1C73E8]' : 'text-slate-500 group-hover:text-slate-400'}`}>
-                    {member.role?.replace('Fractional ', '')}
+                    {(member.job_title || 'Member').replace('Fractional ', '')}
                 </span>
             </div>
         </Link>

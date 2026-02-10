@@ -10,6 +10,7 @@ import { Reorder } from "framer-motion";
 import { CrmSettings } from "@/actions/crm/get-crm-settings";
 import { updateCrmSettings } from "@/actions/crm/update-crm-settings";
 import { transferLeadsTag } from "@/actions/crm/transfer-leads-tag";
+import { getCompanyUsers } from "@/actions/users"; // Import getCompanyUsers
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -186,6 +187,19 @@ export function CrmSettingsModal({ isOpen, onClose, settings }: CrmSettingsModal
     const [responsibles, setResponsibles] = useState<TagItem[]>(normalizeTags(settings?.responsibles || []));
     const [sources, setSources] = useState<TagItem[]>(normalizeTags(settings?.sources || []));
     const [lostReasons, setLostReasons] = useState<TagItem[]>(normalizeTags(settings?.lost_reasons || []));
+
+    // Real Team Members State
+    const [teamMembers, setTeamMembers] = useState<any[]>([]);
+
+    useEffect(() => {
+        if (isOpen) {
+            getCompanyUsers().then(data => {
+                if (data && data.users) {
+                    setTeamMembers(data.users);
+                }
+            });
+        }
+    }, [isOpen]);
 
     // Custom Field State
     const [customFieldName, setCustomFieldName] = useState(settings?.custom_fields?.name || "Category");
@@ -618,66 +632,99 @@ export function CrmSettingsModal({ isOpen, onClose, settings }: CrmSettingsModal
                             {/* Responsibles */}
                             <div className="space-y-4">
                                 <h3 className="text-lg font-semibold border-b border-white/10 pb-2">Team (Responsibles)</h3>
-                                <div className="flex gap-2">
-                                    <Input
-                                        placeholder="New Member Name"
-                                        value={newResponsible.name}
-                                        onChange={(e) => setNewResponsible({ ...newResponsible, name: e.target.value })}
-                                        className="bg-black/50 border-white/20 text-white flex-1"
-                                        onKeyDown={(e) => handleKeyDown(e, addResponsible)}
-                                    />
-                                    <Input
-                                        placeholder="Member e-mail"
-                                        value={newResponsible.email}
-                                        onChange={(e) => setNewResponsible({ ...newResponsible, email: e.target.value })}
-                                        className="bg-black/50 border-white/20 text-white w-64"
-                                        onKeyDown={(e) => handleKeyDown(e, addResponsible)}
-                                    />
-                                    <Button onClick={addResponsible} disabled={loading || !newResponsible.name || !newResponsible.email} className="bg-white/10 hover:bg-white/20 text-white">
-                                        <Plus className="h-4 w-4" />
-                                    </Button>
-                                </div>
-                                <Reorder.Group
-                                    axis="y"
-                                    values={responsibles}
-                                    onReorder={(newOrder) => {
-                                        setResponsibles(newOrder);
-                                        debouncedSave(undefined, undefined, newOrder);
-                                    }}
-                                    className="flex flex-col gap-2 list-none p-0"
-                                >
-                                    {responsibles.map((person, index) => {
-                                        const tag = typeof person === 'string' ? { label: person, bg: 'bg-blue-900', text: 'text-blue-100' } : person;
-                                        return (
-                                            <Reorder.Item key={tag.label} value={person}>
-                                                <div className="flex items-center justify-between p-2 bg-white/5 rounded border border-white/10">
-                                                    <div className="flex items-center gap-2">
-                                                        <GripVertical className="h-4 w-4 text-gray-500 cursor-grab active:cursor-grabbing" />
-                                                        <TagEditor
-                                                            tag={tag}
-                                                            onSave={(l, b, t) => updateResponsible(index, l, b, t)}
-                                                        >
-                                                            <div className={`flex items-center gap-1 px-2 py-1 rounded text-xs border border-white/10 ${tag.bg} ${tag.text} cursor-pointer hover:opacity-80 transition-opacity`}>
-                                                                {tag.label}
-                                                            </div>
-                                                        </TagEditor>
-                                                        {typeof person !== 'string' && person.email && (
-                                                            <span className="text-xs text-gray-500">{person.email}</span>
-                                                        )}
+
+                                {/* Active Team Members (Read-Only / Selectable) */}
+                                <div className="space-y-2 mb-4">
+                                    <Label className="text-xs text-blue-400 font-bold uppercase tracking-wider">Active Platform Members</Label>
+                                    <div className="grid grid-cols-1 gap-2">
+                                        {teamMembers.map((member) => (
+                                            <div key={member.id} className="flex items-center justify-between p-2 bg-blue-500/10 rounded border border-blue-500/20">
+                                                <div className="flex items-center gap-2">
+                                                    <div className="w-6 h-6 rounded-full bg-blue-500 flex items-center justify-center text-[10px] font-bold text-white">
+                                                        {member.name?.[0]?.toUpperCase()}
                                                     </div>
-                                                    <Button
-                                                        size="icon"
-                                                        variant="ghost"
-                                                        className="h-6 w-6 text-red-500 hover:text-red-400 hover:bg-white/10"
-                                                        onClick={() => removeResponsible(index)}
-                                                    >
-                                                        <Trash2 className="h-3.5 w-3.5" />
-                                                    </Button>
+                                                    <div className="flex flex-col">
+                                                        <span className="text-sm font-medium text-blue-100">{member.name}</span>
+                                                        <span className="text-[10px] text-blue-300">{member.email}</span>
+                                                    </div>
                                                 </div>
-                                            </Reorder.Item>
-                                        )
-                                    })}
-                                </Reorder.Group>
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-300 border border-blue-500/20 capitalize">
+                                                        {member.role}
+                                                    </span>
+                                                    {/* Auto-add to responsibles if not present? Or just show they are available? 
+                                                        For now, showing them as "System Users" distinct from "Manual Tags"
+                                                    */}
+                                                </div>
+                                            </div>
+                                        ))}
+                                        {teamMembers.length === 0 && <span className="text-xs text-gray-500">No active members found.</span>}
+                                    </div>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <Label className="text-xs text-gray-400 font-bold uppercase tracking-wider">Custom / External Responsibles</Label>
+                                    <div className="flex gap-2">
+                                        <Input
+                                            placeholder="New Member Name"
+                                            value={newResponsible.name}
+                                            onChange={(e) => setNewResponsible({ ...newResponsible, name: e.target.value })}
+                                            className="bg-black/50 border-white/20 text-white flex-1"
+                                            onKeyDown={(e) => handleKeyDown(e, addResponsible)}
+                                        />
+                                        <Input
+                                            placeholder="Member e-mail"
+                                            value={newResponsible.email}
+                                            onChange={(e) => setNewResponsible({ ...newResponsible, email: e.target.value })}
+                                            className="bg-black/50 border-white/20 text-white w-64"
+                                            onKeyDown={(e) => handleKeyDown(e, addResponsible)}
+                                        />
+                                        <Button onClick={addResponsible} disabled={loading || !newResponsible.name || !newResponsible.email} className="bg-white/10 hover:bg-white/20 text-white">
+                                            <Plus className="h-4 w-4" />
+                                        </Button>
+                                    </div>
+                                    <Reorder.Group
+                                        axis="y"
+                                        values={responsibles}
+                                        onReorder={(newOrder) => {
+                                            setResponsibles(newOrder);
+                                            debouncedSave(undefined, undefined, newOrder);
+                                        }}
+                                        className="flex flex-col gap-2 list-none p-0"
+                                    >
+                                        {responsibles.map((person, index) => {
+                                            const tag = typeof person === 'string' ? { label: person, bg: 'bg-blue-900', text: 'text-blue-100' } : person;
+                                            return (
+                                                <Reorder.Item key={tag.label} value={person}>
+                                                    <div className="flex items-center justify-between p-2 bg-white/5 rounded border border-white/10">
+                                                        <div className="flex items-center gap-2">
+                                                            <GripVertical className="h-4 w-4 text-gray-500 cursor-grab active:cursor-grabbing" />
+                                                            <TagEditor
+                                                                tag={tag}
+                                                                onSave={(l, b, t) => updateResponsible(index, l, b, t)}
+                                                            >
+                                                                <div className={`flex items-center gap-1 px-2 py-1 rounded text-xs border border-white/10 ${tag.bg} ${tag.text} cursor-pointer hover:opacity-80 transition-opacity`}>
+                                                                    {tag.label}
+                                                                </div>
+                                                            </TagEditor>
+                                                            {typeof person !== 'string' && person.email && (
+                                                                <span className="text-xs text-gray-500">{person.email}</span>
+                                                            )}
+                                                        </div>
+                                                        <Button
+                                                            size="icon"
+                                                            variant="ghost"
+                                                            className="h-6 w-6 text-red-500 hover:text-red-400 hover:bg-white/10"
+                                                            onClick={() => removeResponsible(index)}
+                                                        >
+                                                            <Trash2 className="h-3.5 w-3.5" />
+                                                        </Button>
+                                                    </div>
+                                                </Reorder.Item>
+                                            )
+                                        })}
+                                    </Reorder.Group>
+                                </div>
                             </div>
 
                             {/* Lost Reasons */}

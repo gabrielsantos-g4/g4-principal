@@ -4,7 +4,7 @@ import { useState } from "react"
 import { CompanyDNAForm } from "@/components/company-dna-form"
 import { PricingContent } from "@/components/pricing-content"
 import { signout } from '@/app/login/actions'
-import { User, Building2, BadgeDollarSign, CreditCard, ArrowUpRight, LogOut, Ban, Plus, ChevronDown, Brain, History, Users2 } from "lucide-react"
+import { User, Building2, BadgeDollarSign, CreditCard, ArrowUpRight, LogOut, Ban, Plus, ChevronDown, Brain, History, Users2, MessageSquare } from "lucide-react"
 import { UnifiedTeam } from '@/components/profile/UnifiedTeam'
 import { AuditLogsList } from '@/components/profile/audit-logs-list'
 import {
@@ -14,6 +14,8 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 
+import { OmnichannelInbox } from "../support/omnichannel/omnichannel-inbox"
+
 interface OrchestratorTabsProps {
     company: any
     activeAgents?: string[] | null
@@ -22,7 +24,7 @@ interface OrchestratorTabsProps {
 }
 
 export function OrchestratorTabs({ company, activeAgents, userProfile }: OrchestratorTabsProps) {
-    const [activeTab, setActiveTab] = useState<"profile" | "company" | "pricing" | "billing" | "support" | "team" | "history">("profile")
+    const [activeTab, setActiveTab] = useState<"profile" | "company" | "pricing" | "billing" | "support" | "team" | "history" | "chats">("profile")
     // State
     const [currency, setCurrency] = useState<'USD' | 'BRL'>('USD')
 
@@ -65,6 +67,17 @@ export function OrchestratorTabs({ company, activeAgents, userProfile }: Orchest
                             Team
                         </button>
                     )}
+
+                    <button
+                        onClick={() => setActiveTab("chats")}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${activeTab === "chats"
+                            ? "bg-[#2a2a2a] text-white shadow-sm"
+                            : "text-gray-400 hover:text-white hover:bg-white/5"
+                            }`}
+                    >
+                        <MessageSquare size={16} />
+                        Chats
+                    </button>
 
                     <button
                         onClick={() => setActiveTab("history")}
@@ -125,6 +138,12 @@ export function OrchestratorTabs({ company, activeAgents, userProfile }: Orchest
             {activeTab === "profile" && (
                 <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
                     <CompanyDNAForm company={company} userProfile={userProfile} mode="profile" />
+                </div>
+            )}
+
+            {activeTab === "chats" && (
+                <div className="animate-in fade-in slide-in-from-bottom-2 duration-300 h-[calc(100vh-140px)] border border-white/10 rounded-xl overflow-hidden bg-[#171717]">
+                    <OmnichannelInbox targetUserId={userProfile?.id} />
                 </div>
             )}
 

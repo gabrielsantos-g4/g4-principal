@@ -30,6 +30,7 @@ import { getTrainings } from '@/actions/training-actions'
 import { getDesignRequests } from '@/actions/design-actions'
 import { getInitiatives } from '@/actions/strategy-actions'
 import { BiDashboard } from '@/components/bi/bi-dashboard'
+import { getCrmSettings } from '@/actions/crm/get-crm-settings'
 
 import { MobileDashboardLayout } from '@/components/mobile-dashboard-layout'
 import { OrganicSocialDashboard } from '@/components/organic-social/organic-social-dashboard'
@@ -142,12 +143,16 @@ export default async function AgentPage({ params, searchParams }: AgentPageProps
             .eq('id', targetUserId)
             .single()
 
+        // Fetch CRM Settings for the status dropdown
+        const crmSettings = await getCrmSettings(companyId)
+
         if (targetProfile) {
             return (
                 <UserInboxDashboard
                     user={user}
                     targetUser={targetProfile}
                     companyId={companyId}
+                    crmSettings={crmSettings}
                 />
             )
         }

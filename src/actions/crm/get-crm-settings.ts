@@ -66,11 +66,13 @@ const DEFAULT_SETTINGS: CrmSettings = {
     ]
 };
 
-export async function getCrmSettings(): Promise<CrmSettings> {
+export async function getCrmSettings(companyId?: string): Promise<CrmSettings> {
     const supabase = await createClient();
-    const empresaId = await getEmpresaId();
+    const empresaId = companyId || await getEmpresaId();
 
     if (!empresaId) return DEFAULT_SETTINGS;
+
+    console.log("[getCrmSettings] Fetching settings for companyId:", empresaId);
 
     // Fetch existing settings
     const { data, error } = await supabase
@@ -78,6 +80,13 @@ export async function getCrmSettings(): Promise<CrmSettings> {
         .select('*')
         .eq('empresa_id', empresaId)
         .single();
+
+    if (error) {
+        console.error("[getCrmSettings] Error fetching settings:", error);
+    }
+
+    console.log("[getCrmSettings] Fetched data:", data ? "Found" : "Not Found");
+    if (data) console.log("[getCrmSettings] Statuses count:", data.statuses?.length);
 
     if (data) {
         // Ensure responsibles, sources, and options are objects (migration)
@@ -88,6 +97,7 @@ export async function getCrmSettings(): Promise<CrmSettings> {
         return {
             ...DEFAULT_SETTINGS,
             ...data,
+            statuses: migrateTags((data.statuses && data.statuses.length > 0) ? data.statuses : DEFAULT_SETTINGS.statuses),
             responsibles: migrateTags(data.responsibles),
             sources: migrateTags(data.sources),
             custom_fields: {

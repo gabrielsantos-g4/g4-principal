@@ -27,6 +27,7 @@ export async function Sidebar() {
             empresa_id,
             name,
             role,
+            job_title,
             avatar_url,
             active_agents,
             email,
@@ -45,7 +46,7 @@ export async function Sidebar() {
     // 3. Fetch all human members of the company (to show in sidebar if reordered)
     const { data: humanMembers } = await supabaseAdmin
         .from('main_profiles')
-        .select('id, name, role, avatar_url, has_messaging_access, email')
+        .select('id, name, role, job_title, avatar_url, has_messaging_access, email')
         .eq('empresa_id', profile?.empresa_id)
 
     // 4. Identify the Principal Orchestrator (Admin/Owner)
@@ -63,7 +64,7 @@ export async function Sidebar() {
 
     const companyName = companyData?.name || 'My Company'
     const userName = orchestrator?.name || 'User'
-    const userRole = (orchestrator?.role === 'admin' || orchestrator?.role === 'owner') ? 'Principal Orchestrator' : (orchestrator?.role || 'Orchestrator')
+    const userRole = orchestrator?.job_title || ((orchestrator?.role === 'admin' || orchestrator?.role === 'owner') ? 'Principal Orchestrator' : 'Member')
     const userAvatar = orchestrator?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(userName)}&background=random`
 
     let activeAgents = profile?.active_agents || null

@@ -17,9 +17,10 @@ interface UserInboxDashboardProps {
     }
     companyId: string
     agent?: any // Optional AI agent context
+    crmSettings?: any
 }
 
-export function UserInboxDashboard({ user, targetUser, companyId, agent }: UserInboxDashboardProps) {
+export function UserInboxDashboard({ user, targetUser, companyId, agent, crmSettings }: UserInboxDashboardProps) {
     const isSelf = user.id === targetUser.id
 
     return (
@@ -42,10 +43,11 @@ export function UserInboxDashboard({ user, targetUser, companyId, agent }: UserI
                 }
             >
                 <div className="flex-1 flex flex-col min-w-0 h-full p-4">
-                    <div className="flex-1 bg-[#111] rounded-xl border border-white/10 overflow-hidden shadow-2xl">
+                    <div className="flex-1 bg-[#111] rounded-xl border border-white/10 overflow-hidden shadow-2xl flex flex-col">
                         <OmnichannelInbox
                             targetUserId={targetUser.id}
                             targetUser={targetUser}
+                            crmSettings={crmSettings}
                         />
                     </div>
                 </div>

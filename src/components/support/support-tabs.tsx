@@ -16,19 +16,32 @@ import {
 } from "@/components/ui/select"
 import { Calendar } from "lucide-react"
 
+import { Agent } from "@/lib/agents"
+
 interface SupportTabsProps {
     trainings: Training[]
     companyId: string
+    agent?: Agent
 }
 
-export function SupportTabs({ trainings, companyId }: SupportTabsProps) {
-    const [activeTab, setActiveTab] = useState<"training" | "parameters" | "connectors" | "omnichannel" | "reports">("training")
+export function SupportTabs({ trainings, companyId, agent }: SupportTabsProps) {
+    const [activeTab, setActiveTab] = useState<"training" | "parameters" | "connectors" | "omnichannel" | "reports">("omnichannel")
     const [timeFrame, setTimeFrame] = useState("30")
 
     return (
         <div className="w-full flex flex-col gap-8">
             {/* Tabs Header */}
             <div className="bg-[#171717] border border-white/10 p-1 rounded-lg flex flex-wrap gap-1 w-fit">
+                <button
+                    onClick={() => setActiveTab("omnichannel")}
+                    className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-all ${activeTab === "omnichannel"
+                        ? "bg-[#2a2a2a] text-white shadow-sm"
+                        : "text-gray-400 hover:text-white hover:bg-white/5"
+                        }`}
+                >
+                    <MessageSquare size={16} />
+                    Chats
+                </button>
                 <button
                     onClick={() => setActiveTab("training")}
                     className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-all ${activeTab === "training"
@@ -60,16 +73,6 @@ export function SupportTabs({ trainings, companyId }: SupportTabsProps) {
                     Connections
                 </button>
                 <button
-                    onClick={() => setActiveTab("omnichannel")}
-                    className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-all ${activeTab === "omnichannel"
-                        ? "bg-[#2a2a2a] text-white shadow-sm"
-                        : "text-gray-400 hover:text-white hover:bg-white/5"
-                        }`}
-                >
-                    <MessageSquare size={16} />
-                    Chats
-                </button>
-                <button
                     onClick={() => setActiveTab("reports")}
                     className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-all ${activeTab === "reports"
                         ? "bg-[#2a2a2a] text-white shadow-sm"
@@ -85,7 +88,15 @@ export function SupportTabs({ trainings, companyId }: SupportTabsProps) {
             <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
                 {activeTab === "omnichannel" && (
                     <div className="flex flex-col gap-6 w-full">
-                        <OmnichannelInbox />
+                        <OmnichannelInbox
+                            targetUser={agent ? {
+                                id: agent.id,
+                                name: agent.name,
+                                role: agent.role,
+                                avatar_url: agent.avatar
+                            } : undefined}
+                            targetUserId={agent?.id}
+                        />
                     </div>
                 )}
 

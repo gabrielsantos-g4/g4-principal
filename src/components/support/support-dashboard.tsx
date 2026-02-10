@@ -12,6 +12,6 @@ interface SupportDashboardProps {
 
 export function SupportDashboard({ agent, trainings, companyId }: SupportDashboardProps) {
     return (
-        <SupportTabs trainings={trainings} companyId={companyId} />
+        <SupportTabs trainings={trainings} companyId={companyId} agent={agent} />
     );
 }

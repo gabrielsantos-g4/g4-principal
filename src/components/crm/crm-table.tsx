@@ -6,7 +6,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { CrmFilterState } from "./crm-container";
 import { formatPhoneNumberIntl } from 'react-phone-number-input';
 
-import { Trash2, Edit2, CheckCircle2, MessageCircle, ExternalLink, ChevronDown, Phone, Mail, Linkedin, Link2, RefreshCw, Globe, Copy } from "lucide-react";
+import { Trash2, Edit2, CheckCircle2, MessageCircle, ExternalLink, ChevronDown, Phone, Mail, Linkedin, Link2, RefreshCw, Globe, Copy, Facebook, Instagram, MessageSquare, Smartphone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { LeadDetailsModal } from "./lead-details-modal";
 import { LeadHistoryModal } from "./lead-history-modal";
@@ -55,6 +55,7 @@ import { deleteLead } from "@/actions/crm/delete-lead";
 import { toast } from "sonner";
 import { CrmSettings } from "@/actions/crm/get-crm-settings";
 import { updateLeadQualification } from "@/actions/crm/update-lead-qualification";
+import { updateChannel } from "@/actions/crm/update-channel";
 
 // ... existing imports ...
 
@@ -79,8 +80,10 @@ interface LeadType {
     nextStep: { date: string; progress: number; total: number };
     history: { id: string; message: string; date: Date }[];
     date: string; // Creation date required by Modals
+    date: string; // Creation date required by Modals
     lost_reason?: string;
     qualification_status?: string;
+    conversation_channel?: string;
 }
 
 interface CrmTableProps {
@@ -171,7 +174,8 @@ export function CrmTable({ initialLeads, settings, filters }: CrmTableProps) {
             date: h.date ? new Date(h.date) : new Date()
         })) : [],
         date: l.created_at || new Date().toISOString(),
-        qualification_status: l.qualification_status?.toLowerCase()
+        qualification_status: l.qualification_status?.toLowerCase(),
+        conversation_channel: l.conversation_channel || "WhatsApp" // Default or empty
     })), [initialLeads]);
 
     const [leads, setLeads] = useState<LeadType[]>(transformedLeads);
@@ -196,6 +200,31 @@ export function CrmTable({ initialLeads, settings, filters }: CrmTableProps) {
     const SOURCES = settings.sources || [];
     const customFieldName = settings.custom_fields?.name || "Category";
     const CUSTOM_OPTIONS = settings.custom_fields?.options || [];
+
+    const CHANNELS = [
+        "WhatsApp",
+        "LinkedIn",
+        "WebChat",
+        "Instagram",
+        "Facebook",
+        "Email",
+        "SMS",
+        "Phone"
+    ];
+
+    const getChannelIcon = (channel: string) => {
+        switch (channel) {
+            case "WhatsApp": return <MessageCircle size={14} className="text-[#25D366]" />;
+            case "LinkedIn": return <Linkedin size={14} className="text-[#0A66C2]" />;
+            case "WebChat": return <MessageSquare size={14} className="text-gray-400" />;
+            case "Instagram": return <Instagram size={14} className="text-[#E4405F]" />;
+            case "Facebook": return <Facebook size={14} className="text-[#1877F2]" />;
+            case "Email": return <Mail size={14} className="text-orange-500" />;
+            case "SMS": return <MessageSquare size={14} className="text-purple-500" />; // MessageSquare for SMS
+            case "Phone": return <Phone size={14} className="text-blue-500" />;
+            default: return <MessageCircle size={14} className="text-gray-400" />;
+        }
+    };
 
     const filteredLeads = useMemo(() => {
         return leads.filter(lead => {
@@ -503,6 +532,23 @@ export function CrmTable({ initialLeads, settings, filters }: CrmTableProps) {
         }
     };
 
+    const handleChannelChange = async (leadId: number, channel: string) => {
+        // Optimistic update
+        setLeads(prev => prev.map(l => {
+            if (l.id === leadId) {
+                return { ...l, conversation_channel: channel };
+            }
+            return l;
+        }));
+
+        const result = await updateChannel(leadId, channel);
+        if (result.success) {
+            toast.success(`Channel updated to ${channel}`);
+        } else {
+            toast.error("Failed to update channel");
+        }
+    };
+
     return (
         <>
             <div className="bg-[#111] rounded-lg border border-white/5 flex flex-col flex-1 min-h-0 h-full overflow-hidden">
@@ -571,6 +617,7 @@ export function CrmTable({ initialLeads, settings, filters }: CrmTableProps) {
                                         </TooltipProvider>
                                     </div>
                                 </th>
+
                                 {/* Website */}
                                 <th className="px-2 py-1.5 text-center w-[36px]">
                                     <div className="flex justify-center">
@@ -647,6 +694,15 @@ export function CrmTable({ initialLeads, settings, filters }: CrmTableProps) {
                                         <Tooltip>
                                             <TooltipTrigger asChild><span>Source</span></TooltipTrigger>
                                             <TooltipContent><p>Origin of the lead</p></TooltipContent>
+                                        </Tooltip>
+                                    </TooltipProvider>
+                                </th>
+                                {/* Conversation Channel */}
+                                <th className="px-2 py-1.5 text-left min-w-[100px]">
+                                    <TooltipProvider>
+                                        <Tooltip>
+                                            <TooltipTrigger asChild><span>Channel</span></TooltipTrigger>
+                                            <TooltipContent><p>Main communication channel</p></TooltipContent>
                                         </Tooltip>
                                     </TooltipProvider>
                                 </th>
@@ -1110,6 +1166,33 @@ export function CrmTable({ initialLeads, settings, filters }: CrmTableProps) {
                                                         <Settings size={12} />
                                                         Manage...
                                                     </DropdownMenuItem>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
+                                        </td>
+                                        {/* Conversation Channel */}
+                                        <td className="px-3 py-1">
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                    <div className="flex items-center gap-2 px-2 py-1 rounded hover:bg-white/10 cursor-pointer transition-colors group/channel">
+                                                        {getChannelIcon(lead.conversation_channel || "WhatsApp")}
+                                                        <span className="text-[11px] text-white/70 group-hover/channel:text-white truncate">
+                                                            {lead.conversation_channel || "WhatsApp"}
+                                                        </span>
+                                                        <ChevronDown size={10} className="text-white/30 opacity-0 group-hover/channel:opacity-100 transition-opacity" />
+                                                    </div>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent align="start" className="bg-[#1A1A1A] border-white/10 text-white">
+                                                    {CHANNELS.map((channel) => (
+                                                        <DropdownMenuItem
+                                                            key={channel}
+                                                            onClick={() => handleChannelChange(lead.id, channel)}
+                                                            className="flex items-center gap-2 hover:bg-white/10 focus:bg-white/10 cursor-pointer text-xs"
+                                                        >
+                                                            {getChannelIcon(channel)}
+                                                            <span>{channel}</span>
+                                                            {lead.conversation_channel === channel && <CheckCircle2 size={12} className="ml-auto text-green-500" />}
+                                                        </DropdownMenuItem>
+                                                    ))}
                                                 </DropdownMenuContent>
                                             </DropdownMenu>
                                         </td>

@@ -1,5 +1,7 @@
 'use server'
 
+import { syncResponsibles } from '@/actions/crm/sync-responsibles'
+
 import { createClient, createAdminClient } from '@/lib/supabase'
 import { revalidatePath } from 'next/cache'
 
@@ -85,6 +87,7 @@ export async function createCompanyUser(formData: FormData) {
                 email: email,
                 name: name,
                 role: (formData.get('role') as string) || 'member',
+                job_title: (formData.get('job_title') as string) || (formData.get('role') as string) || 'Member',
                 empresa_id: profile.empresa_id,
                 active_agents: JSON.parse((formData.get('active_agents') as string) || '[]'),
                 has_messaging_access: formData.get('has_messaging_access') === 'true',
@@ -108,6 +111,10 @@ export async function createCompanyUser(formData: FormData) {
         })
 
         revalidatePath('/settings/team')
+
+        // Sync CRM Responsibles
+        await syncResponsibles(profile.empresa_id)
+
         return { success: true }
     } catch (err: any) {
         console.error('[createCompanyUser] Unexpected error:', err)
@@ -171,6 +178,7 @@ export async function updateCompanyUser(formData: FormData) {
     const profileData: any = { name, email }
 
     if (formData.get('role')) profileData.role = formData.get('role') as string
+    if (formData.get('job_title')) profileData.job_title = formData.get('job_title') as string
     if (formData.get('avatar_url')) profileData.avatar_url = formData.get('avatar_url') as string
     if (formData.get('has_messaging_access')) {
         profileData.has_messaging_access = formData.get('has_messaging_access') === 'true'
@@ -197,6 +205,10 @@ export async function updateCompanyUser(formData: FormData) {
     })
 
     revalidatePath('/settings/team')
+
+    // Sync CRM Responsibles
+    await syncResponsibles(profile.empresa_id)
+
     return { success: true }
 }
 
@@ -219,7 +231,7 @@ export async function getCompanyUsers() {
     // Fetch all profiles for this company
     const { data: profiles } = await supabaseAdmin
         .from('main_profiles')
-        .select('id, name, email, role, avatar_url, has_messaging_access, active_agents')
+        .select('id, name, email, role, job_title, avatar_url, has_messaging_access, active_agents')
         .eq('empresa_id', profile.empresa_id)
         .order('created_at', { ascending: true })
 
@@ -297,6 +309,10 @@ export async function deleteCompanyUser(userId: string) {
     })
 
     revalidatePath('/settings/team')
+
+    // Sync CRM Responsibles
+    await syncResponsibles(profile.empresa_id)
+
     return { success: true }
 }
 

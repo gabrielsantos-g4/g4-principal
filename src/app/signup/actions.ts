@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase'
 import { createClient as createSupabaseClient } from '@supabase/supabase-js'
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
+import { syncResponsibles } from '@/actions/crm/sync-responsibles'
 
 export async function signup(formData: FormData) {
     const name = formData.get('name') as string
@@ -77,6 +78,7 @@ export async function signup(formData: FormData) {
             empresa_id: companyData.id,
             name: name,
             role: 'admin', // First user is Admin
+            job_title: 'Owner',
             active_agents: []
         })
 
@@ -105,7 +107,15 @@ export async function signup(formData: FormData) {
         // We do not fail the signup because of webhook failure, just log it.
     }
 
-    // 3. Log the user in (Get Session Cookies)
+    // 5. Sync CRM Responsibles (Add the new Admin)
+    try {
+        await syncResponsibles(companyData.id)
+    } catch (syncError) {
+        console.error('Failed to sync responsibles on signup:', syncError)
+        // Non-blocking
+    }
+
+    // 6. Log the user in (Get Session Cookies)
     const { error: signInError } = await supabase.auth.signInWithPassword({
         email,
         password,
