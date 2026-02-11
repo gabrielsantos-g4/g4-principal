@@ -80,7 +80,6 @@ interface LeadType {
     nextStep: { date: string; progress: number; total: number };
     history: { id: string; message: string; date: Date }[];
     date: string; // Creation date required by Modals
-    date: string; // Creation date required by Modals
     lost_reason?: string;
     qualification_status?: string;
     conversation_channel?: string;

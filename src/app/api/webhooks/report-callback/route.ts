@@ -23,7 +23,7 @@ export async function POST(req: Request) {
 
         // Initialize Admin Client (Service Role) to ensure we can write to any user's report
         const supabase = createClient(
-            process.env.SUPABASE_URL!,
+            process.env.NEXT_PUBLIC_SUPABASE_URL!,
             process.env.SUPABASE_SERVICE_ROLE_KEY!
         )
 

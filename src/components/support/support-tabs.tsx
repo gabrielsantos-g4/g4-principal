@@ -22,9 +22,10 @@ interface SupportTabsProps {
     trainings: Training[]
     companyId: string
     agent?: Agent
+    viewerProfile?: any
 }
 
-export function SupportTabs({ trainings, companyId, agent }: SupportTabsProps) {
+export function SupportTabs({ trainings, companyId, agent, viewerProfile }: SupportTabsProps) {
     const [activeTab, setActiveTab] = useState<"training" | "parameters" | "connectors" | "omnichannel" | "reports">("omnichannel")
     const [timeFrame, setTimeFrame] = useState("30")
 
@@ -96,6 +97,7 @@ export function SupportTabs({ trainings, companyId, agent }: SupportTabsProps) {
                                 avatar_url: agent.avatar
                             } : undefined}
                             targetUserId={agent?.id}
+                            viewerProfile={viewerProfile}
                         />
                     </div>
                 )}

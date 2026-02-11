@@ -12,9 +12,10 @@ import { OmnichannelInbox } from "@/components/support/omnichannel/omnichannel-i
 interface GlobalInboxModalProps {
     isOpen: boolean
     onClose: () => void
+    viewerProfile?: any
 }
 
-export function GlobalInboxModal({ isOpen, onClose }: GlobalInboxModalProps) {
+export function GlobalInboxModal({ isOpen, onClose, viewerProfile }: GlobalInboxModalProps) {
     return (
         <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
             <DialogContent
@@ -50,7 +51,7 @@ export function GlobalInboxModal({ isOpen, onClose }: GlobalInboxModalProps) {
 
                 <div className="flex-1 bg-[#0a0a0a] p-4 overflow-hidden">
                     <div className="h-full w-full rounded-xl border border-white/10 overflow-hidden bg-[#111] shadow-inner">
-                        <OmnichannelInbox mode="global" />
+                        <OmnichannelInbox mode="global" viewerProfile={viewerProfile} />
                     </div>
                 </div>
             </DialogContent>

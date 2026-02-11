@@ -8,10 +8,11 @@ interface SupportDashboardProps {
     agent: Agent;
     trainings: Training[];
     companyId: string;
+    viewerProfile?: any;
 }
 
-export function SupportDashboard({ agent, trainings, companyId }: SupportDashboardProps) {
+export function SupportDashboard({ agent, trainings, companyId, viewerProfile }: SupportDashboardProps) {
     return (
-        <SupportTabs trainings={trainings} companyId={companyId} agent={agent} />
+        <SupportTabs trainings={trainings} companyId={companyId} agent={agent} viewerProfile={viewerProfile} />
     );
 }

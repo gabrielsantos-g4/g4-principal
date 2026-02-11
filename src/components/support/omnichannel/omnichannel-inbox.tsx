@@ -139,7 +139,32 @@ import { LeadAmountModal } from "@/components/crm/lead-amount-modal";
 import { CrmProductSelect } from "@/components/crm/crm-product-select";
 import { toast } from "sonner";
 
-export function OmnichannelInbox({ targetUserId, targetUser, mode = 'individual', crmSettings }: { targetUserId?: string, targetUser?: any, mode?: 'individual' | 'global', crmSettings?: any }) {
+export function OmnichannelInbox({ targetUserId, targetUser, mode = 'individual', crmSettings, viewerProfile }: { targetUserId?: string, targetUser?: any, mode?: 'individual' | 'global', crmSettings?: any, viewerProfile?: any }) {
+    // Permission Check
+    const hasAccess = viewerProfile?.role === 'admin' || viewerProfile?.has_messaging_access;
+
+    const DebugBanner = () => (
+        <div className="bg-red-900/90 text-white p-2 text-[10px] font-mono border-b border-red-500/50 w-full z-50">
+            [DEBUG] ID: {viewerProfile?.id?.substring(0, 8)}... | Role: {viewerProfile?.role} | Flag: {String(viewerProfile?.has_messaging_access)} | Access: {String(hasAccess)}
+        </div>
+    );
+
+    if (!hasAccess) {
+        return (
+            <div className="flex flex-col h-full bg-[#111]">
+                <DebugBanner />
+                <div className="flex flex-col items-center justify-center p-8 text-center flex-1">
+                    <div className="bg-white/5 p-4 rounded-full mb-6">
+                        <MessageSquare size={48} className="text-gray-500" />
+                    </div>
+                    <h3 className="text-xl font-medium text-white mb-2">Access Restricted</h3>
+                    <p className="text-gray-400 max-w-md">
+                        You don’t have access to messages yet, but you can still collaborate with your team using the panel on the left.
+                    </p>
+                </div>
+            </div>
+        )
+    }
     const [conversations, setConversations] = useState<Conversation[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
@@ -357,7 +382,7 @@ export function OmnichannelInbox({ targetUserId, targetUser, mode = 'individual'
                                             <AvatarFallback>{conv.contact.name[0]}</AvatarFallback>
                                         </Avatar>
                                         <div className="absolute -bottom-1 -right-1 z-10">
-                                            <ChannelIcon type={conv.channel} status={conv.status === 'open' ? 'In-progress' : conv.status === 'closed' ? 'Resolved' : 'Snoozed'} />
+                                            <ChannelIcon type={conv.channel} status={(conv.status === 'Won' || conv.status === 'Lost') ? 'Resolved' : 'In-progress'} />
                                         </div>
                                     </div>
                                     <div className="flex-1 min-w-0">
@@ -400,9 +425,12 @@ export function OmnichannelInbox({ targetUserId, targetUser, mode = 'individual'
                                     <h4 className="text-sm font-bold text-white flex items-center gap-2">
                                         {selectedConversation.contact.name}
                                     </h4>
-                                    <p className="text-xs text-gray-400 flex items-center gap-1">
-                                        Talking on <Badge variant="secondary" className="bg-white/10 hover:bg-white/20 text-white border-0">{selectedConversation.channel}</Badge>
-                                    </p>
+                                    <div className="text-xs text-gray-400 flex items-center gap-1">
+                                        Talking on <Badge variant="secondary" className="bg-white/10 hover:bg-white/20 text-gray-300 border-0 px-1.5 h-5 flex items-center gap-1">
+                                            {selectedConversation.channel === 'whatsapp' && <MessageSquare size={10} />}
+                                            <span className="capitalize">{selectedConversation.channel}</span>
+                                        </Badge>
+                                    </div>
                                 </div>
                             </div>
                             <div className="flex items-center gap-2">
@@ -746,7 +774,8 @@ export function OmnichannelInbox({ targetUserId, targetUser, mode = 'individual'
                                     </SelectTrigger>
                                     <SelectContent className="bg-[#1a1a1a] border-white/10 text-white">
                                         {messagingUsers
-                                            .filter(user => user.name !== 'Jess' && user.name !== 'Jess AI' && user.id !== currentUserId)
+                                            .filter(user => user.name !== 'Jess' && user.name !== 'Jess AI')
+                                            .filter(user => user.id !== currentUserId)
                                             .map((user) => (
                                                 <SelectItem
                                                     key={user.id}

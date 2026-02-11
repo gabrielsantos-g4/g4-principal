@@ -26,6 +26,7 @@ interface CrmContainerProps {
     initialLeads: any[];
     stats: any;
     settings: CrmSettings;
+    viewerProfile?: any;
 }
 
 // Helper to parse dates consistently with CrmTable
@@ -58,7 +59,7 @@ function parseDateStr(str: string): Date {
     }
 }
 
-export function CrmContainer({ initialLeads, stats: initialStats, settings }: CrmContainerProps) {
+export function CrmContainer({ initialLeads, stats: initialStats, settings, viewerProfile }: CrmContainerProps) {
     const [filters, setFilters] = useState<CrmFilterState>({
         tab: 'active',
         searchName: '',
@@ -209,6 +210,7 @@ export function CrmContainer({ initialLeads, stats: initialStats, settings }: Cr
                 setFilters={setFilters}
                 leads={transformedLeads}
                 headerStats={headerStats}
+                viewerProfile={viewerProfile}
             />
             <CrmTable
                 initialLeads={initialLeads}

@@ -85,9 +85,9 @@ export default async function AgentPage({ params, searchParams }: AgentPageProps
 
     // Get company_id (Needed for all agents)
     const supabaseAdmin = await createAdminClient()
-    const { data: profile } = await supabaseAdmin
+    let { data: profile } = await supabaseAdmin
         .from('main_profiles')
-        .select('empresa_id, active_agents, name, avatar_url, role, email')
+        .select('id, empresa_id, active_agents, name, avatar_url, role, email, has_messaging_access')
         .eq('id', user?.id)
         .eq('id', user?.id)
         .single()
@@ -107,7 +107,6 @@ export default async function AgentPage({ params, searchParams }: AgentPageProps
             profile.active_agents = adminProfile.active_agents
         }
     }
-
 
     const companyId = profile?.empresa_id
 
@@ -153,6 +152,7 @@ export default async function AgentPage({ params, searchParams }: AgentPageProps
                     targetUser={targetProfile}
                     companyId={companyId}
                     crmSettings={crmSettings}
+                    viewerProfile={profile}
                 />
             )
         }
@@ -332,7 +332,7 @@ export default async function AgentPage({ params, searchParams }: AgentPageProps
                         />
                     }
                 >
-                    <CrmDashboard agent={agent} />
+                    <CrmDashboard agent={agent} viewerProfile={profile} />
                 </MobileDashboardLayout>
             </div>
         )
@@ -363,7 +363,7 @@ export default async function AgentPage({ params, searchParams }: AgentPageProps
                     }
                 >
                     <div className="flex-1 w-full h-full overflow-y-auto">
-                        <SupportDashboard agent={agent} trainings={trainings} companyId={companyId} />
+                        <SupportDashboard agent={agent} trainings={trainings} companyId={companyId} viewerProfile={profile} />
                     </div>
                 </MobileDashboardLayout>
             </div>

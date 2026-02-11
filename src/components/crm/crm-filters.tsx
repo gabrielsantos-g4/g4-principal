@@ -55,9 +55,10 @@ interface CrmFiltersProps {
             tomorrow: number;
         };
     };
+    viewerProfile?: any
 }
 
-export function CrmFilters({ settings, filters, setFilters, leads, headerStats }: CrmFiltersProps) {
+export function CrmFilters({ settings, filters, setFilters, leads, headerStats, viewerProfile }: CrmFiltersProps) {
     const router = useRouter();
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -525,6 +526,7 @@ export function CrmFilters({ settings, filters, setFilters, leads, headerStats }
             <GlobalInboxModal
                 isOpen={isGlobalInboxOpen}
                 onClose={() => setIsGlobalInboxOpen(false)}
+                viewerProfile={viewerProfile}
             />
             <CrmSearchModal
                 open={isSearchOpen}

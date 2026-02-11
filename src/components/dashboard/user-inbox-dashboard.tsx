@@ -18,10 +18,15 @@ interface UserInboxDashboardProps {
     companyId: string
     agent?: any // Optional AI agent context
     crmSettings?: any
+    viewerProfile?: any
 }
 
-export function UserInboxDashboard({ user, targetUser, companyId, agent, crmSettings }: UserInboxDashboardProps) {
+export function UserInboxDashboard({ user, targetUser, companyId, agent, crmSettings, viewerProfile }: UserInboxDashboardProps) {
     const isSelf = user.id === targetUser.id
+    const hasAccess = viewerProfile?.role === 'admin' || viewerProfile?.has_messaging_access
+
+    // MessageSquare icon for restricted state
+    const { MessageSquare } = require("lucide-react")
 
     return (
         <div className="flex-1 min-h-0 bg-black text-white font-sans flex flex-col overflow-hidden">
@@ -48,6 +53,7 @@ export function UserInboxDashboard({ user, targetUser, companyId, agent, crmSett
                             targetUserId={targetUser.id}
                             targetUser={targetUser}
                             crmSettings={crmSettings}
+                            viewerProfile={viewerProfile}
                         />
                     </div>
                 </div>

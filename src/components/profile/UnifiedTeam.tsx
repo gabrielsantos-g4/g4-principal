@@ -307,12 +307,29 @@ export function UnifiedTeam({ initialActiveAgents, readOnly }: UnifiedTeamProps)
 
         if (fetchedOrder && fetchedOrder.length > 0) {
             // Sort by fetchedOrder
+            // Strategy:
+            // 1. Fixed Admin (handled by isFixed=true check if we wanted, but here we rely on array order + logic)
+            // 2. New items (NOT in fetchedOrder)
+            // 3. Existing items (IN fetchedOrder, sorted by index)
+
             const sortedItems = [...allItems].sort((a, b) => {
+                // Always keep fixed items at the top (though admins.map sets isFixed for the first admin)
+                if (a.isFixed) return -1
+                if (b.isFixed) return 1
+
                 const indexA = fetchedOrder.indexOf(a.id)
                 const indexB = fetchedOrder.indexOf(b.id)
+
+                // If both are new (not in order), maintain their relative order from allItems
                 if (indexA === -1 && indexB === -1) return 0
-                if (indexA === -1) return 1
-                if (indexB === -1) return -1
+
+                // If A is new and B is old, A comes first
+                if (indexA === -1) return -1
+
+                // If B is new and A is old, B comes first
+                if (indexB === -1) return 1
+
+                // Both are old, sort by order
                 return indexA - indexB
             })
             setItems(sortedItems)
@@ -398,7 +415,7 @@ export function UnifiedTeam({ initialActiveAgents, readOnly }: UnifiedTeamProps)
     }
 
     return (
-        <div className="space-y-8">
+        <div className="space-y-8 max-w-[1200px]">
             {/* Unified Team List */}
             <div>
                 <div className="flex items-center justify-between mb-6">

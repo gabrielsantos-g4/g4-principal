@@ -5,9 +5,10 @@ import { Agent } from "@/lib/agents";
 
 interface CrmDashboardProps {
     agent?: Agent;
+    viewerProfile?: any;
 }
 
-export async function CrmDashboard({ agent }: CrmDashboardProps) {
+export async function CrmDashboard({ agent, viewerProfile }: CrmDashboardProps) {
     const crmData = await getCrmData();
     const settings = await getCrmSettings();
 
@@ -22,6 +23,7 @@ export async function CrmDashboard({ agent }: CrmDashboardProps) {
             initialLeads={leads}
             stats={stats}
             settings={settings}
+            viewerProfile={viewerProfile}
         />
     );
 }

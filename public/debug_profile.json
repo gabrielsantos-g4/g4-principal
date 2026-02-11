@@ -1,0 +1,17 @@
+{
+  "timestamp": "2026-02-11T03:05:48.160Z",
+  "user_id": "18103d4c-8ed4-4713-9452-7e57e522ea12",
+  "profile": {
+    "id": "18103d4c-8ed4-4713-9452-7e57e522ea12",
+    "empresa_id": "b26a3844-1eff-42de-9e50-4db7e8c1c976",
+    "active_agents": [
+      "customer-jess",
+      "crm-emily"
+    ],
+    "name": "Gabriel Santos",
+    "avatar_url": "https://s3.startg4.com/b26a3844-1eff-42de-9e50-4db7e8c1c976/avatars/18103d4c-8ed4-4713-9452-7e57e522ea12/1769735680743-gabriel_original.jpg",
+    "role": "member",
+    "email": "gabriel@startg4.com",
+    "has_messaging_access": false
+  }
+}

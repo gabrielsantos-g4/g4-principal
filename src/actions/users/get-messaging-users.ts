@@ -20,7 +20,7 @@ export async function getMessagingUsers(): Promise<MessagingUser[]> {
         .from('main_profiles')
         .select('id, name, avatar_url, email')
         .eq('empresa_id', empresaId)
-        .eq('has_messaging_access', true)
+        .or('has_messaging_access.eq.true,role.in.(admin,owner)')
         .order('name');
 
     if (error) {

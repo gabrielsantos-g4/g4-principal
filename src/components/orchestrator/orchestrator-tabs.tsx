@@ -24,7 +24,11 @@ interface OrchestratorTabsProps {
 }
 
 export function OrchestratorTabs({ company, activeAgents, userProfile }: OrchestratorTabsProps) {
-    const [activeTab, setActiveTab] = useState<"profile" | "company" | "pricing" | "billing" | "support" | "team" | "history" | "chats">("profile")
+    console.log('[OrchestratorTabs] User Profile:', { role: userProfile?.role, hasMessaging: userProfile?.has_messaging_access })
+    // Determine default tab based on permissions
+    // If user has messaging access or is admin, default to 'chats'. Otherwise 'profile'.
+    const defaultTab = (userProfile?.role === 'admin' || userProfile?.has_messaging_access) ? 'chats' : 'profile'
+    const [activeTab, setActiveTab] = useState<"profile" | "company" | "pricing" | "billing" | "support" | "team" | "history" | "chats">(defaultTab)
     // State
     const [currency, setCurrency] = useState<'USD' | 'BRL'>('USD')
 
@@ -33,6 +37,17 @@ export function OrchestratorTabs({ company, activeAgents, userProfile }: Orchest
             <div className="flex items-center justify-between">
                 {/* Tabs Header */}
                 <div className="flex items-center gap-1 bg-[#171717] p-1 rounded-lg border border-white/10 w-fit flex-wrap">
+                    <button
+                        onClick={() => setActiveTab("chats")}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${activeTab === "chats"
+                            ? "bg-[#2a2a2a] text-white shadow-sm"
+                            : "text-gray-400 hover:text-white hover:bg-white/5"
+                            }`}
+                    >
+                        <MessageSquare size={16} />
+                        Chats
+                    </button>
+
                     <button
                         onClick={() => setActiveTab("profile")}
                         className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${activeTab === "profile"
@@ -68,16 +83,7 @@ export function OrchestratorTabs({ company, activeAgents, userProfile }: Orchest
                         </button>
                     )}
 
-                    <button
-                        onClick={() => setActiveTab("chats")}
-                        className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${activeTab === "chats"
-                            ? "bg-[#2a2a2a] text-white shadow-sm"
-                            : "text-gray-400 hover:text-white hover:bg-white/5"
-                            }`}
-                    >
-                        <MessageSquare size={16} />
-                        Chats
-                    </button>
+
 
                     <button
                         onClick={() => setActiveTab("history")}
@@ -142,9 +148,16 @@ export function OrchestratorTabs({ company, activeAgents, userProfile }: Orchest
             )}
 
             {activeTab === "chats" && (
-                <div className="animate-in fade-in slide-in-from-bottom-2 duration-300 h-[calc(100vh-140px)] border border-white/10 rounded-xl overflow-hidden bg-[#171717]">
-                    <OmnichannelInbox targetUserId={userProfile?.id} />
-                </div>
+                <OmnichannelInbox
+                    targetUserId={userProfile?.id}
+                    targetUser={{
+                        id: userProfile?.id,
+                        name: userProfile?.name,
+                        role: userProfile?.role,
+                        avatar_url: userProfile?.avatar_url
+                    }}
+                    viewerProfile={userProfile}
+                />
             )}
 
             {activeTab === "history" && (
