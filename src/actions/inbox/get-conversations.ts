@@ -3,8 +3,10 @@
 import { createClient, createAdminClient } from "@/lib/supabase";
 import { getEmpresaId } from "@/lib/get-empresa-id";
 import { AGENTS } from "@/lib/agents";
+import { unstable_noStore as noStore } from 'next/cache';
 
 export async function getConversations(targetUserId?: string) {
+    noStore(); // Prevent Next.js from caching this response
     const empresaId = await getEmpresaId();
     if (!empresaId) return [];
 
@@ -51,7 +53,7 @@ export async function getConversations(targetUserId?: string) {
         .from('main_crm')
         .select('*')
         .eq('empresa_id', empresaId)
-        .eq('responsible', responsibleName)
+        .ilike('responsible', responsibleName)
         .order('created_at', { ascending: false });
 
     if (error) {
@@ -140,7 +142,8 @@ export async function getConversations(targetUserId?: string) {
             qualification_status: lead.qualification_status?.toLowerCase() || "pending",
             source: lead.source || "",
             history: Array.isArray(lead.history_log) ? lead.history_log : [],
-            custom: lead.custom_field || ""
+            custom: lead.custom_field || "",
+            quem_atende: lead.quem_atende // Pass this new field
         };
     });
 }

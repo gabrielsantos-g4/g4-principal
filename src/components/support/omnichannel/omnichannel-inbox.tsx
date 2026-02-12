@@ -1,5 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { getConversations } from "@/actions/inbox/get-conversations";
+import { getChatMessages } from "@/actions/inbox/get-messages";
+import { sendMessage } from "@/actions/inbox/send-message";
+import { toggleResponsibility } from "@/actions/inbox/toggle-responsibility";
 import { getMessagingUsers, MessagingUser } from "@/actions/users/get-messaging-users";
 import { Search, Filter, Phone, Mail, MoreVertical, Send, Paperclip, Mic, Smile, Check, CheckCheck, Clock, User, Building2, Tag, MessageSquare, MessageCircle, Linkedin, Instagram, Facebook, Smartphone, ChevronDown, LogOut } from "lucide-react";
 import {
@@ -83,6 +86,7 @@ interface Conversation {
     source: string;
     history: { id: string; message: string; date: Date }[];
     custom?: string;
+    quem_atende?: string;
 }
 
 
@@ -201,11 +205,47 @@ export function OmnichannelInbox({
             process.env.NEXT_PUBLIC_SUPABASE_URL!,
             process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
         );
-        const getUser = async () => {
-            const { data: { user } } = await supabase.auth.getUser();
+
+        // Get current user
+        supabase.auth.getUser().then(({ data: { user } }) => {
             if (user) setCurrentUserId(user.id);
-        }
-        getUser();
+        });
+
+        // Realtime: Lead/CRM updates
+        const channelLeads = supabase
+            .channel(`inbox-leads-${Date.now()}`)
+            .on(
+                'postgres_changes',
+                { event: '*', schema: 'public', table: 'main_crm' },
+                (payload) => {
+                    console.log('[RT leads]', payload);
+                    setRefreshTrigger(prev => prev + 1);
+                }
+            )
+            .subscribe((status) => {
+                console.log('[RT leads] status:', status);
+            });
+
+        // Realtime: New messages — directly reload messages
+        const channelMsgs = supabase
+            .channel(`inbox-messages-${Date.now()}`)
+            .on(
+                'postgres_changes',
+                { event: 'INSERT', schema: 'public', table: 'camp_mensagens' },
+                (payload) => {
+                    console.log('[RT messages] new message:', payload);
+                    silentReloadMessages();
+                    setRefreshTrigger(prev => prev + 1);
+                }
+            )
+            .subscribe((status) => {
+                console.log('[RT messages] status:', status);
+            });
+
+        return () => {
+            supabase.removeChannel(channelLeads);
+            supabase.removeChannel(channelMsgs);
+        };
     }, []);
 
     // Realtime Refresh Logic
@@ -242,49 +282,120 @@ export function OmnichannelInbox({
         return () => { isMounted = false; };
     }, [targetUserId, refreshTrigger]);
 
-    // Realtime Subscription
-    useEffect(() => {
-        const supabase = createBrowserClient(
-            process.env.NEXT_PUBLIC_SUPABASE_URL!,
-            process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-        );
-
-        // A unique channel name or shared channel name. Use 'room-inbox' for simplicity.
-        const channelName = `room-inbox-${targetUserId || currentUserId || 'global'}-${Date.now()}`;
-        console.log('[Realtime] Subscribing to channel:', channelName);
-
-        const channel = supabase
-            .channel(channelName)
-            .on(
-                'postgres_changes',
-                {
-                    event: '*',
-                    schema: 'public',
-                    table: 'main_crm'
-                },
-                (payload) => {
-                    console.log('Realtime update received:', payload);
-                    // Trigger refresh
-                    setRefreshTrigger(prev => prev + 1);
-                }
-            )
-            .subscribe((status) => {
-                if (status === 'SUBSCRIBED') {
-                    console.log('Successfully subscribed to realtime changes');
-                } else if (status === 'CHANNEL_ERROR') {
-                    console.error('Failed to subscribe to realtime changes');
-                }
-            });
-
-        return () => {
-            supabase.removeChannel(channel);
-        };
-    }, [targetUserId, currentUserId]);
-
     const selectedConversation = conversations.find(c => c.id === selectedConversationId);
+
+    // Message Loading Logic
+    const [messages, setMessages] = useState<Message[]>([]);
+    const [isMessagesLoading, setIsMessagesLoading] = useState(false);
+
+    // Ref to track current selectedConversationId for Realtime callbacks
+    const selectedConversationIdRef = useRef<string | null>(null);
+    selectedConversationIdRef.current = selectedConversationId;
+
+    // Silent reload: fetches messages without showing loading indicator
+    const silentReloadMessages = useCallback(async () => {
+        const convId = selectedConversationIdRef.current;
+        if (!convId) return;
+        try {
+            const dbMessages = await getChatMessages(convId);
+            if (dbMessages && dbMessages.length > 0) {
+                setMessages(dbMessages as Message[]);
+            }
+        } catch (error) {
+            console.error('[silentReload] Failed:', error);
+        }
+    }, []);
+
+    // Initial load when conversation changes (with loading indicator)
+    useEffect(() => {
+        if (!selectedConversationId) {
+            setMessages([]);
+            return;
+        }
+
+        let isMounted = true;
+
+        async function loadMessages() {
+            setIsMessagesLoading(true);
+            try {
+                const dbMessages = await getChatMessages(selectedConversationId!);
+                if (isMounted) {
+                    if (dbMessages && dbMessages.length > 0) {
+                        setMessages(dbMessages as Message[]);
+                    } else {
+                        const conv = conversations.find(c => c.id === selectedConversationId);
+                        setMessages(conv?.messages || []);
+                    }
+                }
+            } catch (error) {
+                console.error('Failed to load messages', error);
+            } finally {
+                if (isMounted) setIsMessagesLoading(false);
+            }
+        }
+
+        loadMessages();
+        return () => { isMounted = false; };
+    }, [selectedConversationId]);
+
+
+    // Handle Responsibility Toggle
+    const [isToggling, setIsToggling] = useState(false);
+
+    async function handleToggleResponsibility() {
+        if (!selectedConversation) return;
+
+        setIsToggling(true);
+        try {
+            const result = await toggleResponsibility(selectedConversation.id, selectedConversation.quem_atende);
+            if (result.success) {
+                // Optimistic update or refresh
+                // For now, simpler to trigger a refresh via router or re-fetch conversations
+                setRefreshTrigger(prev => prev + 1); // This will re-fetch list and update properties
+            }
+        } catch (error) {
+            console.error("Failed to toggle responsibility", error);
+        } finally {
+            setIsToggling(false);
+        }
+    }
 
     // State for Lost Lead Modal
     const [isLostModalOpen, setIsLostModalOpen] = useState(false);
+
+    // Message Input State
+    const [messageInput, setMessageInput] = useState("");
+    const [isSending, setIsSending] = useState(false);
+
+    async function handleSendMessage() {
+        if (!messageInput.trim() || !selectedConversation) return;
+
+        const text = messageInput;
+        setMessageInput(""); // Clear immediately for UX
+        setIsSending(true);
+
+        try {
+            // Optimistic update could go here, but user relies on Realtime
+            const result = await sendMessage(selectedConversation.id, text);
+            if (!result.success) {
+                toast.error("Failed to send message: " + result.message);
+                setMessageInput(text); // Restore on failure
+            }
+        } catch (error) {
+            console.error("Send error:", error);
+            toast.error("Failed to send message");
+            setMessageInput(text);
+        } finally {
+            setIsSending(false);
+        }
+    }
+
+    const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            handleSendMessage();
+        }
+    };
 
     // CRM Modal States
     const [historyLead, setHistoryLead] = useState<any | null>(null);
@@ -443,7 +554,7 @@ export function OmnichannelInbox({
     });
 
     return (
-        <div className="flex h-full w-full bg-[#111]">
+        <div className="flex h-full w-full bg-[#111] overflow-hidden">
             <LostLeadModal
                 isOpen={isLostModalOpen}
                 onClose={() => setIsLostModalOpen(false)}
@@ -451,7 +562,7 @@ export function OmnichannelInbox({
                 reasons={crmSettings?.lost_reasons || ["Price too high", "Competitor", "Features missing", "Bad timing"]}
             />
             {/* 1. Left Sidebar: Conversation List */}
-            <div className="w-80 border-r border-white/10 flex flex-col bg-[#111]">
+            <div className="w-80 border-r border-white/10 flex flex-col bg-[#111] h-full overflow-hidden">
                 {/* ... existing sidebar code ... */}
                 {/* Header / Search */}
                 <div className="p-4 border-b border-white/10 space-y-4">
@@ -705,7 +816,7 @@ export function OmnichannelInbox({
                             </div >
 
                             {/* Messages Area */}
-                            < ScrollArea className="flex-1 p-6" >
+                            <ScrollArea className="flex-1 p-6">
                                 <div className="space-y-6">
                                     {/* Date Divider */}
                                     <div className="flex justify-center">
@@ -714,27 +825,37 @@ export function OmnichannelInbox({
                                         </span>
                                     </div>
 
-                                    {selectedConversation.messages.map((msg) => {
-                                        const isMe = msg.senderId === "me";
-                                        return (
-                                            <div key={msg.id} className={cn("flex", isMe ? "justify-end" : "justify-start")}>
-                                                <div className={cn(
-                                                    "max-w-[70%] rounded-2xl px-4 py-2 text-sm",
-                                                    isMe
-                                                        ? "bg-[#1C73E8] text-white rounded-br-none"
-                                                        : "bg-white/10 text-gray-200 rounded-bl-none"
-                                                )}>
-                                                    <p>{msg.content}</p>
-                                                    <div className={cn("flex items-center gap-1 justify-end mt-1", isMe ? "text-blue-200" : "text-gray-500")}>
-                                                        <span className="text-[10px]">{msg.timestamp}</span>
-                                                        {isMe && <CheckCheck size={12} />}
+                                    {isMessagesLoading ? (
+                                        <div className="flex justify-center p-4">
+                                            <div className="w-6 h-6 border-2 border-[#1C73E8] border-t-transparent rounded-full animate-spin" />
+                                        </div>
+                                    ) : messages.length === 0 ? (
+                                        <div className="text-center text-gray-500 text-xs mt-10">
+                                            No messages yet.
+                                        </div>
+                                    ) : (
+                                        messages.map((msg) => {
+                                            const isMe = msg.senderId === "me";
+                                            return (
+                                                <div key={msg.id} className={cn("flex", isMe ? "justify-end" : "justify-start")}>
+                                                    <div className={cn(
+                                                        "max-w-[70%] rounded-2xl px-4 py-2 text-sm",
+                                                        isMe
+                                                            ? "bg-[#1C73E8] text-white rounded-br-none"
+                                                            : "bg-white/10 text-gray-200 rounded-bl-none"
+                                                    )}>
+                                                        <p className="whitespace-pre-wrap">{msg.content}</p>
+                                                        <div className={cn("flex items-center gap-1 justify-end mt-1", isMe ? "text-blue-200" : "text-gray-500")}>
+                                                            <span className="text-[10px]">{msg.timestamp}</span>
+                                                            {isMe && <CheckCheck size={12} />}
+                                                        </div>
                                                     </div>
                                                 </div>
-                                            </div>
-                                        );
-                                    })}
+                                            );
+                                        })
+                                    )}
                                 </div>
-                            </ScrollArea >
+                            </ScrollArea>
 
                             <div className="p-4 bg-[#111] border-t border-white/10 flex gap-4 items-end">
                                 <div className="bg-white/5 rounded-xl flex items-end p-2 border border-white/5 focus-within:border-white/20 transition-colors flex-1">
@@ -747,27 +868,63 @@ export function OmnichannelInbox({
                                         </Button>
                                     </div>
                                     <textarea
-                                        className="flex-1 bg-transparent border-none focus:ring-0 text-white text-sm resize-none max-h-32 py-2 px-2"
+                                        className="flex-1 bg-transparent border-none focus:ring-0 text-white text-sm resize-none max-h-32 py-2 px-2 whitespace-pre-wrap scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent"
                                         placeholder="Type a message..."
                                         rows={1}
+                                        value={messageInput}
+                                        onChange={(e) => setMessageInput(e.target.value)}
+                                        onKeyDown={handleKeyDown}
+                                        disabled={isSending}
                                     />
                                     <div className="flex gap-1 pb-1">
                                         <Button variant="ghost" size="icon" className="text-gray-400 hover:text-white h-8 w-8 rounded-full">
                                             <Mic size={18} />
                                         </Button>
-                                        <Button size="icon" className="h-8 w-8 rounded-full bg-[#1C73E8] hover:bg-[#1557b0] text-white">
+                                        <Button
+                                            size="icon"
+                                            className="h-8 w-8 rounded-full bg-[#1C73E8] hover:bg-[#1557b0] text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                                            onClick={handleSendMessage}
+                                            disabled={!messageInput.trim() || isSending}
+                                        >
                                             <Send size={14} />
                                         </Button>
                                     </div>
                                 </div>
 
-                                {(targetUser?.name === 'Jess' || targetUser?.name === 'Jess AI') && (
-                                    <Button
-                                        variant="outline"
-                                        className="h-[50px] border-red-500/20 bg-red-500/10 text-red-400 hover:bg-red-500/20 hover:text-red-300 font-bold px-6 whitespace-nowrap"
-                                    >
-                                        Take Over Conversation
-                                    </Button>
+                                {(targetUser?.name === 'Jess' || targetUser?.name === 'Jess AI' || true) && (
+                                    (() => {
+                                        const status = selectedConversation.quem_atende?.toLowerCase() || 'agente'; // Default to agent if null
+                                        const isAgent = status === 'agente' || status === 'agent';
+
+                                        // Only show if it's one of these (or default)
+                                        // Logic:
+                                        // If 'Agente' -> Show "Take Over" (Red)
+                                        // If 'Humano' -> Show "Agent Resumes" (Green/Blue)
+
+                                        if (isAgent) {
+                                            return (
+                                                <Button
+                                                    variant="outline"
+                                                    onClick={handleToggleResponsibility}
+                                                    disabled={isToggling}
+                                                    className="h-[50px] border-red-500/20 bg-red-500/10 text-red-400 hover:bg-red-500/20 hover:text-red-300 font-bold px-6 whitespace-nowrap"
+                                                >
+                                                    {isToggling ? "Updating..." : "Take Over Conversation"}
+                                                </Button>
+                                            );
+                                        } else {
+                                            return (
+                                                <Button
+                                                    variant="outline"
+                                                    onClick={handleToggleResponsibility}
+                                                    disabled={isToggling}
+                                                    className="h-[50px] border-green-500/20 bg-green-500/10 text-green-400 hover:bg-green-500/20 hover:text-green-300 font-bold px-6 whitespace-nowrap"
+                                                >
+                                                    {isToggling ? "Updating..." : "Agent Resumes Contact"}
+                                                </Button>
+                                            );
+                                        }
+                                    })()
                                 )}
                             </div>
                         </>
