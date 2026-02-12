@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { CompanyDNAForm } from "@/components/company-dna-form"
 import { PricingContent } from "@/components/pricing-content"
 import { signout } from '@/app/login/actions'
@@ -16,6 +16,9 @@ import {
 
 import { OmnichannelInbox } from "../support/omnichannel/omnichannel-inbox"
 
+import { AGENTS } from "@/lib/agents"
+import { getMessagingUsers } from "@/actions/users/get-messaging-users"
+
 interface OrchestratorTabsProps {
     company: any
     activeAgents?: string[] | null
@@ -27,37 +30,55 @@ export function OrchestratorTabs({ company, activeAgents, userProfile }: Orchest
     console.log('[OrchestratorTabs] User Profile:', { role: userProfile?.role, hasMessaging: userProfile?.has_messaging_access })
     // Determine default tab based on permissions
     // If user has messaging access or is admin, default to 'chats'. Otherwise 'profile'.
-    const defaultTab = (userProfile?.role === 'admin' || userProfile?.has_messaging_access) ? 'chats' : 'profile'
+    const defaultTab = userProfile?.has_messaging_access ? 'chats' : 'company'
     const [activeTab, setActiveTab] = useState<"profile" | "company" | "pricing" | "billing" | "support" | "team" | "history" | "chats">(defaultTab)
     // State
     const [currency, setCurrency] = useState<'USD' | 'BRL'>('USD')
+
+    // Inbox state
+    const [selectedInboxId, setSelectedInboxId] = useState<string>(userProfile?.id)
+    const [accessibleInboxes, setAccessibleInboxes] = useState<any[]>([])
+
+    // Build accessible inboxes list
+    useEffect(() => {
+        const buildInboxes = async () => {
+            const inboxes = []
+
+            if (!userProfile) return
+
+            // 1. Current User (Always first)
+            inboxes.push({
+                id: userProfile.id,
+                name: userProfile.name + " (You)",
+                avatar: userProfile.avatar_url,
+                type: 'human'
+            })
+
+            setAccessibleInboxes(inboxes)
+        }
+
+        buildInboxes()
+    }, [userProfile, activeAgents])
 
     return (
         <div className="w-full flex flex-col gap-6">
             <div className="flex items-center justify-between">
                 {/* Tabs Header */}
                 <div className="flex items-center gap-1 bg-[#171717] p-1 rounded-lg border border-white/10 w-fit flex-wrap">
-                    <button
-                        onClick={() => setActiveTab("chats")}
-                        className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${activeTab === "chats"
-                            ? "bg-[#2a2a2a] text-white shadow-sm"
-                            : "text-gray-400 hover:text-white hover:bg-white/5"
-                            }`}
-                    >
-                        <MessageSquare size={16} />
-                        Chats
-                    </button>
+                    {userProfile?.has_messaging_access && (
+                        <button
+                            onClick={() => setActiveTab("chats")}
+                            className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${activeTab === "chats"
+                                ? "bg-[#2a2a2a] text-white shadow-sm"
+                                : "text-gray-400 hover:text-white hover:bg-white/5"
+                                }`}
+                        >
+                            <MessageSquare size={16} />
+                            Chats
+                        </button>
+                    )}
 
-                    <button
-                        onClick={() => setActiveTab("profile")}
-                        className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${activeTab === "profile"
-                            ? "bg-[#2a2a2a] text-white shadow-sm"
-                            : "text-gray-400 hover:text-white hover:bg-white/5"
-                            }`}
-                    >
-                        <User size={16} />
-                        Profile
-                    </button>
+
 
                     <button
                         onClick={() => setActiveTab("company")}
@@ -141,22 +162,15 @@ export function OrchestratorTabs({ company, activeAgents, userProfile }: Orchest
                 </div>
             </div>
 
-            {activeTab === "profile" && (
-                <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
-                    <CompanyDNAForm company={company} userProfile={userProfile} mode="profile" />
-                </div>
-            )}
 
-            {activeTab === "chats" && (
+
+            {activeTab === "chats" && userProfile?.has_messaging_access && (
                 <OmnichannelInbox
-                    targetUserId={userProfile?.id}
-                    targetUser={{
-                        id: userProfile?.id,
-                        name: userProfile?.name,
-                        role: userProfile?.role,
-                        avatar_url: userProfile?.avatar_url
-                    }}
+                    targetUserId={selectedInboxId}
+                    targetUser={accessibleInboxes.find(i => i.id === selectedInboxId)}
                     viewerProfile={userProfile}
+                    accessibleInboxes={accessibleInboxes}
+                    onInboxChange={setSelectedInboxId}
                 />
             )}
 

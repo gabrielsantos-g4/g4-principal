@@ -195,7 +195,22 @@ export function CrmSettingsModal({ isOpen, onClose, settings }: CrmSettingsModal
         if (isOpen) {
             getCompanyUsers().then(data => {
                 if (data && data.users) {
-                    setTeamMembers(data.users);
+                    let members: any[] = data.users;
+                    // Inject Jess if active for current user
+                    if (data.currentUser?.active_agents?.includes('customer-jess')) {
+                        members = [
+                            ...members,
+                            {
+                                id: 'customer-jess',
+                                name: 'Jess (AI)',
+                                email: 'ai@startg4.com',
+                                role: 'AI Agent',
+                                avatar_url: '', // Handle avatar in UI if needed or use default
+                                has_messaging_access: true // Jess has access by definition if active
+                            }
+                        ];
+                    }
+                    setTeamMembers(members);
                 }
             });
         }
@@ -631,33 +646,67 @@ export function CrmSettingsModal({ isOpen, onClose, settings }: CrmSettingsModal
 
                             {/* Responsibles */}
                             <div className="space-y-4">
-                                <h3 className="text-lg font-semibold border-b border-white/10 pb-2">Team (Responsibles)</h3>
+                                <h3 className="text-lg font-semibold border-b border-white/10 pb-2">Team Members Handling Messaging & CRM</h3>
 
                                 {/* Active Team Members (Read-Only / Selectable) */}
                                 <div className="space-y-2 mb-4">
-                                    <Label className="text-xs text-blue-400 font-bold uppercase tracking-wider">Active Platform Members</Label>
+                                    <Label className="text-xs text-blue-400 font-bold uppercase tracking-wider">Team Members Handling Messaging & CRM</Label>
                                     <div className="grid grid-cols-1 gap-2">
-                                        {teamMembers.map((member) => (
-                                            <div key={member.id} className="flex items-center justify-between p-2 bg-blue-500/10 rounded border border-blue-500/20">
-                                                <div className="flex items-center gap-2">
-                                                    <div className="w-6 h-6 rounded-full bg-blue-500 flex items-center justify-center text-[10px] font-bold text-white">
-                                                        {member.name?.[0]?.toUpperCase()}
+                                        {teamMembers
+                                            .filter(member => {
+                                                // 1. Admin/Owner always shows
+                                                if (member.role === 'admin' || member.role === 'owner') return true;
+                                                // 2. Humans with messaging access
+                                                if (member.has_messaging_access) return true;
+                                                // 3. Jess (if active) - Assuming member list might include AI agents if they are stored in profiles, 
+                                                // but usually Jess is an agent, not a profile. 
+                                                // However, the request implies Jess should appear if enabled.
+                                                // If Jess is not in teamMembers (which comes from profiles), we might need to inject her if she's active for the viewer.
+                                                // But here we are iterating 'teamMembers' which are profiles.
+                                                // Let's stick to filtering profiles first.
+                                                // Wait, if Jess is not a profile, she won't be here.
+                                                // The user said: "Jessica appears only if enabled...".
+                                                // If Jess is not in 'getCompanyUsers', we need to check if we should add her visually here.
+                                                // 'teamMembers' are from 'main_profiles'. Jess is likely NOT there.
+                                                // To add Jess, we need to know if she is active for the company/user.
+                                                // 'getCompanyUsers' returns 'active_agents' for each user.
+                                                // We can check if ANY admin or the current user has Jess active? 
+                                                // Or simply if the company has Jess enabled?
+                                                // Let's look at how we check for Jess in other places.
+                                                // Usually strict on 'active_agents' of the viewer.
+                                                // But this is a setting for the company/team.
+                                                // Let's check if we can verify if 'customer-jess' is active in general.
+                                                // For now, let's filter the humans correctly.
+                                                // 3. Jess (AI Agent)
+                                                if (member.id === 'customer-jess') return true;
+
+                                                return false;
+                                            })
+                                            .map((member) => (
+                                                <div key={member.id} className="flex items-center justify-between p-2 bg-blue-500/10 rounded border border-blue-500/20">
+                                                    <div className="flex items-center gap-2">
+                                                        <div className={`w-6 h-6 rounded-full ${member.id === 'customer-jess' ? 'bg-purple-600' : 'bg-blue-500'} flex items-center justify-center text-[10px] font-bold text-white overflow-hidden`}>
+                                                            {member.avatar_url ? (
+                                                                <img src={member.avatar_url} alt={member.name} className="w-full h-full object-cover" />
+                                                            ) : (
+                                                                member.name?.[0]?.toUpperCase()
+                                                            )}
+                                                        </div>
+                                                        <div className="flex flex-col">
+                                                            <span className="text-sm font-medium text-blue-100">{member.name}</span>
+                                                            <span className="text-[10px] text-blue-300">{member.email}</span>
+                                                        </div>
                                                     </div>
-                                                    <div className="flex flex-col">
-                                                        <span className="text-sm font-medium text-blue-100">{member.name}</span>
-                                                        <span className="text-[10px] text-blue-300">{member.email}</span>
-                                                    </div>
-                                                </div>
-                                                <div className="flex items-center gap-2">
-                                                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-300 border border-blue-500/20 capitalize">
-                                                        {member.role}
-                                                    </span>
-                                                    {/* Auto-add to responsibles if not present? Or just show they are available? 
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-300 border border-blue-500/20 capitalize">
+                                                            {member.role}
+                                                        </span>
+                                                        {/* Auto-add to responsibles if not present? Or just show they are available? 
                                                         For now, showing them as "System Users" distinct from "Manual Tags"
                                                     */}
+                                                    </div>
                                                 </div>
-                                            </div>
-                                        ))}
+                                            ))}
                                         {teamMembers.length === 0 && <span className="text-xs text-gray-500">No active members found.</span>}
                                     </div>
                                 </div>

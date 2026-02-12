@@ -46,6 +46,7 @@ function TabsTrigger({
         className
       )}
       {...props}
+      suppressHydrationWarning
     />
   )
 }
@@ -59,6 +60,7 @@ function TabsContent({
       data-slot="tabs-content"
       className={cn("flex-1 outline-none", className)}
       {...props}
+      suppressHydrationWarning
     />
   )
 }

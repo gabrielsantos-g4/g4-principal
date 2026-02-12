@@ -222,7 +222,7 @@ export async function getCompanyUsers() {
     // Use admin client for profile check
     const { data: profile } = await supabaseAdmin
         .from('main_profiles')
-        .select('empresa_id')
+        .select('empresa_id, active_agents')
         .eq('id', user.id)
         .single()
 
@@ -244,7 +244,8 @@ export async function getCompanyUsers() {
 
     return {
         users: profiles || [],
-        team_order: company?.team_order || []
+        team_order: company?.team_order || [],
+        currentUser: profile // Return current user profile to check active_agents
     }
 }
 

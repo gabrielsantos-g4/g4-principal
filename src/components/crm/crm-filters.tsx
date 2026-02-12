@@ -92,7 +92,11 @@ export function CrmFilters({ settings, filters, setFilters, leads, headerStats, 
     const customFieldName = settings.custom_fields?.name || "Custom Field";
     const STATUSES = settings.statuses || [];
     const SOURCES = settings.sources || [];
-    const RESPONSIBLES = settings.responsibles || [];
+    const RESPONSIBLES = [...(settings.responsibles || [])];
+
+    if (viewerProfile?.active_agents?.includes('customer-jess') && !RESPONSIBLES.some((r: any) => (typeof r === 'string' ? r : r.label) === 'Jess')) {
+        RESPONSIBLES.push({ label: 'Jess', bg: 'bg-purple-900', text: 'text-purple-100' });
+    }
 
     return (
         <div className="@container flex items-center justify-between gap-2 bg-[#111] p-2 rounded-lg border border-white/5 w-full">

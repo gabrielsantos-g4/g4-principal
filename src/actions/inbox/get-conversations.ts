@@ -2,6 +2,7 @@
 
 import { createClient, createAdminClient } from "@/lib/supabase";
 import { getEmpresaId } from "@/lib/get-empresa-id";
+import { AGENTS } from "@/lib/agents";
 
 export async function getConversations(targetUserId?: string) {
     const empresaId = await getEmpresaId();
@@ -11,12 +12,15 @@ export async function getConversations(targetUserId?: string) {
 
     let responsibleName: string | undefined;
 
+    // ...
+
     // 1. Determine the "Responsible" name to filter by
     if (targetUserId) {
-        // Special Case: Agent IDs (start with 'customer-' typically, or just check known agents)
-        // If the ID matches a known agent alias, we skip profile lookup and use the name directly.
-        if (targetUserId === 'customer-jess' || targetUserId === 'jess') {
-            responsibleName = 'Jess';
+        // Check if it's an Agent
+        const agent = AGENTS.find(a => a.id === targetUserId);
+
+        if (agent) {
+            responsibleName = agent.name;
         } else {
             const { data: profile } = await supabaseAdmin
                 .from('main_profiles')
@@ -56,6 +60,14 @@ export async function getConversations(targetUserId?: string) {
     }
 
     if (!leads) return [];
+
+    // DEBUG: Log first few leads to check is_read_by_responsible
+    if (leads.length > 0) {
+        console.log(`[getConversations] Fetched ${leads.length} leads for ${responsibleName}`);
+        leads.slice(0, 3).forEach(l => {
+            console.log(`- Lead: ${l.name} | is_read_by_responsible: ${l.is_read_by_responsible} | mapped unread: ${l.is_read_by_responsible ? 0 : 1}`);
+        });
+    }
 
     // 3. Transform to Conversation objects
     return leads.map(lead => {
@@ -117,7 +129,7 @@ export async function getConversations(targetUserId?: string) {
             },
             lastMessage: lastMessage,
             lastMessageAt: lastMessageAt,
-            unreadCount: 0, // Default to read
+            unreadCount: lead.is_read_by_responsible ? 0 : 1, // 0 if read, 1 if unread
             messages: messages,
 
             // CRM Fields

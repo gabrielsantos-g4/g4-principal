@@ -236,9 +236,10 @@ function TeamRow({ item, selectedAgents, toggleAgent, setEditingUser, setDeleteU
                         )
                     ) : (
                         <div className="flex items-center justify-end gap-3">
-                            {isFixed ? (
+                            {isFixed && (
                                 <span className="text-[10px] text-slate-600 font-bold uppercase tracking-widest px-2">Owner</span>
-                            ) : !readOnly && (
+                            )}
+                            {!readOnly && (
                                 <div className="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                     <Button
                                         variant="ghost"
@@ -248,14 +249,16 @@ function TeamRow({ item, selectedAgents, toggleAgent, setEditingUser, setDeleteU
                                     >
                                         <Pencil className="w-4 h-4" />
                                     </Button>
-                                    <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        className="h-8 w-8 text-red-400/70 hover:text-red-400 hover:bg-red-400/10"
-                                        onClick={() => setDeleteUser(data)}
-                                    >
-                                        <Trash2 className="w-4 h-4" />
-                                    </Button>
+                                    {!isFixed && (
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            className="h-8 w-8 text-red-400/70 hover:text-red-400 hover:bg-red-400/10"
+                                            onClick={() => setDeleteUser(data)}
+                                        >
+                                            <Trash2 className="w-4 h-4" />
+                                        </Button>
+                                    )}
                                 </div>
                             )}
                         </div>

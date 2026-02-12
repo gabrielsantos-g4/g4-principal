@@ -13,7 +13,7 @@ export async function signup(formData: FormData) {
     const companyName = formData.get('company_name') as string
 
     if (!name || !email || !password || !companyName) {
-        return { error: 'Por favor, preencha todos os campos' }
+        return { error: 'Please fill in all fields' }
     }
 
 
@@ -45,13 +45,13 @@ export async function signup(formData: FormData) {
         console.error('Admin Create User failed:', createError)
         // Check if error is due to existing user
         if (createError.message.includes('already has been registered') || createError.status === 400 || createError.status === 422) {
-            return { error: 'Este e-mail já está cadastrado. Por favor, faça login.' }
+            return { error: 'This email is already registered. Please log in.' }
         }
         return { error: createError.message }
     }
 
     if (!adminData.user) {
-        return { error: 'Falha ao criar conta (Dados não retornados)' }
+        return { error: 'Failed to create account (No data returned)' }
     }
 
     // 2. Create Company (Admin Role)
@@ -67,7 +67,7 @@ export async function signup(formData: FormData) {
     if (companyError) {
         console.error('Company creation failed:', companyError)
         await adminAuthClient.auth.admin.deleteUser(adminData.user.id)
-        return { error: `Falha na criação da empresa: ${companyError.message}` }
+        return { error: `Failed to create company: ${companyError.message}` }
     }
 
     // 3. Create Profile linked to Company (Admin Role)
@@ -78,7 +78,9 @@ export async function signup(formData: FormData) {
             empresa_id: companyData.id,
             name: name,
             role: 'admin', // First user is Admin
-            job_title: 'Owner',
+            job_title: '',
+            email: email,
+            has_messaging_access: true,
             active_agents: []
         })
 
@@ -87,7 +89,7 @@ export async function signup(formData: FormData) {
         // Rollback
         await adminAuthClient.from('main_empresas').delete().eq('id', companyData.id)
         await adminAuthClient.auth.admin.deleteUser(adminData.user.id)
-        return { error: `Falha na configuração do perfil: ${profileError.message}` }
+        return { error: `Failed to configure profile: ${profileError.message}` }
     }
 
     // 4. Trigger Webhook (with 3s timeout to avoid hanging)
@@ -122,7 +124,7 @@ export async function signup(formData: FormData) {
     })
 
     if (signInError) {
-        return { error: 'Conta criada, mas o login automático falhou. Tente entrar manualmente.' }
+        return { error: 'Account created, but automatic login failed. Please try logging in manually.' }
     }
 
     revalidatePath('/', 'layout')

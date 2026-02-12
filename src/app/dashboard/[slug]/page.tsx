@@ -117,6 +117,29 @@ export default async function AgentPage({ params, searchParams }: AgentPageProps
     const companyName = companyData?.name || 'Unknown Company'
 
     if (isOrchestrator) {
+        // PERMISSION CHECK:
+        // Only Admins/Owners can see the full Orchestrator Dashboard.
+        // Members see a restricted message.
+        if (profile?.role !== 'admin' && profile?.role !== 'owner') {
+            return (
+                <div className="flex-1 min-h-0 bg-black text-white font-sans flex flex-col overflow-hidden">
+                    <DashboardHeader />
+                    <div className="flex-1 w-full h-full flex flex-col items-center justify-center p-8 text-center opacity-60">
+                        <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mb-6">
+                            <svg className="w-8 h-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                            </svg>
+                        </div>
+                        <h3 className="text-xl font-bold mb-2">Restricted Access</h3>
+                        <p className="max-w-md text-sm text-gray-400">
+                            The Orchestrator Dashboard is restricted to administrators.
+                            Please contact your workspace owner for access.
+                        </p>
+                    </div>
+                </div>
+            )
+        }
+
         const company = await getCompanyDNA()
 
         return (
@@ -141,6 +164,29 @@ export default async function AgentPage({ params, searchParams }: AgentPageProps
             .select('id, name, role, avatar_url')
             .eq('id', targetUserId)
             .single()
+
+        // PERMISSION CHECK:
+        // Only Admins can view other users' dashboards.
+        // Members can only view their own.
+        // If unauthorized, show "Restricted Access" screen instead of redirecting.
+        if (profile?.role !== 'admin' && profile?.id !== targetUserId) {
+            return (
+                <div className="flex-1 min-h-0 bg-black text-white font-sans flex flex-col overflow-hidden">
+                    <DashboardHeader />
+                    <div className="flex-1 w-full h-full flex flex-col items-center justify-center p-8 text-center opacity-60">
+                        <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mb-6">
+                            <svg className="w-8 h-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                            </svg>
+                        </div>
+                        <h3 className="text-xl font-bold mb-2">Restricted Access</h3>
+                        <p className="max-w-md text-sm text-gray-400">
+                            You do not have permission to view {targetProfile?.name || 'this user'}'s inbox.
+                        </p>
+                    </div>
+                </div>
+            )
+        }
 
         // Fetch CRM Settings for the status dropdown
         const crmSettings = await getCrmSettings(companyId)

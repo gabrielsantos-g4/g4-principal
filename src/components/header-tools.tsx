@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { StickyNote, type LucideIcon, PenTool, MousePointer2, Type, Box as BoxIcon, ArrowRight, LayoutTemplate } from "lucide-react"
 import {
     DropdownMenu,
@@ -15,6 +15,13 @@ import { WhiteboardModal } from "./tools/whiteboard-modal"
 export function HeaderTools() {
     const [isNotesOpen, setIsNotesOpen] = useState(false)
     const [isWhiteboardOpen, setIsWhiteboardOpen] = useState(false)
+    const [mounted, setMounted] = useState(false)
+
+    useEffect(() => {
+        setMounted(true)
+    }, [])
+
+    if (!mounted) return null
 
     return (
         <>

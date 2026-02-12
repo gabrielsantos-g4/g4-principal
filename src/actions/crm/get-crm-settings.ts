@@ -72,6 +72,23 @@ export async function getCrmSettings(companyId?: string): Promise<CrmSettings> {
 
     if (!empresaId) return DEFAULT_SETTINGS;
 
+    // Fetch current user to check for active agents (Jess)
+    const { data: { user } } = await supabase.auth.getUser();
+    let jessActive = false;
+
+    if (user) {
+        const { data: profile } = await supabase
+            .from('main_profiles')
+            .select('active_agents')
+            .eq('id', user.id)
+            .single();
+
+        // Check if Jess is active
+        if (profile?.active_agents?.includes('customer-jess')) {
+            jessActive = true;
+        }
+    }
+
     console.log("[getCrmSettings] Fetching settings for companyId:", empresaId);
 
     // Fetch existing settings
@@ -98,7 +115,19 @@ export async function getCrmSettings(companyId?: string): Promise<CrmSettings> {
             ...DEFAULT_SETTINGS,
             ...data,
             statuses: migrateTags((data.statuses && data.statuses.length > 0) ? data.statuses : DEFAULT_SETTINGS.statuses),
-            responsibles: migrateTags(data.responsibles),
+            responsibles: (() => {
+                const baseResponsibles = migrateTags(data.responsibles);
+                // Check if Jess is already in the list to avoid duplicates
+                const jessExists = baseResponsibles.some(r => r.label === 'Jess');
+
+                if (jessActive && !jessExists) {
+                    return [
+                        ...baseResponsibles,
+                        { label: "Jess", bg: "bg-purple-900", text: "text-purple-100", email: "ai@startg4.com" }
+                    ];
+                }
+                return baseResponsibles;
+            })(),
             sources: migrateTags(data.sources),
             custom_fields: {
                 ...data.custom_fields,

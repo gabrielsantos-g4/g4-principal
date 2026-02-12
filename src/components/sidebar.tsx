@@ -64,7 +64,7 @@ export async function Sidebar() {
 
     const companyName = companyData?.name || 'My Company'
     const userName = orchestrator?.name || 'User'
-    const userRole = orchestrator?.job_title || ((orchestrator?.role === 'admin' || orchestrator?.role === 'owner') ? 'Principal Orchestrator' : 'Member')
+    const userRole = orchestrator?.job_title || ((orchestrator?.role === 'admin' || orchestrator?.role === 'owner') ? 'Orchestrador, Principal' : 'Member')
     const userAvatar = orchestrator?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(userName)}&background=random`
 
     let activeAgents = profile?.active_agents || null
