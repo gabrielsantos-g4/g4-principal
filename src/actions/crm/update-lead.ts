@@ -13,6 +13,7 @@ interface UpdateLeadParams {
     amount?: number;
     product?: string;
     lost_reason?: string;
+    qualification_details?: any; // JSONB
 }
 
 export async function updateLead(id: number, data: UpdateLeadParams) {

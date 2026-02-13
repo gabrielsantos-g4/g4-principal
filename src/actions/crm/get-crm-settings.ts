@@ -19,6 +19,11 @@ export interface CrmSettings {
     sources: (string | TagItem)[];
     custom_fields: { name: string; options: (string | TagItem)[] };
     qualification_questions?: { field: string; criteria: string; }[];
+    qualification_actions?: {
+        nq: { type: string; value: string };
+        mql: { type: string; value: string };
+        sql: { type: string; value: string };
+    };
     lost_reasons?: (string | TagItem)[];
 }
 
@@ -134,6 +139,11 @@ export async function getCrmSettings(companyId?: string): Promise<CrmSettings> {
                 options: migrateTags(data.custom_fields?.options)
             },
             qualification_questions: data.qualification_questions || [],
+            qualification_actions: data.qualification_actions || {
+                nq: { type: "text", value: "" },
+                mql: { type: "text", value: "" },
+                sql: { type: "text", value: "" }
+            },
             lost_reasons: migrateTags(data.lost_reasons || [])
         };
     }

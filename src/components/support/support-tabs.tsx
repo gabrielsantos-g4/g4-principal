@@ -6,6 +6,7 @@ import { FineTuneForm } from "./fine-tune-form"
 import { ChannelsConfig } from "./channels-config"
 import { Training } from "@/actions/training-actions"
 import { QualificationParametersForm } from "./qualification-parameters-form"
+import { QualificationActionsForm } from "./qualification-actions-form"
 import { OmnichannelInbox } from "./omnichannel/omnichannel-inbox"
 import {
     Select,
@@ -113,6 +114,7 @@ export function SupportTabs({ trainings, companyId, agent, viewerProfile }: Supp
                 {activeTab === "parameters" && (
                     <div className="flex flex-col gap-6 max-w-5xl">
                         <QualificationParametersForm />
+                        <QualificationActionsForm />
                     </div>
                 )}
 
