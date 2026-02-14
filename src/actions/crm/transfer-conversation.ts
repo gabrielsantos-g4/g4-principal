@@ -2,6 +2,7 @@
 
 import { createClient, createAdminClient } from '@/lib/supabase'
 import { revalidatePath } from 'next/cache'
+import { logAction } from '@/actions/audit'
 
 export async function transferConversation(conversationId: string, newResponsibleName: string) {
     try {
@@ -33,6 +34,13 @@ export async function transferConversation(conversationId: string, newResponsibl
         // Revalidate inbox pages
         revalidatePath('/dashboard/support')
         revalidatePath('/dashboard/orchestrator')
+
+        // Log the conversation transfer
+        await logAction('CONVERSATION_TRANSFERRED', {
+            conversation_id: conversationId,
+            new_responsible: newResponsibleName,
+            via: 'crm_transfer'
+        })
 
         return { success: true }
     } catch (error: any) {

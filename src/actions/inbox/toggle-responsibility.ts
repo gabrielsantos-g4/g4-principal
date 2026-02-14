@@ -3,6 +3,7 @@
 import { createAdminClient } from "@/lib/supabase";
 import { getEmpresaId } from "@/lib/get-empresa-id";
 import { revalidatePath } from "next/cache";
+import { logAction } from '@/actions/audit';
 
 export async function toggleResponsibility(leadId: string, currentStatus?: string) {
     const empresaId = await getEmpresaId();
@@ -28,6 +29,8 @@ export async function toggleResponsibility(leadId: string, currentStatus?: strin
 
         const status = lead?.quem_atende?.toLowerCase();
         if (status === 'humano') newStatus = 'Agente';
+        // Assign currentStatus for logging if it was missing
+        currentStatus = lead?.quem_atende;
     } else {
         const status = currentStatus.toLowerCase();
         if (status === 'humano') newStatus = 'Agente';
@@ -45,5 +48,14 @@ export async function toggleResponsibility(leadId: string, currentStatus?: strin
     }
 
     revalidatePath('/dashboard/customer-support'); // Revalidate inbox
+
+    // Log the responsibility toggle
+    await logAction('RESPONSIBILITY_TOGGLED', {
+        lead_id: leadId,
+        old_status: currentStatus,
+        new_status: newStatus,
+        via: 'inbox_toggle' // helpful context
+    });
+
     return { success: true, newStatus };
 }

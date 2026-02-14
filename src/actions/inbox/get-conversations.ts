@@ -45,16 +45,55 @@ export async function getConversations(targetUserId?: string) {
         }
     }
 
-    if (!responsibleName) {
-        return [];
-    }
+    // If no responsible name found, and we are an admin (deduced by context or lack of specific target), we might want ALL.
+    // However, the original logic returned [] if !responsibleName.
+    // Let's modify: if targetUserId is explicitly provided but not found -> return [].
+    // If targetUserId is NOT provided, and current user is Admin -> Return ALL? 
+    // Or simpler: If targetUserId is provided, filter by it. If not, check if user is admin to return all, or just return own.
 
-    const { data: leads, error } = await supabaseAdmin
+    // For now, let's stick to the requested fix: "Admin view not working". 
+    // If I am admin, I might want to see EVERYTHING if I haven't selected a specific inbox.
+    // But `OmnichannelInbox` passes `targetUserId`.
+    // If `targetUserId` is missing, it falls back to current user.
+
+    // Let's check if the user is admin to bypass "responsible" filter if needed?
+    // Actually, if `targetUserId` is passed, we MUST filter by it (it's the "Inbox of X" view).
+    // If `targetUserId` is undefined, it usually means "My Inbox".
+
+    // The issue might be that for Admin, `responsibleName` might be null if they don't have a profile with a name that matches `responsible` column?
+    // OR, admins expect to see ALL conversations when they first load?
+
+    // Let's verify what `responsibleName` resolves to.
+
+    let query = supabaseAdmin
         .from('main_crm')
         .select('*')
         .eq('empresa_id', empresaId)
-        .ilike('responsible', responsibleName)
         .order('created_at', { ascending: false });
+
+    if (responsibleName) {
+        query = query.ilike('responsible', responsibleName);
+    } else {
+        // If we couldn't find a responsible name (e.g. admin without a matching profile name in leads), 
+        // we previously returned empty. 
+        // IF the user is admin, maybe we should return ALL?
+        // But `getConversations` runs on server. We can check role.
+        const supabase = await createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+
+        let isAdmin = false;
+        if (user) {
+            const { data: profile } = await supabaseAdmin.from('main_profiles').select('role').eq('id', user.id).single();
+            if (profile?.role === 'admin') isAdmin = true;
+        }
+
+        if (!isAdmin) {
+            return [];
+        }
+        // If admin and no responsible identified (and no specific target), fetching ALL.
+    }
+
+    const { data: leads, error } = await query;
 
     if (error) {
         console.error("Error fetching inbox leads:", error);

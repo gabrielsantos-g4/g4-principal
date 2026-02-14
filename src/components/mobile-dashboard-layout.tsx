@@ -4,13 +4,21 @@ import React, { useState } from 'react'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import { MessageSquare, Layout } from 'lucide-react'
 import { useSidebar } from '@/components/providers/sidebar-provider'
+import { DashboardCard } from './layout/dashboard-card'
 
 interface MobileDashboardLayoutProps {
     children: React.ReactNode
     rightSidebar: React.ReactNode
+    disableMainScroll?: boolean
+    withCard?: boolean
 }
 
-export function MobileDashboardLayout({ children, rightSidebar }: MobileDashboardLayoutProps) {
+export function MobileDashboardLayout({
+    children,
+    rightSidebar,
+    disableMainScroll = false,
+    withCard = false
+}: MobileDashboardLayoutProps) {
     const { isRightSidebarCollapsed } = useSidebar()
     const [sidebarWidth, setSidebarWidth] = useState(400)
     const [isResizing, setIsResizing] = useState(false)
@@ -42,11 +50,19 @@ export function MobileDashboardLayout({ children, rightSidebar }: MobileDashboar
     }, [resize, stopResizing])
 
     return (
-        <div className="flex flex-col flex-1 min-h-0 h-full bg-black md:bg-transparent">
+        <div className="flex flex-col flex-1 min-h-0 h-full bg-black md:bg-transparent overflow-hidden">
             {/* Desktop View: Side by Side */}
-            <div className="hidden md:flex w-full h-full">
-                <div className="flex-1 min-w-0 overflow-y-auto h-full p-4 md:p-6">
-                    {children}
+            <div className="hidden md:flex w-full h-full overflow-hidden">
+                <div className={`flex-1 min-w-0 h-full ${withCard ? 'p-4 md:p-6' : (disableMainScroll ? 'overflow-hidden' : 'overflow-y-auto')}`}>
+                    {withCard ? (
+                        <DashboardCard>
+                            {children}
+                        </DashboardCard>
+                    ) : (
+                        <div className={disableMainScroll ? 'h-full overflow-hidden' : ''}>
+                            {children}
+                        </div>
+                    )}
                 </div>
 
                 {/* Resize Handle */}
@@ -64,8 +80,8 @@ export function MobileDashboardLayout({ children, rightSidebar }: MobileDashboar
             </div>
 
             {/* Mobile View: Tabs */}
-            <div className="md:hidden flex flex-col w-full h-full absolute inset-0">
-                <Tabs defaultValue="content" className="flex-1 flex flex-col h-full">
+            <div className="md:hidden flex flex-col w-full h-full absolute inset-0 overflow-hidden">
+                <Tabs defaultValue="content" className="flex-1 flex flex-col h-full overflow-hidden">
                     {/* Top Navigation Tabs */}
                     <TabsList className="grid w-full grid-cols-2 rounded-none bg-[#0c0c0c] p-0 h-12 border-b border-white/10 z-50 shrink-0">
                         <TabsTrigger

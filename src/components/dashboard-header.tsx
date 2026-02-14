@@ -1,8 +1,24 @@
 import { ArrowUpRight, Calendar } from 'lucide-react'
 import { HeaderTools } from '@/components/header-tools'
-import { HeaderWorkflows } from '@/components/header-workflows'
 
-export function DashboardHeader() {
+import { createClient, createAdminClient } from '@/lib/supabase'
+
+
+export async function DashboardHeader() {
+    const supabase = await createClient()
+    const supabaseAdmin = await createAdminClient()
+
+    const { data: { user } } = await supabase.auth.getUser()
+
+    let userProfile = null
+    if (user) {
+        const { data } = await supabaseAdmin
+            .from('main_profiles')
+            .select('id, role')
+            .eq('id', user.id)
+            .single()
+        userProfile = data
+    }
 
     return (
         <div className="hidden md:flex justify-between items-center h-16 px-8 border-b border-white/10 shrink-0 bg-[#171717] sticky top-0 z-50">
@@ -13,8 +29,7 @@ export function DashboardHeader() {
             </div>
             <div className="flex items-center gap-6">
                 <div className="flex gap-3 text-xs font-bold tracking-wider items-center">
-                    <HeaderWorkflows />
-                    <HeaderTools />
+                    <HeaderTools userProfile={userProfile} />
                 </div>
             </div>
         </div>

@@ -141,6 +141,7 @@ export default async function AgentPage({ params, searchParams }: AgentPageProps
         }
 
         const company = await getCompanyDNA()
+        const crmSettings = await getCrmSettings(companyId)
 
         return (
             <div className="flex-1 min-h-0 bg-black text-white font-sans flex flex-col overflow-hidden">
@@ -150,6 +151,7 @@ export default async function AgentPage({ params, searchParams }: AgentPageProps
                         company={company}
                         activeAgents={profile?.active_agents || null}
                         userProfile={profile}
+                        crmSettings={crmSettings}
                     />
                 </div>
             </div>
@@ -193,13 +195,16 @@ export default async function AgentPage({ params, searchParams }: AgentPageProps
 
         if (targetProfile) {
             return (
-                <UserInboxDashboard
-                    user={user}
-                    targetUser={targetProfile}
-                    companyId={companyId}
-                    crmSettings={crmSettings}
-                    viewerProfile={profile}
-                />
+                <div className="flex-1 min-h-0 bg-black text-white font-sans flex flex-col overflow-hidden">
+                    <DashboardHeader />
+                    <UserInboxDashboard
+                        user={user}
+                        targetUser={targetProfile}
+                        companyId={slug === 'g4-start' ? 'e5e8020e-6246-444a-9c4c-70df62706346' : '0'}
+                        crmSettings={crmSettings}
+                        viewerProfile={profile}
+                    />
+                </div>
             )
         }
     }
@@ -237,6 +242,7 @@ export default async function AgentPage({ params, searchParams }: AgentPageProps
             <div className="flex-1 min-h-0 bg-black text-white font-sans flex flex-col overflow-hidden">
                 <DashboardHeader />
                 <MobileDashboardLayout
+                    withCard={true}
                     rightSidebar={
                         <RightSidebar
                             key={slug + (chatId || '')}
@@ -305,6 +311,7 @@ export default async function AgentPage({ params, searchParams }: AgentPageProps
             <div className="flex-1 min-h-0 bg-black text-white font-sans flex flex-col overflow-hidden">
                 <DashboardHeader />
                 <MobileDashboardLayout
+                    withCard={true}
                     rightSidebar={
                         <RightSidebar
                             key={slug + (chatId || '')}
@@ -333,6 +340,7 @@ export default async function AgentPage({ params, searchParams }: AgentPageProps
             <div className="flex-1 min-h-0 bg-black text-white font-sans flex flex-col overflow-hidden">
                 <DashboardHeader />
                 <MobileDashboardLayout
+                    withCard={true}
                     rightSidebar={
                         <RightSidebar
                             key={slug + (chatId || '')}
@@ -361,6 +369,7 @@ export default async function AgentPage({ params, searchParams }: AgentPageProps
             <div className="flex-1 min-h-0 bg-black text-white font-sans flex flex-col overflow-hidden">
                 <DashboardHeader />
                 <MobileDashboardLayout
+                    withCard={true}
                     rightSidebar={
                         <RightSidebar
                             key={slug + (chatId || '')}
@@ -391,6 +400,7 @@ export default async function AgentPage({ params, searchParams }: AgentPageProps
             <div className="flex-1 min-h-0 bg-black text-white font-sans flex flex-col overflow-hidden">
                 <DashboardHeader />
                 <MobileDashboardLayout
+                    withCard={true}
                     rightSidebar={
                         <RightSidebar
                             key={slug + (chatId || '')}
@@ -408,9 +418,7 @@ export default async function AgentPage({ params, searchParams }: AgentPageProps
                         />
                     }
                 >
-                    <div className="flex-1 w-full h-full overflow-y-auto">
-                        <SupportDashboard agent={agent} trainings={trainings} companyId={companyId} viewerProfile={profile} />
-                    </div>
+                    <SupportDashboard agent={agent} trainings={trainings} companyId={companyId} viewerProfile={profile} />
                 </MobileDashboardLayout>
             </div>
         )
@@ -423,6 +431,7 @@ export default async function AgentPage({ params, searchParams }: AgentPageProps
             <div className="flex-1 min-h-0 bg-black text-white font-sans flex flex-col overflow-hidden">
                 <DashboardHeader />
                 <MobileDashboardLayout
+                    withCard={true}
                     rightSidebar={
                         <RightSidebar
                             key={slug + (chatId || '')}
@@ -440,16 +449,14 @@ export default async function AgentPage({ params, searchParams }: AgentPageProps
                         />
                     }
                 >
-                    <div className="flex-1 min-w-0 overflow-y-auto bg-black p-6">
-                        <DesignVideoTabs
-                            initialRequests={designRequests}
-                            company={profile ? { ...profile, ...await getCompanyDNA() } : null}
-                            user={{
-                                id: user?.id,
-                                name: profile?.name || user?.email
-                            }}
-                        />
-                    </div>
+                    <DesignVideoTabs
+                        initialRequests={designRequests}
+                        company={profile ? { ...profile, ...await getCompanyDNA() } : null}
+                        user={{
+                            id: user?.id,
+                            name: profile?.name || user?.email
+                        }}
+                    />
                 </MobileDashboardLayout>
             </div>
         )
@@ -459,6 +466,7 @@ export default async function AgentPage({ params, searchParams }: AgentPageProps
             <div className="flex-1 min-h-0 bg-black text-white font-sans flex flex-col overflow-hidden">
                 <DashboardHeader />
                 <MobileDashboardLayout
+                    withCard={true}
                     rightSidebar={
                         <RightSidebar
                             key={slug + (chatId || '')}
@@ -475,9 +483,7 @@ export default async function AgentPage({ params, searchParams }: AgentPageProps
                         />
                     }
                 >
-                    <div className="flex-1 w-full h-full overflow-hidden">
-                        <PaidSocialDashboard />
-                    </div>
+                    <PaidSocialDashboard />
                 </MobileDashboardLayout>
             </div>
         )
@@ -490,6 +496,7 @@ export default async function AgentPage({ params, searchParams }: AgentPageProps
             <div className="flex-1 min-h-0 bg-black text-white font-sans flex flex-col overflow-hidden">
                 <DashboardHeader />
                 <MobileDashboardLayout
+                    withCard={true}
                     rightSidebar={
                         <RightSidebar
                             key={slug + (chatId || '')}
@@ -520,6 +527,7 @@ export default async function AgentPage({ params, searchParams }: AgentPageProps
             <div className="flex-1 min-h-0 bg-black text-white font-sans flex flex-col overflow-hidden">
                 <DashboardHeader />
                 <MobileDashboardLayout
+                    withCard={true}
                     rightSidebar={
                         <RightSidebar
                             key={slug + (chatId || '')}
@@ -547,6 +555,7 @@ export default async function AgentPage({ params, searchParams }: AgentPageProps
             <div className="flex-1 min-h-0 bg-black text-white font-sans flex flex-col overflow-hidden">
                 <DashboardHeader />
                 <MobileDashboardLayout
+                    withCard={true}
                     rightSidebar={
                         <RightSidebar
                             key={slug + (competitorId || '')}
@@ -564,9 +573,9 @@ export default async function AgentPage({ params, searchParams }: AgentPageProps
                         />
                     }
                 >
-                    <div className="flex flex-1 md:flex-row flex-col h-full bg-black">
+                    <div className="flex flex-1 md:flex-row flex-col h-full bg-transparent">
                         {/* Competitor List (Left Sidebar) */}
-                        <div className="w-full md:w-80 border-r border-white/10 md:h-full flex-none">
+                        <div className="w-full md:w-80 border-r border-white/10 md:h-full flex-none flex flex-col overflow-hidden">
                             <CompetitorList competitors={competitors} />
                         </div>
 
@@ -595,6 +604,7 @@ export default async function AgentPage({ params, searchParams }: AgentPageProps
             <DashboardHeader />
 
             <MobileDashboardLayout
+                withCard={true}
                 rightSidebar={
                     <RightSidebar
                         key={slug + (chatId || '')} // Re-mount if chat changes
@@ -643,15 +653,15 @@ export default async function AgentPage({ params, searchParams }: AgentPageProps
                             />
                         ) : (
                             // Default Print View for other agents
-                            <div className="w-full max-w-5xl mx-auto rounded-lg overflow-hidden border border-white/10 shadow-2xl">
+                            <div className="w-full h-full">
                                 {agent.printUrl ? (
                                     <img
                                         src={agent.printUrl}
                                         alt={`${agent.role} Preview`}
-                                        className="w-full h-auto object-cover"
+                                        className="w-full h-full object-cover"
                                     />
                                 ) : (
-                                    <div className="h-96 w-full flex items-center justify-center bg-white/5 text-gray-400">
+                                    <div className="h-full w-full flex items-center justify-center bg-white/5 text-gray-400 font-bold uppercase tracking-widest text-sm">
                                         No preview available
                                     </div>
                                 )}

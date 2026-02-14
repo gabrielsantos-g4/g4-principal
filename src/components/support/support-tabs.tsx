@@ -1,4 +1,5 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { useSearchParams, useRouter } from "next/navigation"
 import { GraduationCap, Waypoints, BarChart3, Database, ListChecks, MessageSquare, AlertTriangle, Check, Users, Clock, ArrowUpRight, Activity } from "lucide-react"
 import { KnowledgeBaseUpload } from "./knowledge-base-upload"
 import { TrainingsList } from "./trainings-list"
@@ -27,69 +28,24 @@ interface SupportTabsProps {
 }
 
 export function SupportTabs({ trainings, companyId, agent, viewerProfile }: SupportTabsProps) {
-    const [activeTab, setActiveTab] = useState<"training" | "parameters" | "connectors" | "omnichannel" | "reports">("omnichannel")
+    const searchParams = useSearchParams()
+    const router = useRouter()
+    const activeTab = (searchParams.get('tab') || 'omnichannel') as "training" | "parameters" | "connectors" | "omnichannel" | "reports"
+
+    const setActiveTab = (tab: string) => {
+        const params = new URLSearchParams(searchParams.toString())
+        params.set('tab', tab)
+        router.push(`?${params.toString()}`)
+    }
+
     const [timeFrame, setTimeFrame] = useState("30")
 
     return (
-        <div className="w-full flex flex-col gap-8">
-            {/* Tabs Header */}
-            <div className="bg-[#171717] border border-white/10 p-1 rounded-lg flex flex-wrap gap-1 w-fit">
-                <button
-                    onClick={() => setActiveTab("omnichannel")}
-                    className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-all ${activeTab === "omnichannel"
-                        ? "bg-[#2a2a2a] text-white shadow-sm"
-                        : "text-gray-400 hover:text-white hover:bg-white/5"
-                        }`}
-                >
-                    <MessageSquare size={16} />
-                    Chats
-                </button>
-                <button
-                    onClick={() => setActiveTab("training")}
-                    className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-all ${activeTab === "training"
-                        ? "bg-[#2a2a2a] text-white shadow-sm"
-                        : "text-gray-400 hover:text-white hover:bg-white/5"
-                        }`}
-                >
-                    <GraduationCap size={16} />
-                    Training
-                </button>
-                <button
-                    onClick={() => setActiveTab("parameters")}
-                    className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-all ${activeTab === "parameters"
-                        ? "bg-[#2a2a2a] text-white shadow-sm"
-                        : "text-gray-400 hover:text-white hover:bg-white/5"
-                        }`}
-                >
-                    <ListChecks size={16} />
-                    Parameters
-                </button>
-                <button
-                    onClick={() => setActiveTab("connectors")}
-                    className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-all ${activeTab === "connectors"
-                        ? "bg-[#2a2a2a] text-white shadow-sm"
-                        : "text-gray-400 hover:text-white hover:bg-white/5"
-                        }`}
-                >
-                    <Waypoints size={16} />
-                    Connections
-                </button>
-                <button
-                    onClick={() => setActiveTab("reports")}
-                    className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-all ${activeTab === "reports"
-                        ? "bg-[#2a2a2a] text-white shadow-sm"
-                        : "text-gray-400 hover:text-white hover:bg-white/5"
-                        }`}
-                >
-                    <BarChart3 size={16} />
-                    Reports
-                </button>
-            </div>
-
+        <div className="w-full flex flex-col gap-8 h-full">
             {/* Tab Content */}
-            <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+            <div className="animate-in fade-in slide-in-from-bottom-2 duration-300 h-full">
                 {activeTab === "omnichannel" && (
-                    <div className="flex flex-col gap-6 w-full">
+                    <div className="flex flex-col gap-6 w-full h-full">
                         <OmnichannelInbox
                             targetUser={agent ? {
                                 id: agent.id,
@@ -99,28 +55,44 @@ export function SupportTabs({ trainings, companyId, agent, viewerProfile }: Supp
                             } : undefined}
                             targetUserId={agent?.id}
                             viewerProfile={viewerProfile}
+                            onNavigate={(tab) => setActiveTab(tab as any)}
                         />
                     </div>
                 )}
 
-                {activeTab === "training" && (
-                    <div className="flex flex-col gap-6 max-w-5xl mx-auto">
-                        <KnowledgeBaseUpload companyId={companyId} />
-                        <TrainingsList trainings={trainings} />
-                        <FineTuneForm companyId={companyId} />
-                    </div>
-                )}
+                {activeTab !== "omnichannel" && (
+                    <div className="flex flex-col gap-6 w-full h-full overflow-y-auto pb-8">
+                        {/* Back Button */}
+                        <div className="max-w-5xl mx-auto w-full pt-4">
+                            <button
+                                onClick={() => setActiveTab("omnichannel")}
+                                className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors mb-4"
+                            >
+                                <MessageSquare size={16} />
+                                <span>Back to Chats</span>
+                            </button>
+                        </div>
 
-                {activeTab === "parameters" && (
-                    <div className="flex flex-col gap-6 max-w-5xl">
-                        <QualificationParametersForm />
-                        <QualificationActionsForm />
-                    </div>
-                )}
+                        {activeTab === "training" && (
+                            <div className="flex flex-col gap-6 max-w-5xl mx-auto w-full">
+                                <KnowledgeBaseUpload companyId={companyId} />
+                                <TrainingsList trainings={trainings} />
+                                <FineTuneForm companyId={companyId} />
+                            </div>
+                        )}
 
-                {activeTab === "connectors" && (
-                    <div className="flex flex-col gap-6 max-w-5xl mx-auto">
-                        <ChannelsConfig companyId={companyId} />
+                        {activeTab === "parameters" && (
+                            <div className="flex flex-col gap-6 max-w-5xl mx-auto w-full">
+                                <QualificationParametersForm />
+                                <QualificationActionsForm />
+                            </div>
+                        )}
+
+                        {activeTab === "connectors" && (
+                            <div className="flex flex-col gap-6 max-w-5xl mx-auto w-full">
+                                <ChannelsConfig companyId={companyId} />
+                            </div>
+                        )}
                     </div>
                 )}
 

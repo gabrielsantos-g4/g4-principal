@@ -1,6 +1,5 @@
 "use client"
 
-import { DashboardHeader } from "@/components/dashboard-header"
 import { MobileDashboardLayout } from "@/components/mobile-dashboard-layout"
 import { RightSidebar } from "@/components/right-sidebar"
 import { OmnichannelInbox } from "@/components/support/omnichannel/omnichannel-inbox"
@@ -30,8 +29,8 @@ export function UserInboxDashboard({ user, targetUser, companyId, agent, crmSett
 
     return (
         <div className="flex-1 min-h-0 bg-black text-white font-sans flex flex-col overflow-hidden">
-            <DashboardHeader />
             <MobileDashboardLayout
+                withCard={true}
                 rightSidebar={
                     <RightSidebar
                         userId={user?.id}
@@ -46,17 +45,14 @@ export function UserInboxDashboard({ user, targetUser, companyId, agent, crmSett
                         }}
                     />
                 }
+                disableMainScroll={true}
             >
-                <div className="flex-1 flex flex-col min-w-0 h-full p-4">
-                    <div className="flex-1 bg-[#111] rounded-xl border border-white/10 overflow-hidden shadow-2xl flex flex-col">
-                        <OmnichannelInbox
-                            targetUserId={targetUser.id}
-                            targetUser={targetUser}
-                            crmSettings={crmSettings}
-                            viewerProfile={viewerProfile}
-                        />
-                    </div>
-                </div>
+                <OmnichannelInbox
+                    targetUserId={targetUser.id}
+                    targetUser={targetUser}
+                    crmSettings={crmSettings}
+                    viewerProfile={viewerProfile}
+                />
             </MobileDashboardLayout>
         </div>
     )
