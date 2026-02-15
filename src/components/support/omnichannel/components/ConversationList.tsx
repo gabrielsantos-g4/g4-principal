@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import { cn } from "@/lib/utils";
+import { cn, formatWhatsAppDate } from "@/lib/utils";
 import { signout } from "@/app/login/actions";
 import { markAsRead } from "@/actions/crm/mark-as-read";
 
@@ -368,7 +368,7 @@ export function ConversationList({
                                             </h4>
                                             {conv.lastMessageAt && (
                                                 <span className={cn("text-[10px] whitespace-nowrap", isUnread ? "text-[#25D366]" : "text-gray-500")}>
-                                                    {new Date(conv.lastMessageAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                    {formatWhatsAppDate(conv.lastMessageAt)}
                                                 </span>
                                             )}
                                         </div>

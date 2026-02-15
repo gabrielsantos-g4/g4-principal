@@ -12,12 +12,22 @@ import { createBrowserClient } from "@supabase/ssr";
 import { signout } from "@/app/login/actions";
 import { useBrowserNotification } from "@/hooks/use-browser-notification";
 import { markAsRead } from "@/actions/crm/mark-as-read";
-import { getMessagingUsers } from "@/actions/users/get-messaging-users";
-
+import { getMessagingUsers, MessagingUser } from "@/actions/users/get-messaging-users";
+import { LostLeadModal } from "@/components/crm/lost-lead-modal";
 
 // --- Types & Mock Data ---
 
 import { Conversation } from "./components/ConversationList";
+
+interface Message {
+    id: string;
+    content: string;
+    senderId: string;
+    timestamp: string;
+    status: string;
+    type: string;
+    mediaUrl?: string;
+}
 
 
 
@@ -253,20 +263,72 @@ export function OmnichannelInbox({
 
     // Handle Responsibility Toggle
     const [isToggling, setIsToggling] = useState(false);
+    const [isLostModalOpen, setIsLostModalOpen] = useState(false);
 
-    async function handleToggleResponsibility() {
+    async function handleToggleResponsibility(status?: string) {
         if (!selectedConversation) return;
+
+        // If status is Lost, open the modal instead of immediate update
+        if (status === 'Lost') {
+            setIsLostModalOpen(true);
+            return;
+        }
 
         setIsToggling(true);
         try {
+            // If status provided (Won), update it first
+            if (status) {
+                const toastId = toast.loading(`Updating status to ${status}...`);
+                const { updateLead } = await import('@/actions/crm/update-lead');
+                const leadId = parseInt(selectedConversation.id);
+                if (!isNaN(leadId)) {
+                    const result = await updateLead(leadId, { status });
+                    if (!result.success) throw new Error(result.error);
+                    toast.success("Status updated", { id: toastId });
+                }
+            }
+
             const result = await toggleResponsibility(selectedConversation.id, selectedConversation.quem_atende);
             if (result.success) {
-                // Optimistic update or refresh
-                // For now, simpler to trigger a refresh via router or re-fetch conversations
-                setRefreshTrigger(prev => prev + 1); // This will re-fetch list and update properties
+                setRefreshTrigger(prev => prev + 1);
             }
         } catch (error) {
             console.error("Failed to toggle responsibility", error);
+            toast.error("Failed to update/resolve conversation");
+        } finally {
+            setIsToggling(false);
+        }
+    }
+
+    async function handleLostConfirm(reason: string) {
+        if (!selectedConversation) return;
+
+        setIsLostModalOpen(false);
+        setIsToggling(true);
+
+        try {
+            const toastId = toast.loading("Marking as Lost...");
+            const { updateLead } = await import('@/actions/crm/update-lead');
+            const leadId = parseInt(selectedConversation.id);
+
+            if (!isNaN(leadId)) {
+                // Update status AND reason
+                const result = await updateLead(leadId, {
+                    status: 'Lost',
+                    lost_reason: reason
+                });
+
+                if (!result.success) throw new Error(result.error);
+
+                // Toggle responsibility
+                await toggleResponsibility(selectedConversation.id, selectedConversation.quem_atende);
+
+                toast.success("Lead moved to Lost in CRM", { id: toastId });
+                setRefreshTrigger(prev => prev + 1);
+            }
+        } catch (error) {
+            console.error("Failed to mark as lost", error);
+            toast.error("Failed to update lead");
         } finally {
             setIsToggling(false);
         }
@@ -372,7 +434,7 @@ export function OmnichannelInbox({
                 accessibleInboxes={accessibleInboxes}
                 // @ts-ignore
                 onInboxChange={(val) => {
-                    setTargetUserId(val);
+                    onInboxChange?.(val);
                     setSearchQuery("");
                 }}
             />
@@ -408,6 +470,13 @@ export function OmnichannelInbox({
                     });
                 }}
                 onNavigate={onNavigate}
+            />
+
+            <LostLeadModal
+                isOpen={isLostModalOpen}
+                onClose={() => setIsLostModalOpen(false)}
+                onConfirm={handleLostConfirm}
+                reasons={crmSettings?.lost_reasons || []}
             />
         </div>
     );

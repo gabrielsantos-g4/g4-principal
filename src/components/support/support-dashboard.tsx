@@ -9,10 +9,11 @@ interface SupportDashboardProps {
     trainings: Training[];
     companyId: string;
     viewerProfile?: any;
+    crmSettings?: any;
 }
 
-export function SupportDashboard({ agent, trainings, companyId, viewerProfile }: SupportDashboardProps) {
+export function SupportDashboard({ agent, trainings, companyId, viewerProfile, crmSettings }: SupportDashboardProps) {
     return (
-        <SupportTabs trainings={trainings} companyId={companyId} agent={agent} viewerProfile={viewerProfile} />
+        <SupportTabs trainings={trainings} companyId={companyId} agent={agent} viewerProfile={viewerProfile} crmSettings={crmSettings} />
     );
 }

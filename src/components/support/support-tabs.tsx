@@ -25,9 +25,10 @@ interface SupportTabsProps {
     companyId: string
     agent?: Agent
     viewerProfile?: any
+    crmSettings?: any
 }
 
-export function SupportTabs({ trainings, companyId, agent, viewerProfile }: SupportTabsProps) {
+export function SupportTabs({ trainings, companyId, agent, viewerProfile, crmSettings }: SupportTabsProps) {
     const searchParams = useSearchParams()
     const router = useRouter()
     const activeTab = (searchParams.get('tab') || 'omnichannel') as "training" | "parameters" | "connectors" | "omnichannel" | "reports"
@@ -55,6 +56,7 @@ export function SupportTabs({ trainings, companyId, agent, viewerProfile }: Supp
                             } : undefined}
                             targetUserId={agent?.id}
                             viewerProfile={viewerProfile}
+                            crmSettings={crmSettings}
                             onNavigate={(tab) => setActiveTab(tab as any)}
                         />
                     </div>

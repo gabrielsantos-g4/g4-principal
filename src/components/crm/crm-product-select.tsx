@@ -72,17 +72,17 @@ export function CrmProductSelect({ value, options, onChange }: CrmProductSelectP
                     variant="ghost"
                     role="combobox"
                     aria-expanded={open}
-                    className="justify-between w-full h-auto min-h-[26px] p-1 text-[11px] hover:bg-white/5 font-normal ml-0"
+                    className="justify-between w-full h-9 px-3 py-2 text-xs hover:bg-white/10 font-normal ml-0 bg-white/5 border border-white/10 rounded-md"
                 >
-                    <div className="flex flex-wrap gap-1 items-center text-left">
+                    <div className="flex flex-wrap gap-1 items-center text-left overflow-hidden">
                         {selectedProducts.length > 0 ? (
                             selectedProducts.map((name) => (
-                                <Badge key={name} variant="secondary" className="px-1 py-0.5 h-auto text-[11px] bg-white/10 hover:bg-white/20 text-white border-0 font-normal rounded-sm text-nowrap">
+                                <Badge key={name} variant="secondary" className="px-1 py-0.5 h-auto text-[10px] bg-white/10 hover:bg-white/20 text-white border-0 font-normal rounded-sm text-nowrap">
                                     {name}
                                 </Badge>
                             ))
                         ) : (
-                            <span className="text-gray-600 italic">Select...</span>
+                            <span className="text-gray-500 italic">Select...</span>
                         )}
                     </div>
                 </Button>

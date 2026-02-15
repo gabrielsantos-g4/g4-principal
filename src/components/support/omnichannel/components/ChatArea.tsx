@@ -4,6 +4,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { MoreVertical, Phone, Paperclip, Mic, Smile, Send, Check, CheckCheck, Clock, Download, FileAudio, Play, Pause } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -16,7 +17,7 @@ interface ChatAreaProps {
     currentUserId: string | null;
     isSending: boolean;
     onSendMessage: (text: string) => void;
-    onToggleResponsibility: () => void;
+    onToggleResponsibility: (status?: string) => void;
     isToggling: boolean;
     onUpload?: (file: File) => void; // Placeholder for future
 }
@@ -105,21 +106,56 @@ export function ChatArea({
                     <DropdownMenu>
                         {/* More options could go here */}
                     </DropdownMenu>
-                    <Button
-                        variant="secondary"
-                        size="sm"
-                        onClick={onToggleResponsibility}
-                        disabled={isToggling}
-                        className={cn(
-                            "ml-2 transition-all bg-white/10 text-gray-300 hover:bg-white/20"
-                        )}
-                    >
-                        {isToggling ? (
-                            <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                        ) : (
-                            "Resolve"
-                        )}
-                    </Button>
+
+                    <Popover>
+                        <PopoverTrigger asChild>
+                            <Button
+                                variant="secondary"
+                                size="sm"
+                                disabled={isToggling}
+                                className={cn(
+                                    "ml-2 transition-all bg-white/10 text-gray-300 hover:bg-white/20"
+                                )}
+                            >
+                                {isToggling ? (
+                                    <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                                ) : (
+                                    "Resolve"
+                                )}
+                            </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-44 p-1.5 bg-[#1A1A1A] border-white/10" align="end">
+                            <div className="flex flex-col gap-0.5">
+                                <p className="text-[10px] text-gray-500 px-2 py-1 mb-0.5 font-medium uppercase tracking-wider">Resolve</p>
+
+                                <button
+                                    onClick={() => onToggleResponsibility('Won')}
+                                    className="flex items-center gap-2 w-full text-left px-2 py-1.5 text-xs text-green-400 hover:bg-green-500/10 rounded transition-colors"
+                                >
+                                    <div className="w-1.5 h-1.5 rounded-full bg-green-500" />
+                                    Move to Won
+                                </button>
+
+                                <button
+                                    onClick={() => onToggleResponsibility('Lost')}
+                                    className="flex items-center gap-2 w-full text-left px-2 py-1.5 text-xs text-red-400 hover:bg-red-500/10 rounded transition-colors"
+                                >
+                                    <div className="w-1.5 h-1.5 rounded-full bg-red-500" />
+                                    Move to Lost
+                                </button>
+
+                                <div className="h-px bg-white/10 my-0.5" />
+
+                                <button
+                                    onClick={() => onToggleResponsibility()}
+                                    className="flex items-center gap-2 w-full text-left px-2 py-1.5 text-xs text-gray-300 hover:bg-white/10 rounded transition-colors"
+                                >
+                                    <div className="w-1.5 h-1.5 rounded-full bg-gray-500" />
+                                    Keep Status
+                                </button>
+                            </div>
+                        </PopoverContent>
+                    </Popover>
                 </div>
             </div>
 

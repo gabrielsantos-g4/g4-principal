@@ -418,7 +418,13 @@ export default async function AgentPage({ params, searchParams }: AgentPageProps
                         />
                     }
                 >
-                    <SupportDashboard agent={agent} trainings={trainings} companyId={companyId} viewerProfile={profile} />
+                    <SupportDashboard
+                        agent={agent}
+                        trainings={trainings}
+                        companyId={companyId}
+                        viewerProfile={profile}
+                        crmSettings={await getCrmSettings(companyId)}
+                    />
                 </MobileDashboardLayout>
             </div>
         )

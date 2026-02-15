@@ -47,14 +47,6 @@ export function HeaderTools({ userProfile }: HeaderToolsProps) {
 
     return (
         <div className="flex items-center gap-2">
-            <button
-                className="p-2 border border-white/20 rounded text-gray-400 hover:text-white hover:bg-white/5 transition-colors flex items-center justify-center h-9 w-9"
-                title="Notes"
-                onClick={() => setIsNotesOpen(true)}
-            >
-                <StickyNote size={16} />
-            </button>
-
             {isJessPage && (
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
@@ -82,6 +74,14 @@ export function HeaderTools({ userProfile }: HeaderToolsProps) {
                     </DropdownMenuContent>
                 </DropdownMenu>
             )}
+
+            <button
+                className="p-2 border border-white/20 rounded text-gray-400 hover:text-white hover:bg-white/5 transition-colors flex items-center justify-center h-9 w-9"
+                title="Notes"
+                onClick={() => setIsNotesOpen(true)}
+            >
+                <StickyNote size={16} />
+            </button>
 
             {isAdmin && (
                 <DropdownMenu>

@@ -187,7 +187,7 @@ export function LeadDetails({
     }
 
     return (
-        <div className="border-l border-white/10 bg-[#111] flex h-full w-80 overflow-hidden">
+        <div className="border-l border-white/10 bg-[#111] flex h-full w-[260px] overflow-hidden">
             {/* Content Area */}
             <div className="flex-1 flex flex-col min-w-0 opacity-100 visible">
                 <div className="flex-1 overflow-y-auto">
@@ -244,57 +244,60 @@ export function LeadDetails({
 
                     <div className="px-6 pb-6 flex flex-col gap-8">
                         <div className="flex flex-col gap-6">
-                            <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider">Deal Info</h4>
+
 
                             {/* Next Step & Date */}
                             <div className="space-y-2">
-                                <span className="text-xs text-gray-400">Next Step</span>
+                                {/* Unified Horizontal Block */}
+                                <div className="flex flex-col gap-1">
+                                    <span className="text-xs text-gray-500 font-medium ml-1">Next Step</span>
+                                    <div className="flex items-center justify-between w-full">
+                                        {/* Dots Group */}
+                                        <div className="flex items-center gap-1.5">
+                                            {/* 5 Touchpoint Dots */}
+                                            <div className="flex space-x-1">
+                                                {[...Array(5)].map((_, i) => {
+                                                    const stepIndex = i + 1;
+                                                    // @ts-ignore
+                                                    const isActive = stepIndex <= (selectedConversation.nextStep?.progress || 0);
+                                                    const isMsgSaida = stepIndex === 5;
+                                                    let bgColor = 'bg-gray-800';
+                                                    let shadow = '';
+                                                    if (isActive) {
+                                                        if (isMsgSaida) { bgColor = 'bg-red-500'; shadow = 'shadow-[0_0_8px_rgba(239,68,68,0.4)]'; }
+                                                        else { bgColor = 'bg-green-500'; shadow = 'shadow-[0_0_8px_rgba(34,197,94,0.4)]'; }
+                                                    }
+                                                    return (
+                                                        <button key={i} onClick={() => handleProgressClick(stepIndex)} className={`w-2.5 h-2.5 rounded-full transition-all ${bgColor} ${shadow}`} />
+                                                    );
+                                                })}
+                                            </div>
 
-                                {/* Unified Block with Date Below */}
-                                <div className="flex flex-col gap-2">
-                                    <div className="relative flex items-center justify-center gap-3 bg-white/5 p-3 rounded-lg w-full min-h-[70px]">
-                                        <div className="flex space-x-2">
-                                            {[...Array(5)].map((_, i) => {
-                                                const stepIndex = i + 1;
-                                                // @ts-ignore
-                                                const isActive = stepIndex <= (selectedConversation.nextStep?.progress || 0);
-                                                const isMsgSaida = stepIndex === 5;
-                                                let bgColor = 'bg-gray-700';
-                                                let shadow = '';
-                                                if (isActive) {
-                                                    if (isMsgSaida) { bgColor = 'bg-red-500'; shadow = 'shadow-[0_0_8px_rgba(239,68,68,0.4)]'; }
-                                                    else { bgColor = 'bg-green-500'; shadow = 'shadow-[0_0_8px_rgba(34,197,94,0.4)]'; }
-                                                }
-                                                return (
-                                                    <button key={i} onClick={() => handleProgressClick(stepIndex)} className={`w-3 h-3 rounded-full transition-all ${bgColor} ${shadow}`} />
-                                                );
-                                            })}
-                                        </div>
-                                        <div className="flex items-center gap-2">
+                                            {/* Blue Dot (Established) */}
                                             {/* @ts-ignore */}
-                                            <button onClick={() => handleProgressClick(6)} className={`w-3 h-3 rounded-full transition-all ${(selectedConversation.nextStep?.progress || 0) >= 6 ? 'bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.4)]' : 'bg-gray-700'}`} />
+                                            <button onClick={() => handleProgressClick(6)} className={`w-2.5 h-2.5 rounded-full transition-all ${(selectedConversation.nextStep?.progress || 0) >= 6 ? 'bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.4)]' : 'bg-gray-800'}`} />
                                         </div>
 
-                                        {/* History Icon (Keep here, user only mentioned moving menu icon) */}
-                                        <div className="absolute right-2 top-1/2 -translate-y-1/2">
-                                            <div className="cursor-pointer hover:bg-white/10 p-1 rounded-full text-[#1C73E8]" onClick={() => setHistoryLead(selectedConversation)}>
+                                        {/* Actions Group */}
+                                        <div className="flex items-center gap-2">
+                                            {/* Comment Icon */}
+                                            <div className="cursor-pointer text-gray-500 hover:text-white transition-colors" onClick={() => setHistoryLead(selectedConversation)}>
                                                 <MessageCircle size={14} />
                                             </div>
-                                        </div>
-                                    </div>
 
-                                    <div className="flex justify-end">
-                                        <Popover>
-                                            <PopoverTrigger asChild>
-                                                {/* @ts-ignore */}
-                                                <button className={`text-xs font-bold hover:bg-white/10 rounded px-2 py-1 transition-colors ${parseDateStr(selectedConversation.nextStep?.date || "Pending") < new Date(new Date().setHours(0, 0, 0, 0)) ? 'text-red-400' : 'text-gray-400'}`}>
-                                                    {selectedConversation.nextStep?.date ? format(parseDateStr(selectedConversation.nextStep?.date), "EEE, dd/MMM") : "Set Date"}
-                                                </button>
-                                            </PopoverTrigger>
-                                            <PopoverContent className="w-auto p-0" align="end">
-                                                <Calendar mode="single" selected={parseDateStr(selectedConversation.nextStep?.date || "Pending")} onSelect={handleDateSelect} initialFocus />
-                                            </PopoverContent>
-                                        </Popover>
+                                            {/* Date */}
+                                            <Popover>
+                                                <PopoverTrigger asChild>
+                                                    {/* @ts-ignore */}
+                                                    <button className={`text-xs font-bold hover:bg-white/5 rounded px-1.5 py-0.5 transition-colors ${parseDateStr(selectedConversation.nextStep?.date || "Pending") < new Date(new Date().setHours(0, 0, 0, 0)) ? 'text-red-400' : 'text-gray-300'}`}>
+                                                        {selectedConversation.nextStep?.date ? format(parseDateStr(selectedConversation.nextStep?.date), "dd/MMM") : "Set Date"}
+                                                    </button>
+                                                </PopoverTrigger>
+                                                <PopoverContent className="w-auto p-0" align="end">
+                                                    <Calendar mode="single" selected={parseDateStr(selectedConversation.nextStep?.date || "Pending")} onSelect={handleDateSelect} initialFocus />
+                                                </PopoverContent>
+                                            </Popover>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -309,7 +312,7 @@ export function LeadDetails({
                                 <div className="space-y-1.5">
                                     <span className="text-xs text-gray-400">Amount</span>
                                     <button
-                                        className="w-full text-left font-mono text-xs bg-white/5 hover:bg-white/10 p-2 rounded text-gray-200 h-[34px] flex items-center"
+                                        className="w-full text-left font-mono text-xs bg-white/5 hover:bg-white/10 border border-white/10 px-3 rounded-md text-gray-200 h-9 flex items-center"
                                         onClick={() => setAmountLead(selectedConversation)}
                                     >
                                         {/* @ts-ignore */}
@@ -329,24 +332,46 @@ export function LeadDetails({
                                 <span className="text-xs text-gray-400">Qualification</span>
                                 <DropdownMenu>
                                     <DropdownMenuTrigger asChild>
-                                        <button className={`flex items-center justify-between text-xs px-2 py-2 rounded w-full outline-none transition-colors border ${(() => {
+                                        <button className={`flex items-center justify-between text-xs px-3 h-9 rounded-md w-full outline-none transition-colors border ${(() => {
                                             // @ts-ignore
                                             switch (selectedConversation.qualification_status?.toLowerCase()) {
+                                                case 'lead': return "bg-slate-500/10 text-slate-400 border-slate-500/20 font-bold";
                                                 case 'mql': return "bg-blue-500/10 text-blue-400 border-blue-500/20 font-bold";
                                                 case 'sql': return "bg-emerald-500/10 text-emerald-400 border-emerald-500/20 font-bold";
                                                 case 'nq': return "bg-red-500/10 text-red-400 border-red-500/20 font-bold";
-                                                default: return 'text-gray-400 border-white/5 bg-white/5';
+                                                default: return 'text-gray-400 border-white/10 bg-white/5';
                                             }
                                         })()}`}>
                                             {/* @ts-ignore */}
                                             <span className="uppercase">{selectedConversation.qualification_status || "Pending"}</span>
-                                            <ChevronDown size={12} className="opacity-50" />
+                                            <ChevronDown size={14} className="opacity-50" />
                                         </button>
                                     </DropdownMenuTrigger>
                                     <DropdownMenuContent className="w-[200px] bg-[#1A1A1A] border-white/10 text-white">
-                                        <DropdownMenuItem className="text-blue-400" onClick={() => handleQualificationChange('mql')}>MQL</DropdownMenuItem>
-                                        <DropdownMenuItem className="text-emerald-400" onClick={() => handleQualificationChange('sql')}>SQL</DropdownMenuItem>
-                                        <DropdownMenuItem className="text-red-400" onClick={() => handleQualificationChange('nq')}>NQ</DropdownMenuItem>
+                                        <DropdownMenuItem className="text-slate-400 cursor-pointer" onClick={() => handleQualificationChange('lead')}>
+                                            <div className="flex items-center">
+                                                <div className="w-2 h-2 rounded-full mr-2 bg-slate-500" />
+                                                LEAD
+                                            </div>
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem className="text-blue-400 cursor-pointer" onClick={() => handleQualificationChange('mql')}>
+                                            <div className="flex items-center">
+                                                <div className="w-2 h-2 rounded-full mr-2 bg-blue-500" />
+                                                MQL
+                                            </div>
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem className="text-emerald-400 cursor-pointer" onClick={() => handleQualificationChange('sql')}>
+                                            <div className="flex items-center">
+                                                <div className="w-2 h-2 rounded-full mr-2 bg-emerald-500" />
+                                                SQL
+                                            </div>
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem className="text-red-400 cursor-pointer" onClick={() => handleQualificationChange('nq')}>
+                                            <div className="flex items-center">
+                                                <div className="w-2 h-2 rounded-full mr-2 bg-red-500" />
+                                                NQ
+                                            </div>
+                                        </DropdownMenuItem>
                                     </DropdownMenuContent>
                                 </DropdownMenu>
                             </div>
@@ -356,21 +381,36 @@ export function LeadDetails({
                                 <span className="text-xs text-gray-400">Source</span>
                                 <DropdownMenu>
                                     <DropdownMenuTrigger asChild>
-                                        <button className="flex items-center justify-between text-xs px-2 py-2 rounded w-full outline-none transition-colors border border-white/5 bg-white/5 text-gray-300 hover:bg-white/10">
+                                        <button className="flex items-center justify-between text-xs px-3 h-9 rounded-md w-full outline-none transition-colors border border-white/10 bg-white/5 text-gray-300 hover:bg-white/10">
                                             {/* @ts-ignore */}
                                             <span>{selectedConversation.source}</span>
-                                            <ChevronDown size={12} className="opacity-50" />
+                                            <ChevronDown size={14} className="opacity-50" />
                                         </button>
                                     </DropdownMenuTrigger>
                                     <DropdownMenuContent className="w-[200px] bg-[#1A1A1A] border-white/10 text-white">
-                                        {SOURCES.map((s: any) => (
-                                            <DropdownMenuItem
-                                                key={typeof s === 'string' ? s : s.label}
-                                                onClick={() => handleSourceChange(typeof s === 'string' ? s : s.label)}
-                                            >
-                                                {typeof s === 'string' ? s : s.label}
-                                            </DropdownMenuItem>
-                                        ))}
+                                        {SOURCES.map((s: any) => {
+                                            const label = typeof s === 'string' ? s : s.label;
+                                            // Use bg color if available, or generate one based on label hash or default
+                                            const bgColor = typeof s === 'string' ? "bg-slate-500" : (s.bg?.replace('/10', '') || "bg-slate-500");
+
+                                            // Handle potential "text-" classes in bg by mistake, but usually bg is "bg-..."
+                                            // If s.bg is "bg-pink-900/10" or "bg-pink-900", we want the dot to be visible. 
+                                            // Usually badges use dark bg + light text. Dots should probably be the "base" color.
+                                            // If we strip /10 it might be better.
+
+                                            return (
+                                                <DropdownMenuItem
+                                                    key={label}
+                                                    onClick={() => handleSourceChange(label)}
+                                                    className="cursor-pointer"
+                                                >
+                                                    <div className="flex items-center">
+                                                        <div className={`w-2 h-2 rounded-full mr-2 ${bgColor}`} />
+                                                        {label}
+                                                    </div>
+                                                </DropdownMenuItem>
+                                            )
+                                        })}
                                     </DropdownMenuContent>
                                 </DropdownMenu>
                             </div>
@@ -382,7 +422,7 @@ export function LeadDetails({
                                     value={selectedConversation.status}
                                     onValueChange={handleStatusChange}
                                 >
-                                    <SelectTrigger className="w-full bg-white/5 border-white/10 text-white h-9">
+                                    <SelectTrigger className="w-full bg-white/5 border-white/10 text-white h-9 px-3 rounded-md">
                                         <SelectValue placeholder="Select Status" />
                                     </SelectTrigger>
                                     <SelectContent className="bg-[#1a1a1a] border-white/10 text-white">
@@ -404,10 +444,11 @@ export function LeadDetails({
 
                             <div className="space-y-1.5">
                                 <div className="flex flex-col gap-1">
-                                    <span className="text-xs text-gray-400">Transfer to</span>
                                     {selectedConversation.quem_atende && (
                                         <span className="text-[10px] text-gray-500 italic">
-                                            Conversation is with <span className="text-gray-300">{selectedConversation.quem_atende}</span>. Transfer to:
+                                            Conversation is with <span className="text-gray-300">
+                                                {messagingUsers.find(u => u.id === selectedConversation.quem_atende)?.name || selectedConversation.quem_atende}
+                                            </span>. Transfer to:
                                         </span>
                                     )}
                                 </div>
