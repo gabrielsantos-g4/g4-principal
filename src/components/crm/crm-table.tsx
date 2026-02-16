@@ -237,8 +237,8 @@ export function CrmTable({ initialLeads, settings, filters }: CrmTableProps) {
             }
 
             // Text Search
-            if (filters.searchName && !lead.name.toLowerCase().includes(filters.searchName.toLowerCase())) return false;
-            if (filters.searchCompany && !lead.company.toLowerCase().includes(filters.searchCompany.toLowerCase())) return false;
+            if (filters.searchName && !lead.name?.toLowerCase().includes(filters.searchName.toLowerCase())) return false;
+            if (filters.searchCompany && !lead.company?.toLowerCase().includes(filters.searchCompany.toLowerCase())) return false;
             if (filters.searchPhone && !lead.phone?.toLowerCase().includes(filters.searchPhone.toLowerCase())) return false;
 
             // Product Filter

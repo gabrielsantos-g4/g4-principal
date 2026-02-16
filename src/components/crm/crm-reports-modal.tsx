@@ -23,8 +23,8 @@ import {
     Cell
 } from 'recharts';
 import { motion } from "framer-motion";
-import { format, eachDayOfInterval, isSameDay, startOfMonth, endOfMonth, isWithinInterval, startOfDay, endOfDay } from "date-fns";
-import { CrmSettings } from "@/actions/crm/get-crm-settings";
+import { format, eachDayOfInterval, isSameDay, startOfMonth, endOfMonth, isWithinInterval, startOfDay, endOfDay, differenceInDays, isWeekend } from "date-fns";
+import { CrmSettings, TagItem } from "@/actions/crm/get-crm-settings";
 import { DateRange } from "react-day-picker"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -38,11 +38,48 @@ import {
 interface CrmReportsModalProps {
     isOpen: boolean
     onClose: () => void
-    leads: any[]
+    leads: Record<string, any>[]
     settings: CrmSettings
 }
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d', '#ef4444', '#3b82f6'];
+
+const CustomYAxisTick = ({ x, y, payload, width, ...props }: { x?: number, y?: number, payload?: { value: string | number }, width?: number, [key: string]: any }) => {
+    const value = payload?.value ? payload.value.toString() : "";
+    const limit = 20; // approximate chars per line
+    const words = value.split(' ');
+    const lines: string[] = [];
+    let currentLine = words[0];
+
+    for (let i = 1; i < words.length; i++) {
+        if (currentLine.length + words[i].length + 1 <= limit) {
+            currentLine += ' ' + words[i];
+        } else {
+            lines.push(currentLine);
+            currentLine = words[i];
+        }
+    }
+    lines.push(currentLine);
+
+    return (
+        <g transform={`translate(${x},${y})`}>
+            {lines.map((line, index) => (
+                <text
+                    key={index}
+                    x={0}
+                    y={0}
+                    dy={(index - (lines.length - 1) / 2) * 12 + 4}
+                    textAnchor="end"
+                    fill="#9ca3af"
+                    fontSize={11}
+                    {...props}
+                >
+                    {line}
+                </text>
+            ))}
+        </g>
+    );
+};
 
 // Helper to parse dates (duplicated from CrmContainer to ensure self-containment or could be utils)
 function parseDateStr(str: string): Date {
@@ -86,7 +123,10 @@ export function CrmReportsModal({ isOpen, onClose, leads, settings }: CrmReports
         }
     }
 
-    const [date, setDate] = useState<DateRange | undefined>(undefined)
+    const [date, setDate] = useState<DateRange | undefined>({
+        from: startOfMonth(new Date()),
+        to: new Date()
+    })
 
     const stats = useMemo(() => {
         // Filter leads by date range first
@@ -110,12 +150,12 @@ export function CrmReportsModal({ isOpen, onClose, leads, settings }: CrmReports
 
         // --- Status Distribution ---
         const allStatuses = [...(settings.statuses || [])];
-        if (!allStatuses.some((s: any) => s.label === 'New')) allStatuses.unshift({ label: 'New', bg: 'bg-blue-500', text: 'New' });
-        if (!allStatuses.some((s: any) => s.label === 'Won')) allStatuses.push({ label: 'Won', bg: 'bg-green-500', text: 'Won' });
-        if (!allStatuses.some((s: any) => s.label === 'Lost')) allStatuses.push({ label: 'Lost', bg: 'bg-red-500', text: 'Lost' });
+        if (!allStatuses.some((s: TagItem) => s.label === 'New')) allStatuses.unshift({ label: 'New', bg: 'bg-blue-500', text: 'New' });
+        if (!allStatuses.some((s: TagItem) => s.label === 'Won')) allStatuses.push({ label: 'Won', bg: 'bg-green-500', text: 'Won' });
+        if (!allStatuses.some((s: TagItem) => s.label === 'Lost')) allStatuses.push({ label: 'Lost', bg: 'bg-red-500', text: 'Lost' });
 
         const statusCount: Record<string, number> = {};
-        allStatuses.forEach((s: any) => statusCount[s.label] = 0);
+        allStatuses.forEach((s: TagItem) => statusCount[s.label] = 0);
 
         filteredLeads.forEach(l => {
             const s = l.status || 'New';
@@ -130,7 +170,7 @@ export function CrmReportsModal({ isOpen, onClose, leads, settings }: CrmReports
         // --- Product Distribution (Explicit Sort) ---
         const allProducts = settings.products || [];
         const productCount: Record<string, number> = {};
-        allProducts.forEach((p: any) => productCount[p.name] = 0);
+        allProducts.forEach((p) => productCount[p.name] = 0);
 
         filteredLeads.forEach(l => {
             let products: string[] = [];
@@ -140,7 +180,7 @@ export function CrmReportsModal({ isOpen, onClose, leads, settings }: CrmReports
                 } else if (l.product) {
                     products = [l.product];
                 }
-            } catch (e) {
+            } catch {
                 if (l.product) products = [l.product];
             }
             products.forEach(p => {
@@ -154,7 +194,7 @@ export function CrmReportsModal({ isOpen, onClose, leads, settings }: CrmReports
         // --- Source Distribution ---
         const allSources = settings.sources || [];
         const sourceCount: Record<string, number> = {};
-        allSources.forEach((s: any) => {
+        allSources.forEach((s: string | TagItem) => {
             const label = typeof s === 'string' ? s : s.label;
             sourceCount[label] = 0;
         });
@@ -169,7 +209,7 @@ export function CrmReportsModal({ isOpen, onClose, leads, settings }: CrmReports
         // --- Category Distribution ---
         const allCategories = settings.custom_fields?.options || [];
         const categoryCount: Record<string, number> = {};
-        allCategories.forEach((c: any) => {
+        allCategories.forEach((c: string | TagItem) => {
             const label = typeof c === 'string' ? c : c.label;
             categoryCount[label] = 0;
         });
@@ -184,7 +224,7 @@ export function CrmReportsModal({ isOpen, onClose, leads, settings }: CrmReports
         // --- Responsible (Won / Assigned formula) ---
         const allResponsibles = settings.responsibles || [];
         const respCount: Record<string, { won: number, lost: number, assigned: number }> = {};
-        allResponsibles.forEach((r: any) => {
+        allResponsibles.forEach((r: string | TagItem) => {
             const label = typeof r === 'string' ? r : r.label;
             respCount[label] = { won: 0, lost: 0, assigned: 0 };
         });
@@ -240,6 +280,9 @@ export function CrmReportsModal({ isOpen, onClose, leads, settings }: CrmReports
             intervalEnd = date.to || date.from;
         }
 
+        const daysDiff = Math.max(1, differenceInDays(intervalEnd, intervalStart) + 1);
+        const avgLeadsPerDay = total > 0 ? (total / daysDiff).toFixed(1) : "0.0";
+
         const days = eachDayOfInterval({
             start: intervalStart,
             end: intervalEnd
@@ -247,7 +290,8 @@ export function CrmReportsModal({ isOpen, onClose, leads, settings }: CrmReports
         const timelineData = days.map(day => {
             const count = leadsWithDate.filter(l => isSameDay(new Date(l.created_at || l.date), day)).length;
             return {
-                date: format(day, 'MMM dd'),
+                date: day.toISOString(), // Store as ISO string for parsing
+                displayDate: format(day, 'MMM dd'),
                 commits: count
             };
         });
@@ -297,6 +341,7 @@ export function CrmReportsModal({ isOpen, onClose, leads, settings }: CrmReports
                 else engagementCount['Advanced']++;
             }
         });
+
         const tpData = Object.entries(tpCount)
             .filter(([name]) => name !== 'In Progress')
             .map(([name, value]) => ({ name, value }));
@@ -379,7 +424,8 @@ export function CrmReportsModal({ isOpen, onClose, leads, settings }: CrmReports
             mainLostReason,
             tpData,
             engagementData,
-            globalStats
+            globalStats,
+            avgLeadsPerDay
         };
     }, [leads, settings, date]);
 
@@ -427,40 +473,59 @@ export function CrmReportsModal({ isOpen, onClose, leads, settings }: CrmReports
                             >
                                 Clear Filter
                             </Button>
-                            <div className={cn("grid gap-2")}>
+                            <div className="flex items-center gap-2">
+                                {/* From Date */}
                                 <Popover>
                                     <PopoverTrigger asChild>
                                         <Button
-                                            id="date"
                                             variant={"outline"}
                                             className={cn(
-                                                "w-[260px] justify-start text-left font-normal bg-[#0a0a0a] border-white/10 text-white hover:bg-white/5 hover:text-white",
-                                                !date && "text-muted-foreground"
+                                                "w-[140px] justify-start text-left font-normal bg-[#0a0a0a] border-white/10 text-white hover:bg-white/5 hover:text-white",
+                                                !date?.from && "text-muted-foreground"
                                             )}
                                         >
                                             <CalendarIcon className="mr-2 h-4 w-4" />
-                                            {date?.from ? (
-                                                date.to ? (
-                                                    <>
-                                                        {format(date.from, "LLL dd, y")} -{" "}
-                                                        {format(date.to, "LLL dd, y")}
-                                                    </>
-                                                ) : (
-                                                    format(date.from, "LLL dd, y")
-                                                )
-                                            ) : (
-                                                <span>Pick a date</span>
-                                            )}
+                                            {date?.from ? format(date.from, "LLL dd, y") : <span>From</span>}
                                         </Button>
                                     </PopoverTrigger>
-                                    <PopoverContent className="w-auto p-0 bg-[#0f0f0f] border-white/10" align="end">
+                                    <PopoverContent className="w-auto p-0 bg-[#0f0f0f] border-white/10 text-white" align="end">
                                         <Calendar
+                                            mode="single"
+                                            selected={date?.from}
+                                            onSelect={(newDate) => setDate(prev => {
+                                                if (!prev) return { from: newDate, to: undefined };
+                                                return { ...prev, from: newDate };
+                                            })}
                                             initialFocus
-                                            mode="range"
-                                            defaultMonth={date?.from}
-                                            selected={date}
-                                            onSelect={setDate}
-                                            numberOfMonths={2}
+                                            className="bg-[#0f0f0f] text-white"
+                                        />
+                                    </PopoverContent>
+                                </Popover>
+
+                                {/* To Date */}
+                                <Popover>
+                                    <PopoverTrigger asChild>
+                                        <Button
+                                            variant={"outline"}
+                                            className={cn(
+                                                "w-[140px] justify-start text-left font-normal bg-[#0a0a0a] border-white/10 text-white hover:bg-white/5 hover:text-white",
+                                                !date?.to && "text-muted-foreground"
+                                            )}
+                                        >
+                                            <CalendarIcon className="mr-2 h-4 w-4" />
+                                            {date?.to ? format(date.to, "LLL dd, y") : <span>To</span>}
+                                        </Button>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-auto p-0 bg-[#0f0f0f] border-white/10 text-white" align="end">
+                                        <Calendar
+                                            mode="single"
+                                            selected={date?.to}
+                                            onSelect={(newDate) => setDate(prev => {
+                                                if (!prev) return { from: undefined, to: newDate };
+                                                return { ...prev, to: newDate };
+                                            })}
+                                            disabled={(d) => date?.from ? d < date.from : false}
+                                            initialFocus
                                             className="bg-[#0f0f0f] text-white"
                                         />
                                     </PopoverContent>
@@ -528,10 +593,15 @@ export function CrmReportsModal({ isOpen, onClose, leads, settings }: CrmReports
 
                         {/* Full Width Timeline */}
                         <motion.div variants={itemVariants} className="w-full bg-[#141414] p-6 rounded-2xl border border-white/5 flex flex-col h-[350px]">
-                            <h3 className="text-lg font-semibold text-white mb-6 flex items-center gap-2">
-                                <LineChart size={18} className="text-green-500" />
-                                Acquisition Timeline
-                            </h3>
+                            <div className="flex items-center justify-between mb-6">
+                                <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+                                    <LineChart size={18} className="text-green-500" />
+                                    Acquisition Timeline
+                                </h3>
+                                <div className="text-sm text-gray-400">
+                                    Avg. Leads/Day: <span className="text-white font-bold">{stats.avgLeadsPerDay}</span>
+                                </div>
+                            </div>
                             <div className="flex-1 w-full min-w-0">
                                 <ResponsiveContainer width="100%" height="100%">
                                     <AreaChart data={stats.timelineData}>
@@ -545,7 +615,20 @@ export function CrmReportsModal({ isOpen, onClose, leads, settings }: CrmReports
                                         <XAxis
                                             dataKey="date"
                                             stroke="#666"
-                                            tick={{ fill: '#888', fontSize: 12 }}
+                                            tick={({ x, y, payload }) => {
+                                                const date = new Date(payload.value);
+                                                const isWeekendDay = isWeekend(date);
+                                                return (
+                                                    <g transform={`translate(${x},${y})`}>
+                                                        <text x={0} y={0} dy={32} textAnchor="middle" fill={isWeekendDay ? "#fff" : "#666"} fontWeight={isWeekendDay ? "bold" : "normal"} fontSize={12}>
+                                                            <tspan x="0" dy="0">{format(date, 'EEE')}</tspan>
+                                                            <tspan x="0" dy="14">{format(date, 'MMM dd')}</tspan>
+                                                        </text>
+                                                    </g>
+                                                );
+                                            }}
+                                            interval={0}
+                                            height={60}
                                             axisLine={false}
                                             tickLine={false}
                                         />
@@ -558,6 +641,7 @@ export function CrmReportsModal({ isOpen, onClose, leads, settings }: CrmReports
                                         <RechartsTooltip
                                             contentStyle={{ backgroundColor: '#1f1f1f', borderColor: '#333', borderRadius: '8px', color: '#fff' }}
                                             itemStyle={{ color: '#fff' }}
+                                            labelFormatter={(value) => format(new Date(value), 'MMM dd, yyyy')}
                                             cursor={{ stroke: 'rgba(255,255,255,0.2)' }}
                                         />
                                         <Area type="monotone" dataKey="commits" name="Leads" stroke="#8884d8" fillOpacity={1} fill="url(#colorLeads)" />
@@ -637,8 +721,9 @@ export function CrmReportsModal({ isOpen, onClose, leads, settings }: CrmReports
                                             <YAxis
                                                 dataKey="name"
                                                 type="category"
-                                                width={100}
-                                                tick={{ fill: '#888', fontSize: 12 }}
+                                                width={130}
+                                                tick={<CustomYAxisTick />}
+                                                interval={0}
                                                 axisLine={false}
                                                 tickLine={false}
                                             />
@@ -672,8 +757,9 @@ export function CrmReportsModal({ isOpen, onClose, leads, settings }: CrmReports
                                             <YAxis
                                                 dataKey="name"
                                                 type="category"
-                                                width={100}
-                                                tick={{ fill: '#9ca3af', fontSize: 11 }}
+                                                width={130}
+                                                tick={<CustomYAxisTick />}
+                                                interval={0}
                                                 axisLine={false}
                                                 tickLine={false}
                                             />
@@ -707,8 +793,9 @@ export function CrmReportsModal({ isOpen, onClose, leads, settings }: CrmReports
                                             <YAxis
                                                 dataKey="name"
                                                 type="category"
-                                                width={100}
-                                                tick={{ fill: '#9ca3af', fontSize: 11 }}
+                                                width={130}
+                                                tick={<CustomYAxisTick />}
+                                                interval={0}
                                                 axisLine={false}
                                                 tickLine={false}
                                             />
@@ -729,7 +816,7 @@ export function CrmReportsModal({ isOpen, onClose, leads, settings }: CrmReports
                             <motion.div variants={itemVariants} className="bg-[#141414] p-6 rounded-2xl border border-white/5 flex flex-col h-[400px]">
                                 <h3 className="text-lg font-semibold text-white mb-6 flex items-center gap-2">
                                     <PieChart size={18} className="text-orange-500" />
-                                    Leads by Category
+                                    Leads by {settings.custom_fields?.name || "Category"}
                                 </h3>
                                 <div className="flex-1 w-full relative min-w-0">
                                     <ResponsiveContainer width="100%" height="100%">
@@ -739,8 +826,9 @@ export function CrmReportsModal({ isOpen, onClose, leads, settings }: CrmReports
                                             <YAxis
                                                 dataKey="name"
                                                 type="category"
-                                                width={120}
-                                                tick={{ fill: '#9ca3af', fontSize: 11 }}
+                                                width={130}
+                                                tick={<CustomYAxisTick />}
+                                                interval={0}
                                                 axisLine={false}
                                                 tickLine={false}
                                             />
@@ -888,8 +976,9 @@ export function CrmReportsModal({ isOpen, onClose, leads, settings }: CrmReports
                                                 <YAxis
                                                     dataKey="name"
                                                     type="category"
-                                                    width={100}
-                                                    tick={{ fill: '#9ca3af', fontSize: 12 }}
+                                                    width={130}
+                                                    tick={<CustomYAxisTick />}
+                                                    interval={0}
                                                     axisLine={false}
                                                     tickLine={false}
                                                 />
