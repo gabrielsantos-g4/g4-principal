@@ -25,9 +25,10 @@ interface LeadDetailsModalProps {
     isOpen: boolean;
     onClose: () => void;
     lead: Lead | null;
+    onNewDeal?: (lead: Lead) => void;
 }
 
-export function LeadDetailsModal({ isOpen, onClose, lead }: LeadDetailsModalProps) {
+export function LeadDetailsModal({ isOpen, onClose, lead, onNewDeal }: LeadDetailsModalProps) {
     const [phone, setPhone] = useState<string | undefined>();
     const [name, setName] = useState("");
     const [company, setCompany] = useState("");
@@ -139,13 +140,28 @@ export function LeadDetailsModal({ isOpen, onClose, lead }: LeadDetailsModalProp
                         </div>
                     </div>
 
-                    <div className="flex items-center gap-2 pb-0.5">
-                        <Button variant="outline" onClick={onClose} className="h-10 px-4 font-bold border-white/10 bg-transparent text-gray-400 hover:text-white hover:bg-white/5 rounded-sm">
+                    <div className="flex items-center gap-2 pb-0.5 w-full justify-between">
+                        <Button
+                            variant="outline"
+                            onClick={onClose}
+                            className="h-10 px-4 font-bold border-white/10 bg-transparent text-gray-400 hover:text-white hover:bg-white/5 rounded-sm"
+                        >
                             Close
                         </Button>
-                        <Button onClick={handleSave} className="h-10 px-6 font-bold bg-[#1C73E8] text-white hover:bg-[#1557B0] border-none shadow-none rounded-sm">
-                            Save
-                        </Button>
+
+                        <div className="flex items-center gap-2">
+                            {onNewDeal && (
+                                <Button
+                                    onClick={() => onNewDeal(lead)}
+                                    className="h-10 px-4 font-bold bg-emerald-600 text-white hover:bg-emerald-700 border-none shadow-none rounded-sm"
+                                >
+                                    + New Deal
+                                </Button>
+                            )}
+                            <Button onClick={handleSave} className="h-10 px-6 font-bold bg-[#1C73E8] text-white hover:bg-[#1557B0] border-none shadow-none rounded-sm">
+                                Save
+                            </Button>
+                        </div>
                     </div>
                 </div>
             </DialogContent>

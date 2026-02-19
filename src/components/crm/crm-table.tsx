@@ -27,6 +27,7 @@ import {
     Popover,
     PopoverContent,
     PopoverTrigger,
+    PopoverClose,
 } from "@/components/ui/popover";
 import {
     DropdownMenu,
@@ -46,7 +47,7 @@ import {
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { MoreHorizontal } from "lucide-react";
-import { format } from "date-fns";
+import { format, addDays } from "date-fns";
 import { updateTouchpoint } from "@/actions/crm/update-touchpoint";
 import { updateDate } from "@/actions/crm/update-date";
 import { updateHistory } from "@/actions/crm/update-history";
@@ -71,7 +72,7 @@ interface LeadType {
     linkedin: string;
     website?: string;
     role?: string;
-    amount: string;
+    amount: string | number;
     product: string;
     status: string;
     source: string;
@@ -86,7 +87,8 @@ interface LeadType {
 }
 
 interface CrmTableProps {
-    initialLeads: any[];
+    initialLeads: any[]; // Deprecated, kept for interface compat if needed
+    filteredLeads: LeadType[]; // New prop receiving pre-filtered leads
     settings: CrmSettings;
     filters: CrmFilterState;
 }
@@ -149,39 +151,76 @@ function getDaysRemaining(dateStr: string): number | null {
     return diffDays;
 }
 
-export function CrmTable({ initialLeads, settings, filters }: CrmTableProps) {
-    const router = useRouter();
-    // Transform initial DB leads to UI format
-    const transformedLeads: LeadType[] = useMemo(() => initialLeads.map(l => ({
-        id: l.id,
-        name: l.name,
-        company: l.company,
-        phone: l.phone,
-        email: l.email,
-        linkedin: l.linkedin,
-        website: l.website,
-        role: l.role,
-        product: l.product || "",
-        amount: l.amount?.toString() || "0",
-        status: l.status || "New",
-        source: l.source || "",
-        custom: l.custom_field || "",
-        responsible: l.responsible || "",
-        nextStep: l.next_step || { date: "Pending", progress: 0, total: 6 },
-        history: Array.isArray(l.history_log) ? l.history_log.map((h: any) => ({
-            ...h,
-            date: h.date ? new Date(h.date) : new Date()
-        })) : [],
-        date: l.created_at || new Date().toISOString(),
-        qualification_status: l.qualification_status?.toLowerCase(),
-        conversation_channel: l.conversation_channel || "WhatsApp" // Default or empty
-    })), [initialLeads]);
+function NextStepDatePicker({ dateStr, onSelect }: { dateStr: string, onSelect: (date: Date) => Promise<void> }) {
+    const [open, setOpen] = useState(false);
 
-    const [leads, setLeads] = useState<LeadType[]>(transformedLeads);
+    const handleSelect = (date: Date | undefined) => {
+        if (!date) return;
+
+        // Optimistic: Close immediately
+        setOpen(false);
+
+        // Trigger save in background
+        onSelect(date);
+    }
+
+    return (
+        <Popover open={open} onOpenChange={setOpen}>
+            <PopoverTrigger asChild>
+                <button
+                    className={`text-[11px] font-semibold hover:bg-white/10 rounded px-1 -ml-1 w-fit transition-colors text-left ${parseDateStr(dateStr) < new Date(new Date().setHours(0, 0, 0, 0)) ? 'text-red-400' : 'text-gray-400'}`}
+                >
+                    {dateStr}
+                    {getDaysRemaining(dateStr) !== null && (
+                        <span className="opacity-75"> ({getDaysRemaining(dateStr)})</span>
+                    )}
+                </button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+                <div className="p-2 grid grid-cols-3 gap-1 border-b border-white/10">
+                    <button
+                        className="text-[10px] bg-white/5 hover:bg-white/10 text-gray-300 hover:text-white py-1.5 rounded transition-colors"
+                        onClick={() => handleSelect(addDays(new Date(), 1))}
+                    >
+                        Tomorrow
+                    </button>
+                    <button
+                        className="text-[10px] bg-white/5 hover:bg-white/10 text-gray-300 hover:text-white py-1.5 rounded transition-colors"
+                        onClick={() => handleSelect(addDays(new Date(), 2))}
+                    >
+                        In 2 Days
+                    </button>
+                    <button
+                        className="text-[10px] bg-white/5 hover:bg-white/10 text-gray-300 hover:text-white py-1.5 rounded transition-colors"
+                        onClick={() => handleSelect(addDays(new Date(), 3))}
+                    >
+                        In 3 Days
+                    </button>
+                </div>
+                <Calendar
+                    mode="single"
+                    selected={parseDateStr(dateStr)}
+                    onSelect={handleSelect}
+                    initialFocus
+                />
+            </PopoverContent>
+        </Popover>
+    );
+}
+
+export function CrmTable({ initialLeads, filteredLeads: propFilteredLeads, settings, filters }: CrmTableProps) {
+    const router = useRouter();
+
+    // We now receive filtered leads directly from prop
+    // Maintain local state for optimistic updates
+    const [leads, setLeads] = useState<LeadType[]>(propFilteredLeads || []);
 
     useEffect(() => {
-        setLeads(transformedLeads);
-    }, [transformedLeads]);
+        if (propFilteredLeads) {
+            setLeads(propFilteredLeads);
+        }
+    }, [propFilteredLeads]);
+
     const [selectedLead, setSelectedLead] = useState<LeadType | null>(null);
     const [historyLead, setHistoryLead] = useState<LeadType | null>(null);
     const [amountLead, setAmountLead] = useState<LeadType | null>(null);
@@ -189,6 +228,7 @@ export function CrmTable({ initialLeads, settings, filters }: CrmTableProps) {
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
     const [deleteLeadId, setDeleteLeadId] = useState<number | null>(null);
     const [lostLeadId, setLostLeadId] = useState<number | null>(null);
+    const [isLeadDetailsOpen, setIsLeadDetailsOpen] = useState(false);
 
     // Pagination State
     const [currentPage, setCurrentPage] = useState(1);
@@ -225,69 +265,8 @@ export function CrmTable({ initialLeads, settings, filters }: CrmTableProps) {
         }
     };
 
-    const filteredLeads = useMemo(() => {
-        return leads.filter(lead => {
-            // Tab Filter
-            if (filters.tab === 'active') {
-                if (lead.status === 'Won' || lead.status === 'Lost') return false;
-            } else if (filters.tab === 'earned') {
-                if (lead.status !== 'Won') return false;
-            } else if (filters.tab === 'lost') {
-                if (lead.status !== 'Lost') return false;
-            }
-
-            // Text Search
-            if (filters.searchName && !lead.name?.toLowerCase().includes(filters.searchName.toLowerCase())) return false;
-            if (filters.searchCompany && !lead.company?.toLowerCase().includes(filters.searchCompany.toLowerCase())) return false;
-            if (filters.searchPhone && !lead.phone?.toLowerCase().includes(filters.searchPhone.toLowerCase())) return false;
-
-            // Product Filter
-            if (filters.product?.length > 0 && !filters.product.includes(lead.product)) return false;
-
-            // Custom Field Filter
-            if (filters.customField && lead.custom !== filters.customField) return false;
-
-            // Source Filter
-            if (filters.source && lead.source !== filters.source) return false;
-
-            // Status Filter (Specific)
-            if (filters.status && lead.status !== filters.status) return false;
-
-            // Responsible Filter
-            if (filters.responsible && lead.responsible !== filters.responsible) return false;
-
-            // Date Filter
-            if (filters.date) {
-                const filterDateStr = format(filters.date, "EEE, dd/MMM");
-                if (lead.nextStep?.date !== filterDateStr) return false;
-            }
-
-            // Contact Filter (Overdue/Today/Tomorrow)
-            if (filters.contactFilter) {
-                const nextStepDate = parseDateStr(lead.nextStep?.date);
-                // Ensure valid date
-                if (nextStepDate.getTime() >= 8640000000000000) return false;
-
-                const now = new Date();
-                const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-                const tomorrowStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
-                const dayAfterTomorrowStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 2);
-
-                if (filters.contactFilter === 'overdue') {
-                    if (nextStepDate >= todayStart) return false;
-                } else if (filters.contactFilter === 'today') {
-                    if (nextStepDate < todayStart || nextStepDate >= tomorrowStart) return false;
-                } else if (filters.contactFilter === 'tomorrow') {
-                    if (nextStepDate < tomorrowStart || nextStepDate >= dayAfterTomorrowStart) return false;
-                }
-            }
-
-            // Qualification Filter
-            if (filters.qualification && lead.qualification_status !== filters.qualification) return false;
-
-            return true;
-        });
-    }, [leads, filters]);
+    // Use leads directly as they are already filtered
+    const filteredLeads = leads;
 
     // Reset page when filters change
     useEffect(() => {
@@ -745,16 +724,41 @@ export function CrmTable({ initialLeads, settings, filters }: CrmTableProps) {
                                 paginatedLeads.map((lead) => (
                                     <tr
                                         key={lead.id}
-                                        className="hover:bg-white/5 transition-colors group"
+                                        className="hover:bg-white/5 transition-colors group cursor-pointer"
+                                        onClick={() => {
+                                            setSelectedLead(lead);
+                                            setIsLeadDetailsOpen(true);
+                                        }}
                                     >
                                         <td className="px-3 py-1">
-                                            <div className="font-medium text-white truncate text-[11px] max-w-[130px]">{lead.name}</div>
+                                            <TooltipProvider>
+                                                <Tooltip>
+                                                    <TooltipTrigger asChild>
+                                                        <div className="font-medium text-white truncate text-[11px] max-w-[130px]">{lead.name}</div>
+                                                    </TooltipTrigger>
+                                                    <TooltipContent><p>{lead.name}</p></TooltipContent>
+                                                </Tooltip>
+                                            </TooltipProvider>
                                         </td>
                                         <td className="px-3 py-1">
-                                            <div className="font-normal text-white/50 truncate text-[11px] max-w-[110px]">{lead.company}</div>
+                                            <TooltipProvider>
+                                                <Tooltip>
+                                                    <TooltipTrigger asChild>
+                                                        <div className="font-normal text-white/50 truncate text-[11px] max-w-[110px]">{lead.company}</div>
+                                                    </TooltipTrigger>
+                                                    <TooltipContent><p>{lead.company}</p></TooltipContent>
+                                                </Tooltip>
+                                            </TooltipProvider>
                                         </td>
                                         <td className="px-3 py-1">
-                                            <div className="font-normal text-white/50 truncate text-[11px] max-w-[100px]">{lead.role || "-"}</div>
+                                            <TooltipProvider>
+                                                <Tooltip>
+                                                    <TooltipTrigger asChild>
+                                                        <div className="font-normal text-white/50 truncate text-[11px] max-w-[100px]">{lead.role || "-"}</div>
+                                                    </TooltipTrigger>
+                                                    <TooltipContent><p>{lead.role || "-"}</p></TooltipContent>
+                                                </Tooltip>
+                                            </TooltipProvider>
                                         </td>
                                         <td className="px-2 py-1">
                                             <div className="flex justify-center">
@@ -774,21 +778,36 @@ export function CrmTable({ initialLeads, settings, filters }: CrmTableProps) {
                                                         </Tooltip>
                                                     </TooltipProvider>
                                                     <PopoverContent className="w-auto p-3 bg-[#1A1A1A] border-white/10 text-white flex flex-col gap-2 z-[9999]" align="center" onClick={(e) => e.stopPropagation()}>
-                                                        <p className="text-sm font-medium text-gray-300 text-center mb-1">{formatPhoneNumberIntl(lead.phone) || lead.phone}</p>
-                                                        <div className="flex flex-col gap-1">
-                                                            <a href={`tel:${lead.phone}`} className="flex items-center gap-2 px-3 py-2 rounded-md hover:bg-white/10 transition-colors text-xs text-white">
-                                                                <Phone size={12} /> Make a call
-                                                            </a>
-                                                            <a href={`sms:${lead.phone}`} className="flex items-center gap-2 px-3 py-2 rounded-md hover:bg-white/10 transition-colors text-xs text-white">
-                                                                <MessageCircle size={12} /> Send iMessage
-                                                            </a>
-                                                            <a href={`https://wa.me/${lead.phone?.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-3 py-2 rounded-md hover:bg-white/10 transition-colors text-xs text-white">
-                                                                <svg viewBox="0 0 24 24" fill="currentColor" className="w-3 h-3">
-                                                                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z" />
-                                                                </svg>
-                                                                Open WhatsApp
-                                                            </a>
-                                                        </div>
+                                                        {lead.phone ? (
+                                                            <>
+                                                                <p className="text-sm font-medium text-gray-300 text-center mb-1">{formatPhoneNumberIntl(lead.phone) || lead.phone}</p>
+                                                                <div className="flex flex-col gap-1">
+                                                                    <button
+                                                                        onClick={() => {
+                                                                            navigator.clipboard.writeText(lead.phone);
+                                                                            toast.success("Phone number copied");
+                                                                        }}
+                                                                        className="flex items-center gap-2 px-3 py-2 rounded-md hover:bg-white/10 transition-colors text-xs text-white w-full text-left"
+                                                                    >
+                                                                        <Copy size={12} /> Copy number
+                                                                    </button>
+                                                                    <a href={`tel:${lead.phone}`} className="flex items-center gap-2 px-3 py-2 rounded-md hover:bg-white/10 transition-colors text-xs text-white">
+                                                                        <Phone size={12} /> Make a call
+                                                                    </a>
+                                                                    <a href={`sms:${lead.phone}`} className="flex items-center gap-2 px-3 py-2 rounded-md hover:bg-white/10 transition-colors text-xs text-white">
+                                                                        <MessageCircle size={12} /> Send iMessage
+                                                                    </a>
+                                                                    <a href={`https://wa.me/${lead.phone?.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-3 py-2 rounded-md hover:bg-white/10 transition-colors text-xs text-white">
+                                                                        <svg viewBox="0 0 24 24" fill="currentColor" className="w-3 h-3">
+                                                                            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z" />
+                                                                        </svg>
+                                                                        Open WhatsApp
+                                                                    </a>
+                                                                </div>
+                                                            </>
+                                                        ) : (
+                                                            <p className="text-xs text-gray-400 text-center py-2">No phone number available</p>
+                                                        )}
                                                     </PopoverContent>
                                                 </Popover>
                                             </div>
@@ -885,26 +904,10 @@ export function CrmTable({ initialLeads, settings, filters }: CrmTableProps) {
                                         </td>
                                         <td className="px-3 py-1 pl-8">
                                             <div className="flex flex-col gap-1" onClick={(e) => e.stopPropagation()}>
-                                                <Popover>
-                                                    <PopoverTrigger asChild>
-                                                        <button
-                                                            className={`text-[11px] font-semibold hover:bg-white/10 rounded px-1 -ml-1 w-fit transition-colors text-left ${parseDateStr(lead.nextStep.date) < new Date(new Date().setHours(0, 0, 0, 0)) ? 'text-red-400' : 'text-gray-400'}`}
-                                                        >
-                                                            {lead.nextStep.date}
-                                                            {getDaysRemaining(lead.nextStep.date) !== null && (
-                                                                <span className="opacity-75"> ({getDaysRemaining(lead.nextStep.date)})</span>
-                                                            )}
-                                                        </button>
-                                                    </PopoverTrigger>
-                                                    <PopoverContent className="w-auto p-0" align="start">
-                                                        <Calendar
-                                                            mode="single"
-                                                            selected={parseDateStr(lead.nextStep.date)}
-                                                            onSelect={(date) => handleDateSelect(lead.id, date)}
-                                                            initialFocus
-                                                        />
-                                                    </PopoverContent>
-                                                </Popover>
+                                                <NextStepDatePicker
+                                                    dateStr={lead.nextStep.date}
+                                                    onSelect={(date) => handleDateSelect(lead.id, date)}
+                                                />
 
 
                                                 <div className="flex items-center gap-1">
@@ -1001,8 +1004,8 @@ export function CrmTable({ initialLeads, settings, filters }: CrmTableProps) {
                                                 }}
                                             >
                                                 {/* Ensure amount is formatted if coming from DB as simple number string */}
-                                                {lead.amount?.includes('$') ? lead.amount : (
-                                                    (parseFloat(lead.amount) || 0).toLocaleString('en-US', {
+                                                {lead.amount?.toString().includes('$') ? lead.amount : (
+                                                    (typeof lead.amount === 'number' ? lead.amount : parseFloat(lead.amount) || 0).toLocaleString('en-US', {
                                                         style: 'currency',
                                                         currency: 'USD',
                                                         minimumFractionDigits: 2
@@ -1022,9 +1025,16 @@ export function CrmTable({ initialLeads, settings, filters }: CrmTableProps) {
                                                         })()}`}
                                                         onClick={(e) => e.stopPropagation()}
                                                     >
-                                                        <span className="whitespace-nowrap overflow-hidden text-ellipsis">
-                                                            {lead.custom || <span className="text-gray-600 italic font-normal">Select...</span>}
-                                                        </span>
+                                                        <TooltipProvider>
+                                                            <Tooltip>
+                                                                <TooltipTrigger asChild>
+                                                                    <span className="whitespace-nowrap overflow-hidden text-ellipsis">
+                                                                        {lead.custom || <span className="text-gray-600 italic font-normal">Select...</span>}
+                                                                    </span>
+                                                                </TooltipTrigger>
+                                                                <TooltipContent><p>{lead.custom || "Select..."}</p></TooltipContent>
+                                                            </Tooltip>
+                                                        </TooltipProvider>
                                                         <ChevronDown size={12} className="ml-2 shrink-0 opacity-50" />
                                                     </button>
                                                 </DropdownMenuTrigger>
@@ -1131,9 +1141,16 @@ export function CrmTable({ initialLeads, settings, filters }: CrmTableProps) {
                                                         })()}`}
                                                         onClick={(e) => e.stopPropagation()}
                                                     >
-                                                        <span className="whitespace-nowrap overflow-hidden text-ellipsis">
-                                                            {lead.source || <span className="text-gray-600 italic font-normal">Select...</span>}
-                                                        </span>
+                                                        <TooltipProvider>
+                                                            <Tooltip>
+                                                                <TooltipTrigger asChild>
+                                                                    <span className="whitespace-nowrap overflow-hidden text-ellipsis">
+                                                                        {lead.source || <span className="text-gray-600 italic font-normal">Select...</span>}
+                                                                    </span>
+                                                                </TooltipTrigger>
+                                                                <TooltipContent><p>{lead.source || "Select..."}</p></TooltipContent>
+                                                            </Tooltip>
+                                                        </TooltipProvider>
                                                         <ChevronDown size={12} className="ml-2 shrink-0 opacity-50" />
                                                     </button>
                                                 </DropdownMenuTrigger>
@@ -1174,9 +1191,16 @@ export function CrmTable({ initialLeads, settings, filters }: CrmTableProps) {
                                                 <DropdownMenuTrigger asChild>
                                                     <div className="flex items-center gap-2 px-2 py-1 rounded hover:bg-white/10 cursor-pointer transition-colors group/channel">
                                                         {getChannelIcon(lead.conversation_channel || "WhatsApp")}
-                                                        <span className="text-[11px] text-white/70 group-hover/channel:text-white truncate">
-                                                            {lead.conversation_channel || "WhatsApp"}
-                                                        </span>
+                                                        <TooltipProvider>
+                                                            <Tooltip>
+                                                                <TooltipTrigger asChild>
+                                                                    <span className="text-[11px] text-white/70 group-hover/channel:text-white truncate">
+                                                                        {lead.conversation_channel || "WhatsApp"}
+                                                                    </span>
+                                                                </TooltipTrigger>
+                                                                <TooltipContent><p>{lead.conversation_channel || "WhatsApp"}</p></TooltipContent>
+                                                            </Tooltip>
+                                                        </TooltipProvider>
                                                         <ChevronDown size={10} className="text-white/30 opacity-0 group-hover/channel:opacity-100 transition-opacity" />
                                                     </div>
                                                 </DropdownMenuTrigger>
@@ -1264,9 +1288,16 @@ export function CrmTable({ initialLeads, settings, filters }: CrmTableProps) {
                                                         })()}`}
                                                         onClick={(e) => e.stopPropagation()}
                                                     >
-                                                        <span className="whitespace-nowrap overflow-hidden text-ellipsis">
-                                                            {lead.responsible || <span className="text-gray-600 italic font-normal">Select...</span>}
-                                                        </span>
+                                                        <TooltipProvider>
+                                                            <Tooltip>
+                                                                <TooltipTrigger asChild>
+                                                                    <span className="whitespace-nowrap overflow-hidden text-ellipsis">
+                                                                        {lead.responsible || <span className="text-gray-600 italic font-normal">Select...</span>}
+                                                                    </span>
+                                                                </TooltipTrigger>
+                                                                <TooltipContent><p>{lead.responsible || "Select..."}</p></TooltipContent>
+                                                            </Tooltip>
+                                                        </TooltipProvider>
                                                         <ChevronDown size={12} className="ml-2 shrink-0 opacity-50" />
                                                     </button>
                                                 </DropdownMenuTrigger>
@@ -1415,7 +1446,7 @@ export function CrmTable({ initialLeads, settings, filters }: CrmTableProps) {
             <LeadDetailsModal
                 isOpen={!!selectedLead}
                 onClose={() => setSelectedLead(null)}
-                lead={selectedLead}
+                lead={selectedLead ? { ...selectedLead, amount: selectedLead.amount.toString() } : null}
             />
 
             <LeadHistoryModal
@@ -1429,7 +1460,7 @@ export function CrmTable({ initialLeads, settings, filters }: CrmTableProps) {
             <LeadAmountModal
                 isOpen={!!amountLead}
                 onClose={() => setAmountLead(null)}
-                currentAmount={amountLead?.amount || ""}
+                currentAmount={amountLead?.amount.toString() || ""}
                 onSave={handleSaveAmount}
             />
 
@@ -1445,6 +1476,31 @@ export function CrmTable({ initialLeads, settings, filters }: CrmTableProps) {
                 isOpen={isSettingsOpen}
                 onClose={() => setIsSettingsOpen(false)}
                 settings={settings}
+            />
+            <LeadDetailsModal
+                isOpen={isLeadDetailsOpen}
+                onClose={() => setIsLeadDetailsOpen(false)}
+                lead={selectedLead}
+                onNewDeal={(lead) => {
+                    setIsLeadDetailsOpen(false);
+                    const newDealData = {
+                        name: lead.name,
+                        company: lead.company,
+                        phone: lead.phone,
+                        email: lead.email,
+                        linkedin: lead.linkedin,
+                        website: lead.website,
+                        role: lead.role,
+                        responsible: lead.responsible,
+                        product: "[]",
+                        amount: 0,
+                        status: "New",
+                        touchpoint: 0,
+                        nextStep: undefined,
+                        history_log: []
+                    };
+                    setEditLead(newDealData); // Using setEditLead reusing NewOpportunityModal logic
+                }}
             />
 
             <NewOpportunityModal

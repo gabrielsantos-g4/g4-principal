@@ -38,3 +38,12 @@ export function formatWhatsAppDate(dateString: string | null | undefined): strin
 
   return date.toLocaleDateString([], { day: '2-digit', month: '2-digit', year: '2-digit' })
 }
+
+export function formatCurrency(value: number) {
+  return new Intl.NumberFormat('pt-BR', {
+    style: 'currency',
+    currency: 'BRL',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(value)
+}

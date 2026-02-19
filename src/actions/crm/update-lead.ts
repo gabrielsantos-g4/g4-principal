@@ -13,6 +13,7 @@ interface UpdateLeadParams {
     amount?: number;
     product?: string;
     lost_reason?: string;
+    temperature?: string;
     qualification_details?: any; // JSONB
 }
 

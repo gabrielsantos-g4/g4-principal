@@ -3,14 +3,16 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Trash2, Edit2, Check, X, Plus, Save, GripVertical } from "lucide-react";
+import { Trash2, Edit2, Check, X, Plus, Save, GripVertical, Pencil } from "lucide-react";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Reorder } from "framer-motion";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 import { CrmSettings } from "@/actions/crm/get-crm-settings";
 import { updateCrmSettings } from "@/actions/crm/update-crm-settings";
+import { updateCrmStatuses } from "@/actions/crm/update-statuses"; // NEW
 import { transferLeadsTag } from "@/actions/crm/transfer-leads-tag";
-import { getCompanyUsers } from "@/actions/users"; // Import getCompanyUsers
+import { checkProductUsage, transferProduct } from "@/actions/crm/product-actions"; // NEW IMPORTS
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -26,12 +28,16 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { formatCurrency } from "@/lib/utils";
 
-interface TagItem {
+export interface TagItem {
+    id?: string | number;
     label: string;
     bg: string;
     text: string;
     email?: string;
+    phase?: 'not_started' | 'in_progress' | 'closing';
+    temperature?: 'Cold' | 'Warm' | 'Hot';
 }
 
 const COLORS = [
@@ -58,17 +64,16 @@ interface CrmSettingsModalProps {
     settings: CrmSettings;
 }
 
-// Internal component for editing a Tag (Name + Color)
-function TagEditor({
+import { StatusItem } from "./status-item";
+
+// Internal component for editing a Tag (Name + Color + Phase)
+export function TagEditor({
     tag,
     onSave,
-    onDelete,
     children
 }: {
     tag: TagItem,
     onSave: (newLabel: string, newBg: string, newText: string) => void,
-    onDeleteRaw?: () => void,
-    onDelete?: () => void,
     children: React.ReactNode
 }) {
     const [label, setLabel] = useState(tag.label);
@@ -102,7 +107,7 @@ function TagEditor({
             <PopoverTrigger asChild>
                 {children}
             </PopoverTrigger>
-            <PopoverContent className="w-[220px] p-3 bg-[#1a1a1a] border-white/10 flex flex-col gap-3 z-[9999]">
+            <PopoverContent className="w-[260px] p-3 bg-[#1a1a1a] border-white/10 flex flex-col gap-3 z-[9999]">
                 <div className="space-y-1">
                     <Label className="text-[10px] text-gray-500 uppercase font-semibold">Label</Label>
                     <Input
@@ -113,6 +118,7 @@ function TagEditor({
                         autoFocus
                     />
                 </div>
+
                 <div className="space-y-1">
                     <Label className="text-[10px] text-gray-500 uppercase font-semibold">Color</Label>
                     <div className="grid grid-cols-5 gap-2">
@@ -160,7 +166,9 @@ export function CrmSettingsModal({ isOpen, onClose, settings }: CrmSettingsModal
         overrideResponsibles?: any[],
         overrideSources?: any[],
         overrideCustomOptions?: any[],
-        overrideLostReasons?: any[]
+        overrideLostReasons?: any[],
+        silent: boolean = false,
+        overrideMetrics?: { revenue_goal?: number; avg_ticket?: number; close_rate?: number }
     ) => {
         if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
         saveTimeoutRef.current = setTimeout(() => {
@@ -171,7 +179,8 @@ export function CrmSettingsModal({ isOpen, onClose, settings }: CrmSettingsModal
                 overrideSources,
                 overrideCustomOptions,
                 overrideLostReasons,
-                true // silent save
+                silent,
+                overrideMetrics
             );
         }, 1000);
     };
@@ -188,69 +197,38 @@ export function CrmSettingsModal({ isOpen, onClose, settings }: CrmSettingsModal
     const [sources, setSources] = useState<TagItem[]>(normalizeTags(settings?.sources || []));
     const [lostReasons, setLostReasons] = useState<TagItem[]>(normalizeTags(settings?.lost_reasons || []));
 
-    // Real Team Members State
-    const [teamMembers, setTeamMembers] = useState<any[]>([]);
+    // Pipeline Health Metrics
+    const [revenueGoal, setRevenueGoal] = useState<number>(settings?.revenue_goal || 0);
+    const [avgTicket, setAvgTicket] = useState<number>(settings?.avg_ticket || 0);
+    const [closeRate, setCloseRate] = useState<number>(settings?.close_rate || 0);
 
-    useEffect(() => {
-        if (isOpen) {
-            getCompanyUsers().then(data => {
-                if (data && data.users) {
-                    let members: any[] = data.users;
-                    // Inject Jess if active for current user
-                    if (data.currentUser?.active_agents?.includes('customer-jess')) {
-                        members = [
-                            ...members,
-                            {
-                                id: 'customer-jess',
-                                name: 'Jess (AI)',
-                                email: 'ai@startg4.com',
-                                role: 'AI Agent',
-                                avatar_url: '', // Handle avatar in UI if needed or use default
-                                has_messaging_access: true // Jess has access by definition if active
-                            }
-                        ];
-                    }
-                    setTeamMembers(members);
-                }
-            });
-        }
-    }, [isOpen]);
 
     // Custom Field State
     const [customFieldName, setCustomFieldName] = useState(settings?.custom_fields?.name || "Category");
     const [customOptions, setCustomOptions] = useState<TagItem[]>(normalizeTags(settings?.custom_fields?.options));
 
     // Local state for inputs
-    const [newProduct, setNewProduct] = useState({ name: "", price: "" });
+    const [newProduct, setNewProduct] = useState({ name: '', price: '' });
+    const [editingProductIndex, setEditingProductIndex] = useState<number | null>(null);
+    const [editingProductData, setEditingProductData] = useState({ name: '', price: '' });
     const [newStatus, setNewStatus] = useState({ label: "", bg: "bg-gray-500", text: "text-white" });
-    const [newResponsible, setNewResponsible] = useState({ name: "", email: "" });
     const [newSource, setNewSource] = useState("");
     const [newLostReason, setNewLostReason] = useState("");
     const [newCustomOption, setNewCustomOption] = useState("");
 
     // Edit/Delete State
-    const [editingProductIndex, setEditingProductIndex] = useState<number | null>(null);
-    const [editingProductData, setEditingProductData] = useState({ name: "", price: "" });
-    const [itemToDelete, setItemToDelete] = useState<{ type: 'product' | 'status' | 'responsible' | 'source' | 'lostReason' | 'customOption', index: number } | null>(null);
+    const [itemToDelete, setItemToDelete] = useState<{ type: 'product', index: number } | null>(null);
+
+    // Product Deletion State
+    const [productDeleteInfo, setProductDeleteInfo] = useState<{ count: number, productName: string, index: number } | null>(null);
+    const [selectedReassignProduct, setSelectedReassignProduct] = useState<string>("");
 
     // Transfer State
     const [transferTarget, setTransferTarget] = useState<string>("");
 
     // Get available options for transfer based on itemToDelete
     const getTransferOptions = () => {
-        if (!itemToDelete) return [];
-        const { type, index } = itemToDelete;
-
-        const filter = (arr: TagItem[]) => arr.filter((_, idx) => idx !== index);
-
-        switch (type) {
-            case 'status': return filter(statuses);
-            case 'responsible': return filter(responsibles);
-            case 'source': return filter(sources);
-            case 'lostReason': return filter(lostReasons);
-            case 'customOption': return filter(customOptions);
-            default: return [];
-        }
+        return [];
     };
 
     // Sync state when settings prop updates
@@ -261,8 +239,12 @@ export function CrmSettingsModal({ isOpen, onClose, settings }: CrmSettingsModal
         setResponsibles(normalizeTags(settings.responsibles || []));
         setSources(normalizeTags(settings.sources || []));
         setLostReasons(normalizeTags(settings.lost_reasons || []));
+        // setTemperatures(normalizeTags(settings.temperatures || [])); // Removed
         setCustomFieldName(settings.custom_fields?.name || "Category");
         setCustomOptions(normalizeTags(settings.custom_fields?.options || []));
+        setRevenueGoal(settings.revenue_goal || 0);
+        setAvgTicket(settings.avg_ticket || 0);
+        setCloseRate(settings.close_rate || 0);
     }, [settings]);
 
     // Reset transfer target when delete modal opens
@@ -270,8 +252,16 @@ export function CrmSettingsModal({ isOpen, onClose, settings }: CrmSettingsModal
         setTransferTarget("");
     }, [itemToDelete]);
 
-
-    const saveSettings = async (overrideProducts?: any[], overrideStatuses?: any[], overrideResponsibles?: any[], overrideSources?: any[], overrideCustomOptions?: any[], overrideLostReasons?: any[], silent: boolean = false) => {
+    const saveSettings = async (
+        overrideProducts?: any[],
+        overrideStatuses?: any[],
+        overrideResponsibles?: any[],
+        overrideSources?: any[],
+        overrideCustomOptions?: any[],
+        overrideLostReasons?: any[],
+        silent: boolean = false,
+        overrideMetrics?: { revenue_goal?: number, avg_ticket?: number, close_rate?: number }
+    ) => {
         setLoading(true);
         try {
             const updatedSettings = {
@@ -280,10 +270,14 @@ export function CrmSettingsModal({ isOpen, onClose, settings }: CrmSettingsModal
                 responsibles: overrideResponsibles || responsibles,
                 sources: overrideSources || sources,
                 lost_reasons: overrideLostReasons || lostReasons,
+                // temperatures: settings.temperatures, // Temporarily removed to fix save error if column missing
                 custom_fields: {
                     name: customFieldName,
                     options: overrideCustomOptions || customOptions
-                }
+                },
+                revenue_goal: overrideMetrics?.revenue_goal ?? revenueGoal,
+                avg_ticket: overrideMetrics?.avg_ticket ?? avgTicket,
+                close_rate: overrideMetrics?.close_rate ?? closeRate,
             };
 
             const result = await updateCrmSettings(updatedSettings);
@@ -294,7 +288,8 @@ export function CrmSettingsModal({ isOpen, onClose, settings }: CrmSettingsModal
                 }
                 router.refresh();
             } else {
-                toast.error("Failed to save.");
+                console.error("Save failed:", result.error);
+                toast.error(`Failed to save: ${result.error}`);
             }
         } catch (error) {
             toast.error("Error saving settings.");
@@ -312,8 +307,94 @@ export function CrmSettingsModal({ isOpen, onClose, settings }: CrmSettingsModal
         await saveSettings(updatedProducts);
     };
 
-    const confirmDeleteProduct = (index: number) => {
-        setItemToDelete({ type: 'product', index });
+    const confirmDeleteProduct = async (index: number) => {
+        try {
+            const product = products[index];
+            if (!product) return;
+
+            setLoading(true);
+            console.log(`[Client] Checking usage for product: ${product.name}`);
+            const result = await checkProductUsage(product.name);
+            console.log(`[Client] Usage check result:`, result);
+
+            // Handle case where result might be undefined if action fails completely
+            const count = result?.count || 0;
+
+            if (count > 0) {
+                setProductDeleteInfo({ count, productName: product.name, index });
+                setItemToDelete(null);
+            } else {
+                setItemToDelete({ type: 'product', index });
+            }
+        } catch (error) {
+            console.error("Error checking product usage:", error);
+            toast.error("Failed to check product usage. Please try again.");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleProductDeleteConfirm = async () => {
+        if (!productDeleteInfo) return;
+        setLoading(true);
+
+        try {
+            const { productName, index } = productDeleteInfo;
+
+            // 1. Handle Reassignment or Removal from Leads
+            if (selectedReassignProduct) {
+                await transferProduct(productName, selectedReassignProduct);
+                toast.success(`Leads reassigned to ${selectedReassignProduct}`);
+            } else {
+                // Just remove the product from leads
+                await transferProduct(productName);
+                toast.success(`Product removed from ${productDeleteInfo.count} leads`);
+            }
+
+            // 2. Delete Product from Settings
+            const updatedProducts = [...products];
+            updatedProducts.splice(index, 1);
+            setProducts(updatedProducts);
+            await saveSettings(updatedProducts, undefined, undefined, undefined, undefined, undefined, true);
+
+            toast.success("Product deleted successfully!");
+            setProductDeleteInfo(null);
+            setSelectedReassignProduct("");
+
+        } catch (e) {
+            console.error(e);
+            toast.error("Failed to delete product.");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const startEditingProduct = (index: number) => {
+        const product = products[index];
+        setEditingProductIndex(index);
+        setEditingProductData({ name: product.name, price: String(product.price) });
+    };
+
+    const cancelEditProduct = () => {
+        setEditingProductIndex(null);
+        setEditingProductData({ name: '', price: '' });
+    };
+
+    const saveEditedProduct = () => {
+        if (editingProductIndex === null) return;
+        if (!editingProductData.name || !editingProductData.price) return;
+
+        const updatedProducts = [...products];
+        updatedProducts[editingProductIndex] = {
+            name: editingProductData.name,
+            price: editingProductData.price
+        };
+
+        setProducts(updatedProducts);
+        // Save immediately (not silent) to show feedback
+        saveSettings(updatedProducts, undefined, undefined, undefined, undefined, undefined, false);
+        setEditingProductIndex(null);
+        setEditingProductData({ name: '', price: '' });
     };
 
     // Generic Delete handler with Transfer Logic
@@ -324,80 +405,14 @@ export function CrmSettingsModal({ isOpen, onClose, settings }: CrmSettingsModal
         const { type, index } = itemToDelete;
 
         try {
-            // 1. Transfer leads if needed (Products don't have lead association in this context usually, skipping for simplicity unless requested)
-            if (type !== 'product' && transferTarget) {
-                let oldValue = "";
-                let column = "";
-
-                if (type === 'status') {
-                    oldValue = statuses[index].label;
-                    column = 'status';
-                } else if (type === 'responsible') {
-                    oldValue = responsibles[index].label;
-                    column = 'responsible';
-                } else if (type === 'source') {
-                    oldValue = sources[index].label;
-                    column = 'source';
-                } else if (type === 'lostReason') {
-                    oldValue = lostReasons[index].label;
-                    column = 'lost_reason';
-                } else if (type === 'customOption') {
-                    oldValue = customOptions[index].label;
-                    column = 'custom_field';
-                }
-
-                if (oldValue && column) {
-                    const transferResult = await transferLeadsTag(oldValue, transferTarget, column);
-                    if (!transferResult.success) {
-                        toast.error("Failed to transfer leads. Delete aborted.");
-                        setLoading(false);
-                        return;
-                    }
-                    toast.success(`Leads transferred to ${transferTarget}`);
-                }
-            }
-
-
-            // 2. Perform local deletion and save
             if (type === 'product') {
                 const updatedProducts = [...products];
                 updatedProducts.splice(index, 1);
                 setProducts(updatedProducts);
                 await saveSettings(updatedProducts, undefined, undefined, undefined, undefined, undefined, true);
-            } else if (type === 'status') {
-                const updatedStatuses = [...statuses];
-                updatedStatuses.splice(index, 1);
-                setStatuses(updatedStatuses);
-                await saveSettings(undefined, updatedStatuses, undefined, undefined, undefined, undefined, true);
-            } else if (type === 'responsible') {
-                const updated = [...responsibles];
-                updated.splice(index, 1);
-                setResponsibles(updated);
-                await saveSettings(undefined, undefined, updated, undefined, undefined, undefined, true);
-            } else if (type === 'source') {
-                const updated = [...sources];
-                updated.splice(index, 1);
-                setSources(updated);
-                await saveSettings(undefined, undefined, undefined, updated, undefined, undefined, true);
-            } else if (type === 'lostReason') {
-                const updated = [...lostReasons];
-                updated.splice(index, 1);
-                setLostReasons(updated);
-                await saveSettings(undefined, undefined, undefined, undefined, undefined, updated, true);
-            } else if (type === 'customOption') {
-                const updated = [...customOptions];
-                updated.splice(index, 1);
-                setCustomOptions(updated);
-                await saveSettings(undefined, undefined, undefined, undefined, updated, undefined, true);
+                toast.success("Product deleted successfully!");
+                setItemToDelete(null);
             }
-
-            toast.error("Tag deleted!", {
-                style: { background: '#ef4444', color: 'white', border: 'none' }
-            });
-            router.refresh();
-            setItemToDelete(null);
-            setTransferTarget("");
-
         } catch (e) {
             console.error(e);
             toast.error("An error occurred during deletion.");
@@ -415,43 +430,30 @@ export function CrmSettingsModal({ isOpen, onClose, settings }: CrmSettingsModal
     const addStatus = async () => {
         if (!newStatus.label) return;
         const color = getRandomColor();
-        const updatedStatuses = [...statuses, { ...newStatus, ...color, id: Date.now() }];
+        const newStatusObj: TagItem = { ...newStatus, ...color, id: crypto.randomUUID(), phase: 'not_started', temperature: 'Cold' };
+        const updatedStatuses = [...statuses, newStatusObj];
         setStatuses(updatedStatuses);
         setNewStatus({ label: "", bg: "bg-gray-500", text: "text-white" });
-        await saveSettings(undefined, updatedStatuses);
+        await updateCrmStatuses(updatedStatuses);
     };
 
-    const removeStatus = (index: number) => {
-        setItemToDelete({ type: 'status', index });
-    };
+    const [statusToDelete, setStatusToDelete] = useState<number | null>(null);
 
-    const updateStatus = async (index: number, label: string, bg: string, text: string) => {
+    const updateStatus = async (index: number, label: string, bg: string, text: string, phase?: 'not_started' | 'in_progress' | 'closing', temperature?: 'Cold' | 'Warm' | 'Hot') => {
         const updatedStatuses = [...statuses];
-        updatedStatuses[index] = { ...updatedStatuses[index], label, bg, text };
+        updatedStatuses[index] = {
+            ...updatedStatuses[index],
+            label,
+            bg,
+            text,
+            phase: phase || 'not_started',
+            temperature: temperature || 'Cold'
+        };
         setStatuses(updatedStatuses);
-        await saveSettings(undefined, updatedStatuses, undefined, undefined, undefined, undefined, true);
+        await updateCrmStatuses(updatedStatuses);
     }
 
     // --- Others ---
-    const addResponsible = async () => {
-        if (!newResponsible.name || !newResponsible.email || responsibles.some(r => r.label === newResponsible.name)) return;
-        const color = getRandomColor();
-        const updated = [...responsibles, { label: newResponsible.name, email: newResponsible.email, ...color }];
-        setResponsibles(updated);
-        setNewResponsible({ name: "", email: "" });
-        await saveSettings(undefined, undefined, updated);
-    };
-
-    const removeResponsible = (index: number) => {
-        setItemToDelete({ type: 'responsible', index });
-    };
-
-    const updateResponsible = async (index: number, label: string, bg: string, text: string) => {
-        const updated = [...responsibles];
-        updated[index] = { ...updated[index], label, bg, text };
-        setResponsibles(updated);
-        await saveSettings(undefined, undefined, updated, undefined, undefined, undefined, true);
-    }
 
     const addSource = async () => {
         if (!newSource || sources.some(s => s.label === newSource)) return;
@@ -460,10 +462,6 @@ export function CrmSettingsModal({ isOpen, onClose, settings }: CrmSettingsModal
         setSources(updated);
         setNewSource("");
         await saveSettings(undefined, undefined, undefined, updated);
-    };
-
-    const removeSource = (index: number) => {
-        setItemToDelete({ type: 'source', index });
     };
 
     const updateSource = async (index: number, label: string, bg: string, text: string) => {
@@ -483,16 +481,13 @@ export function CrmSettingsModal({ isOpen, onClose, settings }: CrmSettingsModal
         await saveSettings(undefined, undefined, undefined, undefined, undefined, updated);
     };
 
-    const removeLostReason = (index: number) => {
-        setItemToDelete({ type: 'lostReason', index });
-    };
-
     const updateLostReason = async (index: number, label: string, bg: string, text: string) => {
         const updated = [...lostReasons];
         updated[index] = { ...updated[index], label, bg, text };
         setLostReasons(updated);
         await saveSettings(undefined, undefined, undefined, undefined, undefined, updated, true);
     }
+
 
     // --- Custom Options ---
     const addCustomOption = async () => {
@@ -503,10 +498,6 @@ export function CrmSettingsModal({ isOpen, onClose, settings }: CrmSettingsModal
         setNewCustomOption("");
         await saveSettings(undefined, undefined, undefined, undefined, updated);
     };
-
-    const removeCustomOption = (index: number) => {
-        setItemToDelete({ type: 'customOption', index });
-    }
 
     const updateCustomOption = async (index: number, label: string, bg: string, text: string) => {
         const updated = [...customOptions];
@@ -526,479 +517,514 @@ export function CrmSettingsModal({ isOpen, onClose, settings }: CrmSettingsModal
     // --- Render ---
     return (
         <>
-            <Dialog open={isOpen} onOpenChange={onClose}>
-                <DialogContent className="w-[95vw] max-w-[95vw] sm:max-w-[95vw] md:max-w-[95vw] max-h-[90vh] overflow-y-auto bg-[#1a1a1a] text-white p-6 border border-white/10 rounded-lg">
-                    <DialogHeader className="mb-4">
-                        <DialogTitle className="text-xl font-bold">CRM Settings</DialogTitle>
-                        <DialogDescription className="text-gray-400">Manage your CRM products, statuses, and options.</DialogDescription>
+            {/* Product Reassignment Modal */}
+            <Dialog open={!!productDeleteInfo} onOpenChange={(open) => !open && setProductDeleteInfo(null)}>
+                <DialogContent className="bg-[#1a1a1a] border-white/10 text-white sm:max-w-[425px]">
+                    <DialogHeader>
+                        <DialogTitle>Delete Product: {productDeleteInfo?.productName}</DialogTitle>
+                        <DialogDescription className="text-gray-400">
+                            This product is currently associated with <span className="text-white font-bold">{productDeleteInfo?.count} leads</span>.
+                        </DialogDescription>
                     </DialogHeader>
 
-                    {/* ... (Existing Grid Structure unchanged) ... */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                        {/* Products Column */}
-                        <div className="space-y-6">
-                            <div className="space-y-4">
-                                <h3 className="text-lg font-semibold border-b border-white/10 pb-2">Products / Services</h3>
-                                {/* Avoid duplicating product add UI code for brevity, it's same as before */}
-                                <div className="space-y-3 p-4 bg-white/5 rounded-md border border-white/10">
-                                    <Label className="text-sm text-gray-300">Add New Product</Label>
-                                    <div className="flex flex-col gap-2">
-                                        <div className="flex gap-2">
-                                            <Input
-                                                placeholder="Name (e.g., Consulting)"
-                                                value={newProduct.name}
-                                                onChange={(e) => setNewProduct({ ...newProduct, name: e.target.value })}
-                                                className="bg-black/50 border-white/20 text-white flex-1"
-                                                onKeyDown={(e) => handleKeyDown(e, addProduct)}
-                                            />
-                                            <Input
-                                                type="number"
-                                                placeholder="Price"
-                                                value={newProduct.price}
-                                                onChange={(e) => setNewProduct({ ...newProduct, price: e.target.value })}
-                                                className="bg-black/50 border-white/20 text-white w-32"
-                                                onKeyDown={(e) => handleKeyDown(e, addProduct)}
-                                            />
-                                        </div>
-                                        <Button
-                                            onClick={addProduct}
-                                            disabled={loading || !newProduct.name || !newProduct.price}
-                                            className="bg-[#1C73E8] hover:bg-[#1557B0] text-white h-8 text-xs w-fit px-4"
-                                        >
-                                            Save Product
-                                        </Button>
-                                    </div>
-                                </div>
-                                <div className="flex flex-col gap-2 pr-2">
-                                    {products.map((product, index) => (
-                                        <div key={index} className="flex items-center justify-between p-2 bg-white/5 rounded border border-white/10 group hover:bg-white/10 transition-colors">
-                                            <div className="flex items-center gap-3">
-                                                <span className="font-medium text-sm text-white">{product.name}</span>
-                                                <span className="text-xs text-gray-400 border-l border-white/10 pl-3">${Number(product.price).toLocaleString()}</span>
-                                            </div>
-                                            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                <Button
-                                                    size="icon"
-                                                    variant="ghost"
-                                                    className="h-6 w-6 text-red-500 hover:text-red-400 hover:bg-white/10"
-                                                    onClick={() => confirmDeleteProduct(index)}
-                                                >
-                                                    <Trash2 className="h-3.5 w-3.5" />
-                                                </Button>
-                                            </div>
-                                        </div>
-                                    ))}
-                                    {products.length === 0 && (
-                                        <div className="text-center py-4 text-gray-500 text-sm">No products added yet.</div>
-                                    )}
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Statuses & Others Column */}
-                        <div className="space-y-8">
-                            {/* Statuses */}
-                            <div className="space-y-4">
-                                <h3 className="text-lg font-semibold border-b border-white/10 pb-2">Pipeline Statuses</h3>
-                                <div className="flex gap-2">
-                                    <Input
-                                        placeholder="New Status Label"
-                                        value={newStatus.label}
-                                        onChange={(e) => setNewStatus({ ...newStatus, label: e.target.value })}
-                                        className="bg-black/50 border-white/20 text-white"
-                                        onKeyDown={(e) => handleKeyDown(e, addStatus)}
-                                    />
-                                    <Button onClick={addStatus} disabled={loading || !newStatus.label} className="bg-white/10 hover:bg-white/20 text-white">
-                                        <Plus className="h-4 w-4" />
-                                    </Button>
-                                </div>
-                                <Reorder.Group
-                                    axis="x"
-                                    values={statuses}
-                                    onReorder={(newOrder) => {
-                                        setStatuses(newOrder);
-                                        debouncedSave(undefined, newOrder);
-                                    }}
-                                    className="flex flex-nowrap overflow-x-auto gap-2 w-full list-none p-1 pb-2 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent"
-                                >
-                                    {statuses.map((status, index) => (
-                                        <Reorder.Item key={status.id || status.label} value={status}>
-                                            <TagEditor
-                                                tag={status}
-                                                onSave={(l, b, t) => updateStatus(index, l, b, t)}
-                                                onDelete={() => removeStatus(index)}
-                                            >
-                                                <div className={`flex items-center gap-1 px-2 py-1 rounded text-xs border border-white/10 ${status.bg} ${status.text} cursor-pointer hover:opacity-80 transition-opacity`}>
-                                                    <GripVertical className="h-3 w-3 opacity-50 mr-1 cursor-grab active:cursor-grabbing" />
-                                                    {status.label}
-                                                    <button
-                                                        onClick={(e) => { e.stopPropagation(); removeStatus(index); }}
-                                                        className="hover:text-white ml-1 opacity-70 hover:opacity-100"
-                                                    >
-                                                        <X className="h-3 w-3" />
-                                                    </button>
-                                                </div>
-                                            </TagEditor>
-                                        </Reorder.Item>
-                                    ))}
-                                </Reorder.Group>
-                            </div>
-
-                            {/* Responsibles */}
-                            <div className="space-y-4">
-                                <h3 className="text-lg font-semibold border-b border-white/10 pb-2">Team Members Handling Messaging & CRM</h3>
-
-                                {/* Active Team Members (Read-Only / Selectable) */}
-                                <div className="space-y-2 mb-4">
-                                    <Label className="text-xs text-blue-400 font-bold uppercase tracking-wider">Team Members Handling Messaging & CRM</Label>
-                                    <div className="grid grid-cols-1 gap-2">
-                                        {teamMembers
-                                            .filter(member => {
-                                                // 1. Admin/Owner always shows
-                                                if (member.role === 'admin' || member.role === 'owner') return true;
-                                                // 2. Humans with messaging access
-                                                if (member.has_messaging_access) return true;
-                                                // 3. Jess (if active) - Assuming member list might include AI agents if they are stored in profiles, 
-                                                // but usually Jess is an agent, not a profile. 
-                                                // However, the request implies Jess should appear if enabled.
-                                                // If Jess is not in teamMembers (which comes from profiles), we might need to inject her if she's active for the viewer.
-                                                // But here we are iterating 'teamMembers' which are profiles.
-                                                // Let's stick to filtering profiles first.
-                                                // Wait, if Jess is not a profile, she won't be here.
-                                                // The user said: "Jessica appears only if enabled...".
-                                                // If Jess is not in 'getCompanyUsers', we need to check if we should add her visually here.
-                                                // 'teamMembers' are from 'main_profiles'. Jess is likely NOT there.
-                                                // To add Jess, we need to know if she is active for the company/user.
-                                                // 'getCompanyUsers' returns 'active_agents' for each user.
-                                                // We can check if ANY admin or the current user has Jess active? 
-                                                // Or simply if the company has Jess enabled?
-                                                // Let's look at how we check for Jess in other places.
-                                                // Usually strict on 'active_agents' of the viewer.
-                                                // But this is a setting for the company/team.
-                                                // Let's check if we can verify if 'customer-jess' is active in general.
-                                                // For now, let's filter the humans correctly.
-                                                // 3. Jess (AI Agent)
-                                                if (member.id === 'customer-jess') return true;
-
-                                                return false;
-                                            })
-                                            .map((member) => (
-                                                <div key={member.id} className="flex items-center justify-between p-2 bg-blue-500/10 rounded border border-blue-500/20">
-                                                    <div className="flex items-center gap-2">
-                                                        <div className={`w-6 h-6 rounded-full ${member.id === 'customer-jess' ? 'bg-purple-600' : 'bg-blue-500'} flex items-center justify-center text-[10px] font-bold text-white overflow-hidden`}>
-                                                            {member.avatar_url ? (
-                                                                <img src={member.avatar_url} alt={member.name} className="w-full h-full object-cover" />
-                                                            ) : (
-                                                                member.name?.[0]?.toUpperCase()
-                                                            )}
-                                                        </div>
-                                                        <div className="flex flex-col">
-                                                            <span className="text-sm font-medium text-blue-100">{member.name}</span>
-                                                            <span className="text-[10px] text-blue-300">{member.email}</span>
-                                                        </div>
-                                                    </div>
-                                                    <div className="flex items-center gap-2">
-                                                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-300 border border-blue-500/20 capitalize">
-                                                            {member.role}
-                                                        </span>
-                                                        {/* Auto-add to responsibles if not present? Or just show they are available? 
-                                                        For now, showing them as "System Users" distinct from "Manual Tags"
-                                                    */}
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        {teamMembers.length === 0 && <span className="text-xs text-gray-500">No active members found.</span>}
-                                    </div>
-                                </div>
-
-                                <div className="space-y-2">
-                                    <Label className="text-xs text-gray-400 font-bold uppercase tracking-wider">Custom / External Responsibles</Label>
-                                    <div className="flex gap-2">
-                                        <Input
-                                            placeholder="New Member Name"
-                                            value={newResponsible.name}
-                                            onChange={(e) => setNewResponsible({ ...newResponsible, name: e.target.value })}
-                                            className="bg-black/50 border-white/20 text-white flex-1"
-                                            onKeyDown={(e) => handleKeyDown(e, addResponsible)}
-                                        />
-                                        <Input
-                                            placeholder="Member e-mail"
-                                            value={newResponsible.email}
-                                            onChange={(e) => setNewResponsible({ ...newResponsible, email: e.target.value })}
-                                            className="bg-black/50 border-white/20 text-white w-64"
-                                            onKeyDown={(e) => handleKeyDown(e, addResponsible)}
-                                        />
-                                        <Button onClick={addResponsible} disabled={loading || !newResponsible.name || !newResponsible.email} className="bg-white/10 hover:bg-white/20 text-white">
-                                            <Plus className="h-4 w-4" />
-                                        </Button>
-                                    </div>
-                                    <Reorder.Group
-                                        axis="y"
-                                        values={responsibles}
-                                        onReorder={(newOrder) => {
-                                            setResponsibles(newOrder);
-                                            debouncedSave(undefined, undefined, newOrder);
-                                        }}
-                                        className="flex flex-col gap-2 list-none p-0"
-                                    >
-                                        {responsibles.map((person, index) => {
-                                            const tag = typeof person === 'string' ? { label: person, bg: 'bg-blue-900', text: 'text-blue-100' } : person;
-                                            return (
-                                                <Reorder.Item key={tag.label} value={person}>
-                                                    <div className="flex items-center justify-between p-2 bg-white/5 rounded border border-white/10">
-                                                        <div className="flex items-center gap-2">
-                                                            <GripVertical className="h-4 w-4 text-gray-500 cursor-grab active:cursor-grabbing" />
-                                                            <TagEditor
-                                                                tag={tag}
-                                                                onSave={(l, b, t) => updateResponsible(index, l, b, t)}
-                                                            >
-                                                                <div className={`flex items-center gap-1 px-2 py-1 rounded text-xs border border-white/10 ${tag.bg} ${tag.text} cursor-pointer hover:opacity-80 transition-opacity`}>
-                                                                    {tag.label}
-                                                                </div>
-                                                            </TagEditor>
-                                                            {typeof person !== 'string' && person.email && (
-                                                                <span className="text-xs text-gray-500">{person.email}</span>
-                                                            )}
-                                                        </div>
-                                                        <Button
-                                                            size="icon"
-                                                            variant="ghost"
-                                                            className="h-6 w-6 text-red-500 hover:text-red-400 hover:bg-white/10"
-                                                            onClick={() => removeResponsible(index)}
-                                                        >
-                                                            <Trash2 className="h-3.5 w-3.5" />
-                                                        </Button>
-                                                    </div>
-                                                </Reorder.Item>
-                                            )
-                                        })}
-                                    </Reorder.Group>
-                                </div>
-                            </div>
-
-                            {/* Lost Reasons */}
-                            <div className="space-y-4">
-                                <h3 className="text-lg font-semibold border-b border-white/10 pb-2">Lost Lead Reasons</h3>
-                                <div className="flex gap-2">
-                                    <Input
-                                        placeholder="New Reason"
-                                        value={newLostReason}
-                                        onChange={(e) => setNewLostReason(e.target.value)}
-                                        className="bg-black/50 border-white/20 text-white"
-                                        onKeyDown={(e) => handleKeyDown(e, addLostReason)}
-                                    />
-                                    <Button onClick={addLostReason} disabled={loading || !newLostReason} className="bg-white/10 hover:bg-white/20 text-white">
-                                        <Plus className="h-4 w-4" />
-                                    </Button>
-                                </div>
-                                <Reorder.Group
-                                    axis="x"
-                                    values={lostReasons}
-                                    onReorder={(newOrder) => {
-                                        setLostReasons(newOrder);
-                                        debouncedSave(undefined, undefined, undefined, undefined, undefined, newOrder);
-                                    }}
-                                    className="flex flex-nowrap overflow-x-auto gap-2 w-full list-none p-1 pb-2 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent"
-                                >
-                                    {lostReasons.map((reason, index) => (
-                                        <Reorder.Item key={reason.label} value={reason}>
-                                            <TagEditor
-                                                tag={reason}
-                                                onSave={(l, b, t) => updateLostReason(index, l, b, t)}
-                                                onDelete={() => removeLostReason(index)}
-                                            >
-                                                <div className={`flex items-center gap-1 px-2 py-1 rounded text-xs border border-white/10 ${reason.bg} ${reason.text} cursor-pointer hover:opacity-80 transition-opacity`}>
-                                                    <GripVertical className="h-3 w-3 opacity-50 mr-1 cursor-grab active:cursor-grabbing" />
-                                                    {reason.label}
-                                                    <button
-                                                        onClick={(e) => { e.stopPropagation(); removeLostReason(index); }}
-                                                        className="hover:text-white ml-1 opacity-70 hover:opacity-100"
-                                                    >
-                                                        <X className="h-3 w-3" />
-                                                    </button>
-                                                </div>
-                                            </TagEditor>
-                                        </Reorder.Item>
-                                    ))}
-                                </Reorder.Group>
-                            </div>
-
-                            {/* Sources */}
-                            <div className="space-y-4">
-                                <h3 className="text-lg font-semibold border-b border-white/10 pb-2">Lead Sources</h3>
-                                <div className="flex gap-2">
-                                    <Input
-                                        placeholder="New Source"
-                                        value={newSource}
-                                        onChange={(e) => setNewSource(e.target.value)}
-                                        className="bg-black/50 border-white/20 text-white"
-                                        onKeyDown={(e) => handleKeyDown(e, addSource)}
-                                    />
-                                    <Button onClick={addSource} disabled={loading || !newSource} className="bg-white/10 hover:bg-white/20 text-white">
-                                        <Plus className="h-4 w-4" />
-                                    </Button>
-                                </div>
-                                <Reorder.Group
-                                    axis="x"
-                                    values={sources}
-                                    onReorder={(newOrder) => {
-                                        setSources(newOrder);
-                                        debouncedSave(undefined, undefined, undefined, newOrder);
-                                    }}
-                                    className="flex flex-nowrap overflow-x-auto gap-2 w-full list-none p-1 pb-2 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent"
-                                >
-                                    {sources.map((source, index) => (
-                                        <Reorder.Item key={source.label} value={source}>
-                                            <TagEditor
-                                                tag={source}
-                                                onSave={(l, b, t) => updateSource(index, l, b, t)}
-                                                onDelete={() => removeSource(index)}
-                                            >
-                                                <div className={`flex items-center gap-1 px-2 py-1 rounded text-xs border border-white/10 ${source.bg} ${source.text} cursor-pointer hover:opacity-80 transition-opacity`}>
-                                                    <GripVertical className="h-3 w-3 opacity-50 mr-1 cursor-grab active:cursor-grabbing" />
-                                                    {source.label}
-                                                    <button
-                                                        onClick={(e) => { e.stopPropagation(); removeSource(index); }}
-                                                        className="hover:text-white ml-1 opacity-70 hover:opacity-100"
-                                                    >
-                                                        <X className="h-3 w-3" />
-                                                    </button>
-                                                </div>
-                                            </TagEditor>
-                                        </Reorder.Item>
-                                    ))}
-                                </Reorder.Group>
-                            </div>
-
-                            {/* Custom Field */}
-                            <div className="space-y-4">
-                                <h3 className="text-lg font-semibold border-b border-white/10 pb-2">Custom Field</h3>
-                                <div className="space-y-3">
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div className="flex flex-col gap-1">
-                                            <Label className="text-xs text-gray-500">Field Name</Label>
-                                            <div className="flex gap-2">
-                                                <Input
-                                                    value={customFieldName}
-                                                    onChange={(e) => setCustomFieldName(e.target.value)}
-                                                    className="bg-black/50 border-white/20 text-white h-8 w-full"
-                                                    onKeyDown={(e) => handleKeyDown(e, () => saveSettings())}
-                                                />
-                                                <Button
-                                                    onClick={() => saveSettings()}
-                                                    disabled={loading || !customFieldName}
-                                                    className="bg-white/10 hover:bg-white/20 text-white px-3"
-                                                >
-                                                    <Save className="h-4 w-4" />
-                                                </Button>
-                                            </div>
-                                        </div>
-
-                                        <div className="flex flex-col gap-1">
-                                            <Label className="text-xs text-gray-500">Field Options</Label>
-                                            <div className="flex gap-2">
-                                                <Input
-                                                    placeholder="New Option"
-                                                    value={newCustomOption}
-                                                    onChange={(e) => setNewCustomOption(e.target.value)}
-                                                    className="bg-black/50 border-white/20 text-white"
-                                                    onKeyDown={(e) => handleKeyDown(e, addCustomOption)}
-                                                />
-                                                <Button onClick={addCustomOption} disabled={loading || !newCustomOption} className="bg-white/10 hover:bg-white/20 text-white">
-                                                    <Plus className="h-4 w-4" />
-                                                </Button>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <Reorder.Group
-                                        axis="x"
-                                        values={customOptions}
-                                        onReorder={(newOrder) => {
-                                            setCustomOptions(newOrder);
-                                            debouncedSave(undefined, undefined, undefined, undefined, newOrder);
-                                        }}
-                                        className="flex flex-nowrap overflow-x-auto gap-2 mt-2 w-full list-none p-1 pb-2 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent"
-                                    >
-                                        {customOptions.map((opt, index) => (
-                                            <Reorder.Item key={opt.label} value={opt}>
-                                                <TagEditor
-                                                    tag={opt}
-                                                    onSave={(l, b, t) => updateCustomOption(index, l, b, t)}
-                                                >
-                                                    <div className={`flex items-center gap-1 px-2 py-1 rounded text-xs border border-white/10 ${opt.bg} ${opt.text} cursor-pointer hover:opacity-80 transition-opacity`}>
-                                                        <GripVertical className="h-3 w-3 opacity-50 mr-1 cursor-grab active:cursor-grabbing" />
-                                                        {opt.label}
-                                                        <button
-                                                            onClick={(e) => { e.stopPropagation(); removeCustomOption(index); }}
-                                                            className="hover:text-white ml-1 opacity-70 hover:opacity-100"
-                                                        >
-                                                            <X className="h-3 w-3" />
-                                                        </button>
-                                                    </div>
-                                                </TagEditor>
-                                            </Reorder.Item>
-                                        ))}
-                                    </Reorder.Group>
-                                </div>
-                            </div>
-
+                    <div className="py-4 space-y-4">
+                        <p className="text-sm text-gray-300">What would you like to do with these leads?</p>
+                        <div className="space-y-2">
+                            <Label className="text-xs text-gray-400 uppercase">Reassign to (Optional)</Label>
+                            <Select value={selectedReassignProduct} onValueChange={setSelectedReassignProduct}>
+                                <SelectTrigger className="bg-black/50 border-white/20 text-white">
+                                    <SelectValue placeholder="Leave empty to just remove product" />
+                                </SelectTrigger>
+                                <SelectContent className="bg-[#1a1a1a] border-white/10 text-white">
+                                    <SelectItem value="remove_only_placeholder">Leave empty (Remove product from leads)</SelectItem>
+                                    {products
+                                        .filter((_, idx) => idx !== productDeleteInfo?.index)
+                                        .map((p, idx) => (
+                                            <SelectItem key={idx} value={p.name}>{p.name}</SelectItem>
+                                        ))
+                                    }
+                                </SelectContent>
+                            </Select>
+                            <p className="text-[10px] text-gray-500">
+                                If you leave this empty, the product "{productDeleteInfo?.productName}" will simply be removed from the leads' product list.
+                            </p>
                         </div>
                     </div>
 
-                    <DialogFooter className="mt-8 pt-4 border-t border-white/10">
-                        <Button variant="ghost" onClick={onClose} className="bg-transparent hover:bg-white/10 text-white">Close</Button>
+                    <DialogFooter>
+                        <Button variant="ghost" onClick={() => setProductDeleteInfo(null)} disabled={loading}>Cancel</Button>
+                        <Button
+                            variant="destructive"
+                            onClick={handleProductDeleteConfirm}
+                            disabled={loading}
+                            className="bg-red-600 hover:bg-red-700 text-white"
+                        >
+                            {loading ? "Processing..." : "Confirm Delete"}
+                        </Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
 
+            <Dialog open={isOpen} onOpenChange={onClose}>
+                <DialogContent className="w-[90vw] max-w-[90vw] sm:max-w-[90vw] h-[90vh] bg-[#0A0A0A] text-white p-0 border border-white/10 rounded-lg flex flex-col gap-0 overflow-hidden shadow-2xl">
+                    <DialogHeader className="p-6 pb-2 border-b border-white/10 shrink-0">
+                        <DialogTitle className="text-xl font-bold">CRM Settings</DialogTitle>
+                        <DialogDescription className="text-gray-400">Manage your CRM products, statuses, and options.</DialogDescription>
+                    </DialogHeader>
+
+                    <div className="flex-1 overflow-hidden p-6 pt-4">
+                        <Tabs defaultValue="products" className="w-full h-full flex flex-col">
+                            <TabsList className="bg-black/20 border border-white/10 w-fit">
+                                <TabsTrigger value="products">Products</TabsTrigger>
+                                <TabsTrigger value="tags">Tags</TabsTrigger>
+                                <TabsTrigger value="pipeline-health">Pipeline Health</TabsTrigger>
+                            </TabsList>
+
+                            <TabsContent value="products" className="flex-1 overflow-y-auto mt-4 pr-2">
+                                <div className="flex flex-col gap-8 pb-10">
+                                    {/* Products Section */}
+                                    <div className="space-y-6">
+                                        <div className="space-y-4">
+                                            <h3 className="text-lg font-semibold border-b border-white/10 pb-2">Products / Services</h3>
+                                            <div className="space-y-3 p-4 bg-white/5 rounded-md border border-white/10">
+                                                <Label className="text-sm text-gray-300">Add New Product</Label>
+                                                <div className="flex flex-col gap-2">
+                                                    <div className="flex gap-2">
+                                                        <Input
+                                                            placeholder="Name (e.g., Consulting)"
+                                                            value={newProduct.name}
+                                                            onChange={(e) => setNewProduct({ ...newProduct, name: e.target.value })}
+                                                            className="bg-black/50 border-white/20 text-white flex-1"
+                                                            onKeyDown={(e) => handleKeyDown(e, addProduct)}
+                                                        />
+                                                        <Input
+                                                            type="number"
+                                                            placeholder="Price"
+                                                            value={newProduct.price}
+                                                            onChange={(e) => setNewProduct({ ...newProduct, price: e.target.value })}
+                                                            className="bg-black/50 border-white/20 text-white w-32"
+                                                            onKeyDown={(e) => handleKeyDown(e, addProduct)}
+                                                        />
+                                                    </div>
+                                                    <Button
+                                                        onClick={addProduct}
+                                                        disabled={loading || !newProduct.name || !newProduct.price}
+                                                        className="bg-[#1C73E8] hover:bg-[#1557B0] text-white h-8 text-xs w-fit px-4"
+                                                    >
+                                                        Save Product
+                                                    </Button>
+                                                </div>
+                                            </div>
+                                            <div className="flex flex-col gap-2 pr-2">
+                                                {products.map((product, index) => (
+                                                    <div key={index} className="flex items-center justify-between p-2 bg-white/5 rounded border border-white/10 group hover:bg-white/10 transition-colors">
+                                                        {editingProductIndex === index ? (
+                                                            <div className="flex items-center gap-2 flex-1 mr-2">
+                                                                <Input
+                                                                    value={editingProductData.name}
+                                                                    onChange={(e) => setEditingProductData({ ...editingProductData, name: e.target.value })}
+                                                                    className="bg-black/50 border-white/20 text-white flex-1 h-8 text-sm"
+                                                                    placeholder="Product Name"
+                                                                    autoFocus
+                                                                    onKeyDown={(e) => handleKeyDown(e, saveEditedProduct)}
+                                                                />
+                                                                <Input
+                                                                    type="number"
+                                                                    value={editingProductData.price}
+                                                                    onChange={(e) => setEditingProductData({ ...editingProductData, price: e.target.value })}
+                                                                    className="bg-black/50 border-white/20 text-white w-24 h-8 text-sm"
+                                                                    placeholder="Price"
+                                                                    onKeyDown={(e) => handleKeyDown(e, saveEditedProduct)}
+                                                                />
+                                                                <div className="flex items-center gap-1">
+                                                                    <Button
+                                                                        size="icon"
+                                                                        variant="ghost"
+                                                                        className="h-8 w-8 text-green-500 hover:text-green-400 hover:bg-green-500/10"
+                                                                        onClick={saveEditedProduct}
+                                                                    >
+                                                                        <Check className="h-4 w-4" />
+                                                                    </Button>
+                                                                    <Button
+                                                                        size="icon"
+                                                                        variant="ghost"
+                                                                        className="h-8 w-8 text-gray-400 hover:text-white hover:bg-white/10"
+                                                                        onClick={cancelEditProduct}
+                                                                    >
+                                                                        <X className="h-4 w-4" />
+                                                                    </Button>
+                                                                </div>
+                                                            </div>
+                                                        ) : (
+                                                            <>
+                                                                <div className="flex items-center gap-3">
+                                                                    <span className="font-medium text-sm text-white">{product.name}</span>
+                                                                    <span className="text-xs text-gray-400 border-l border-white/10 pl-3">
+                                                                        {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0 }).format(Number(product.price))}
+                                                                    </span>
+                                                                </div>
+                                                                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                                    <Button
+                                                                        size="icon"
+                                                                        variant="ghost"
+                                                                        className="h-6 w-6 text-blue-400 hover:text-blue-300 hover:bg-white/10"
+                                                                        onClick={() => startEditingProduct(index)}
+                                                                    >
+                                                                        <Pencil className="h-3.5 w-3.5" />
+                                                                    </Button>
+                                                                    <Button
+                                                                        size="icon"
+                                                                        variant="ghost"
+                                                                        className="h-6 w-6 text-red-500 hover:text-red-400 hover:bg-white/10"
+                                                                        onClick={() => confirmDeleteProduct(index)}
+                                                                    >
+                                                                        <Trash2 className="h-3.5 w-3.5" />
+                                                                    </Button>
+                                                                </div>
+                                                            </>
+                                                        )}
+                                                    </div>
+                                                ))}
+                                                {products.length === 0 && (
+                                                    <div className="text-center py-4 text-gray-500 text-sm">No products added yet.</div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </TabsContent>
+
+                            <TabsContent value="tags" className="flex-1 overflow-hidden mt-4">
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 h-full p-1 overflow-y-auto lg:overflow-hidden">
+                                    {/* Column 1: Pipeline Statuses */}
+                                    <div className="flex flex-col gap-4 bg-white/[0.02] p-4 rounded-lg border border-white/5 lg:overflow-hidden h-full min-h-[400px]">
+                                        <h3 className="text-xs font-bold uppercase tracking-widest text-gray-400 border-b border-white/10 pb-2">Pipeline Status</h3>
+
+                                        <div className="flex gap-2">
+                                            <Input
+                                                placeholder="New Status Label"
+                                                value={newStatus.label}
+                                                onChange={(e) => setNewStatus({ ...newStatus, label: e.target.value })}
+                                                className="h-9 bg-black/50 border-white/20 text-white text-sm"
+                                                onKeyDown={(e) => handleKeyDown(e, addStatus)}
+                                            />
+                                            <Button size="sm" onClick={addStatus} disabled={loading || !newStatus.label} className="bg-white/10 hover:bg-white/20 text-white">
+                                                <Plus className="h-4 w-4" />
+                                            </Button>
+                                        </div>
+
+                                        <div className="flex-1 overflow-y-auto pr-1 custom-scrollbar">
+                                            <Reorder.Group
+                                                axis="y"
+                                                values={statuses}
+                                                onReorder={(newOrder) => {
+                                                    setStatuses(newOrder);
+                                                    updateCrmStatuses(newOrder);
+                                                }}
+                                                className="flex flex-col gap-2 w-full list-none py-1"
+                                            >
+                                                {statuses.map((status, index) => (
+                                                    <StatusItem
+                                                        key={status.id || `status-${index}-${status.label}`} // Fallback key if ID is missing, but ID should be present
+                                                        status={status}
+                                                        index={index}
+                                                        settings={settings}
+                                                        updateStatus={updateStatus}
+                                                        TagEditorComponent={TagEditor}
+                                                    />
+                                                ))}
+                                            </Reorder.Group>
+                                        </div>
+                                    </div>
+
+                                    {/* Column 2: Lead Sources */}
+                                    <div className="flex flex-col gap-4 bg-white/[0.02] p-4 rounded-lg border border-white/5 lg:overflow-hidden h-full min-h-[400px]">
+                                        <h3 className="text-xs font-bold uppercase tracking-widest text-gray-400 border-b border-white/10 pb-2">Lead Sources</h3>
+
+                                        <div className="flex gap-2">
+                                            <Input
+                                                placeholder="New Source Label"
+                                                value={newSource}
+                                                onChange={(e) => setNewSource(e.target.value)}
+                                                className="h-9 bg-black/50 border-white/20 text-white text-sm"
+                                                onKeyDown={(e) => handleKeyDown(e, addSource)}
+                                            />
+                                            <Button size="sm" onClick={addSource} disabled={loading || !newSource} className="bg-white/10 hover:bg-white/20 text-white">
+                                                <Plus className="h-4 w-4" />
+                                            </Button>
+                                        </div>
+
+                                        <div className="flex-1 overflow-y-auto pr-1 custom-scrollbar">
+                                            <Reorder.Group
+                                                axis="y"
+                                                values={sources}
+                                                onReorder={(newOrder) => {
+                                                    setSources(newOrder);
+                                                    debouncedSave(undefined, undefined, undefined, newOrder);
+                                                }}
+                                                className="flex flex-col gap-2 w-full list-none py-1"
+                                            >
+                                                {sources.map((source, index) => {
+                                                    const tag = typeof source === 'string' ? { label: source, bg: 'bg-slate-800', text: 'text-slate-100' } : source;
+                                                    return (
+                                                        <Reorder.Item key={tag.label} value={source}>
+                                                            <div className="flex items-center gap-2 p-1.5 bg-white/5 rounded border border-white/10 group">
+                                                                <GripVertical className="h-3.5 w-3.5 text-gray-600 cursor-grab active:cursor-grabbing flex-shrink-0" />
+                                                                <TagEditor
+                                                                    tag={tag}
+                                                                    onSave={(l, b, t) => updateSource(index, l, b, t)}
+                                                                >
+                                                                    <div className={`flex items-center gap-2 px-2 py-1 rounded text-xs border border-white/10 ${tag.bg} ${tag.text} cursor-pointer hover:brightness-110 transition-all shadow-sm flex-1 truncate`}>
+                                                                        <span className="truncate">{tag.label}</span>
+                                                                    </div>
+                                                                </TagEditor>
+                                                            </div>
+                                                        </Reorder.Item>
+                                                    )
+                                                })}
+                                            </Reorder.Group>
+                                        </div>
+                                    </div>
+
+                                    {/* Column 3: Lost Reasons */}
+                                    <div className="flex flex-col gap-4 bg-white/[0.02] p-4 rounded-lg border border-white/5 lg:overflow-hidden h-full min-h-[400px]">
+                                        <h3 className="text-xs font-bold uppercase tracking-widest text-gray-400 border-b border-white/10 pb-2">Lost Reasons</h3>
+
+                                        <div className="flex gap-2">
+                                            <Input
+                                                placeholder="New Reason Label"
+                                                value={newLostReason}
+                                                onChange={(e) => setNewLostReason(e.target.value)}
+                                                className="h-9 bg-black/50 border-white/20 text-white text-sm"
+                                                onKeyDown={(e) => handleKeyDown(e, addLostReason)}
+                                            />
+                                            <Button size="sm" onClick={addLostReason} disabled={loading || !newLostReason} className="bg-white/10 hover:bg-white/20 text-white">
+                                                <Plus className="h-4 w-4" />
+                                            </Button>
+                                        </div>
+
+                                        <div className="flex-1 overflow-y-auto pr-1 custom-scrollbar">
+                                            <Reorder.Group
+                                                axis="y"
+                                                values={lostReasons}
+                                                onReorder={(newOrder) => {
+                                                    setLostReasons(newOrder);
+                                                    debouncedSave(undefined, undefined, undefined, undefined, undefined, newOrder);
+                                                }}
+                                                className="flex flex-col gap-2 w-full list-none py-1"
+                                            >
+                                                {lostReasons.map((reason, index) => {
+                                                    const tag = typeof reason === 'string' ? { label: reason, bg: 'bg-red-900', text: 'text-red-100' } : reason;
+                                                    return (
+                                                        <Reorder.Item key={tag.label} value={reason}>
+                                                            <div className="flex items-center gap-2 p-1.5 bg-white/5 rounded border border-white/10 group">
+                                                                <GripVertical className="h-3.5 w-3.5 text-gray-600 cursor-grab active:cursor-grabbing flex-shrink-0" />
+                                                                <TagEditor
+                                                                    tag={tag}
+                                                                    onSave={(l, b, t) => updateLostReason(index, l, b, t)}
+                                                                >
+                                                                    <div className={`flex items-center gap-2 px-2 py-1 rounded text-xs border border-white/10 ${tag.bg} ${tag.text} cursor-pointer hover:brightness-110 transition-all shadow-sm flex-1 truncate`}>
+                                                                        <span className="truncate">{tag.label}</span>
+                                                                    </div>
+                                                                </TagEditor>
+                                                            </div>
+                                                        </Reorder.Item>
+                                                    )
+                                                })}
+                                            </Reorder.Group>
+                                        </div>
+                                    </div>
+
+                                    {/* Column 4: Custom Fields */}
+                                    <div className="flex flex-col gap-4 bg-white/[0.02] p-4 rounded-lg border border-white/5 lg:overflow-hidden h-full min-h-[400px]">
+                                        <div className="flex items-center justify-between border-b border-white/10 pb-2">
+                                            <h3 className="text-xs font-bold uppercase tracking-widest text-gray-400">Custom Options</h3>
+                                            <Input
+                                                value={customFieldName}
+                                                onChange={(e) => setCustomFieldName(e.target.value)}
+                                                onBlur={() => debouncedSave()}
+                                                className="h-6 w-24 px-1 text-[10px] bg-transparent border-white/10 text-white focus:border-white/30 text-right"
+                                            />
+                                        </div>
+
+                                        <div className="flex gap-2">
+                                            <Input
+                                                placeholder={`New ${customFieldName}...`}
+                                                value={newCustomOption}
+                                                onChange={(e) => setNewCustomOption(e.target.value)}
+                                                className="h-9 bg-black/50 border-white/20 text-white text-sm"
+                                                onKeyDown={(e) => handleKeyDown(e, addCustomOption)}
+                                            />
+                                            <Button size="sm" onClick={addCustomOption} disabled={loading || !newCustomOption} className="bg-white/10 hover:bg-white/20 text-white">
+                                                <Plus className="h-4 w-4" />
+                                            </Button>
+                                        </div>
+
+                                        <div className="flex-1 overflow-y-auto pr-1 custom-scrollbar">
+                                            <Reorder.Group
+                                                axis="y"
+                                                values={customOptions}
+                                                onReorder={(newOrder) => {
+                                                    setCustomOptions(newOrder);
+                                                    debouncedSave(undefined, undefined, undefined, undefined, newOrder);
+                                                }}
+                                                className="flex flex-col gap-2 w-full list-none py-1"
+                                            >
+                                                {customOptions.map((option, index) => {
+                                                    const tag = typeof option === 'string' ? { label: option, bg: 'bg-slate-800', text: 'text-slate-100' } : option;
+                                                    return (
+                                                        <Reorder.Item key={tag.label} value={option}>
+                                                            <div className="flex items-center gap-2 p-1.5 bg-white/5 rounded border border-white/10 group">
+                                                                <GripVertical className="h-3.5 w-3.5 text-gray-600 cursor-grab active:cursor-grabbing flex-shrink-0" />
+                                                                <TagEditor
+                                                                    tag={tag}
+                                                                    onSave={(l, b, t) => updateCustomOption(index, l, b, t)}
+                                                                >
+                                                                    <div className={`flex items-center gap-2 px-2 py-1 rounded text-xs border border-white/10 ${tag.bg} ${tag.text} cursor-pointer hover:brightness-110 transition-all shadow-sm flex-1 truncate`}>
+                                                                        <span className="truncate">{tag.label}</span>
+                                                                    </div>
+                                                                </TagEditor>
+                                                            </div>
+                                                        </Reorder.Item>
+                                                    )
+                                                })}
+                                            </Reorder.Group>
+                                        </div>
+                                    </div>
+
+                                </div>
+                            </TabsContent>
+
+                            <TabsContent value="pipeline-health" className="flex-1 overflow-y-auto mt-4 pr-2">
+                                <div className="space-y-8 max-w-2xl">
+                                    <div className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+                                        <h3 className="text-lg font-semibold text-blue-100 mb-2">Pipeline Health Calculator</h3>
+                                        <p className="text-sm text-blue-200/80 mb-4">
+                                            Configure your revenue goals to automatically calculate if your pipeline is healthy.
+                                            The system compares your <strong>Needed Pipeline</strong> vs <strong>Actual Pipeline (Closing Phase)</strong>.
+                                        </p>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <div className="space-y-4 p-4 bg-white/5 border border-white/10 rounded-lg">
+                                            <h4 className="font-semibold text-gray-200">Revenue Goals</h4>
+
+                                            <div className="space-y-2">
+                                                <Label className="text-xs text-gray-400">Monthly Revenue Goal</Label>
+                                                <div className="relative">
+                                                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">$</span>
+                                                    <Input
+                                                        type="number"
+                                                        value={revenueGoal}
+                                                        onChange={(e) => {
+                                                            const val = Number(e.target.value);
+                                                            setRevenueGoal(val);
+                                                            debouncedSave(undefined, undefined, undefined, undefined, undefined, undefined, false, { revenue_goal: val });
+                                                        }}
+                                                        className="pl-7 bg-black/50 border-white/20 text-white"
+                                                    />
+                                                </div>
+                                                <p className="text-[10px] text-gray-500">Monthly revenue target to calculate pipeline health.</p>
+                                            </div>
+
+                                            <div className="space-y-2">
+                                                <Label className="text-xs text-gray-400 font-bold uppercase tracking-wider">Average Ticket</Label>
+                                                <div className="relative">
+                                                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-xs">$</span>
+                                                    <Input
+                                                        type="number"
+                                                        value={avgTicket}
+                                                        onChange={(e) => {
+                                                            const val = Number(e.target.value);
+                                                            setAvgTicket(val);
+                                                            debouncedSave(undefined, undefined, undefined, undefined, undefined, undefined, false, { avg_ticket: val });
+                                                        }}
+                                                        className="pl-7 bg-black/50 border-white/20 text-white"
+                                                    />
+                                                </div>
+                                                <p className="text-[10px] text-gray-500">Average deal value.</p>
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-4 p-4 bg-white/5 border border-white/10 rounded-lg">
+                                            <h4 className="font-semibold text-gray-200">Conversion Metrics</h4>
+
+                                            <div className="space-y-2">
+                                                <Label className="text-xs text-gray-400 font-bold uppercase tracking-wider">Close Rate (%)</Label>
+                                                <div className="relative">
+                                                    <Input
+                                                        type="number"
+                                                        value={closeRate}
+                                                        onChange={(e) => {
+                                                            const val = Number(e.target.value);
+                                                            setCloseRate(val);
+                                                            debouncedSave(undefined, undefined, undefined, undefined, undefined, undefined, false, { close_rate: val });
+                                                        }}
+                                                        className="pr-8 bg-black/50 border-white/20 text-white"
+                                                    />
+                                                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500">%</span>
+                                                </div>
+                                                <p className="text-[10px] text-gray-500">Historical closing percentage (e.g. 20 for 20%).</p>
+                                                <p className="text-[10px] text-gray-500">
+                                                    Percentage of "Closing" leads that typically become customers.
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Preview Calculation */}
+                                    <div className="p-4 bg-white/5 border border-white/10 rounded-lg space-y-3">
+                                        <h4 className="font-semibold text-gray-200">Projected Requirements</h4>
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div className="p-3 bg-black/30 rounded border border-white/10">
+                                                <span className="text-xs text-gray-400 block mb-1">Needed Customers</span>
+                                                <span className="text-xl font-bold text-white">
+                                                    {avgTicket > 0 ? Math.ceil(revenueGoal / avgTicket) : 0}
+                                                </span>
+                                            </div>
+                                            <div className="p-3 bg-black/30 rounded border border-white/10">
+                                                <span className="text-xs text-gray-400 block mb-1">Needed Advanced Pipeline (Deals)</span>
+                                                <span className="text-xl font-bold text-[#1C73E8]">
+                                                    {avgTicket > 0 && closeRate > 0 ? Math.ceil((revenueGoal / avgTicket) / (closeRate / 100)) : 0}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </TabsContent>
+                        </Tabs>
+                    </div>
+
+                    <DialogFooter className="p-6 pt-2 border-t border-white/10 shrink-0">
+                        <Button variant="ghost" className="text-gray-400 hover:text-white" onClick={onClose}>Close</Button>
+                    </DialogFooter>
+
+                </DialogContent>
+            </Dialog >
+
             <AlertDialog open={itemToDelete !== null} onOpenChange={(open) => !open && setItemToDelete(null)}>
-                <AlertDialogContent className="bg-[#1a1a1a] border-white/10 text-white z-[10000] max-w-[400px]">
+                <AlertDialogContent className="bg-[#1a1a1a] border border-white/10 text-white z-[200]">
                     <AlertDialogHeader>
                         <AlertDialogTitle>Are you sure?</AlertDialogTitle>
                         <AlertDialogDescription className="text-gray-400">
-                            Delete
-                            {itemToDelete?.type === 'product' && <span className="font-semibold text-white"> {products[itemToDelete.index]?.name}</span>}
-                            {itemToDelete?.type === 'status' && <span className="font-semibold text-white"> {statuses[itemToDelete.index]?.label}</span>}
-                            {itemToDelete?.type === 'responsible' && <span className="font-semibold text-white"> {responsibles[itemToDelete.index]?.label}</span>}
-                            {itemToDelete?.type === 'source' && <span className="font-semibold text-white"> {sources[itemToDelete.index]?.label}</span>}
-                            {itemToDelete?.type === 'lostReason' && <span className="font-semibold text-white"> {lostReasons[itemToDelete.index]?.label}</span>}
-                            {itemToDelete?.type === 'customOption' && <span className="font-semibold text-white"> {customOptions[itemToDelete.index]?.label}</span>}
-                            ?
+                            This action cannot be undone. This will permanently delete the tag.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
 
-                    {itemToDelete && itemToDelete.type !== 'product' && getTransferOptions().length > 0 && (
-                        <div className="py-2 space-y-2">
-                            <Label className="text-xs text-gray-400">Transfer leads to a new tag:</Label>
-                            <Select value={transferTarget} onValueChange={setTransferTarget}>
-                                <SelectTrigger className="w-full h-8 bg-black/50 border-white/20 text-white text-xs">
-                                    <SelectValue placeholder="Select replacement tag..." />
-                                </SelectTrigger>
-                                <SelectContent className="bg-[#1a1a1a] border-white/10 text-white z-[10001]">
-                                    {getTransferOptions().map((opt, idx) => (
-                                        <SelectItem key={idx} value={opt.label}>{opt.label}</SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                            <p className="text-[10px] text-yellow-500/80">
-                                Warning: Leads using this tag will be transferred to the selected tag.
-                            </p>
-                        </div>
-                    )}
 
-                    <AlertDialogFooter className="gap-2 sm:space-x-0 mt-2">
-                        <AlertDialogCancel className="bg-transparent border-white/10 text-white hover:bg-white/10 h-8 text-xs">Cancel</AlertDialogCancel>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel className="border-white/10 bg-white/5 hover:bg-white/10 text-white hover:text-white">Cancel</AlertDialogCancel>
                         <AlertDialogAction
                             onClick={handleConfirmDelete}
-                            className="bg-red-600 hover:bg-red-700 text-white border-0 h-8 text-xs"
-                            disabled={loading || !!(itemToDelete && itemToDelete.type !== 'product' && getTransferOptions().length > 0 && !transferTarget)}
+                            className="bg-red-600 hover:bg-red-700 text-white border-none"
+                            disabled={loading}
                         >
-                            {loading ? "Processing..." : "Confirm Delete"}
+                            {loading ? "Deleting..." : "Delete"}
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
+
         </>
     );
 }

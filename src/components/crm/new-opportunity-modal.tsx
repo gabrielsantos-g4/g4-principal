@@ -2,9 +2,23 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog";
+import { format } from "date-fns";
+import { Calendar as CalendarIcon } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
+import {
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
+} from "@/components/ui/popover";
 import PhoneInput from "react-phone-number-input";
 import "react-phone-number-input/style.css";
 import { toast } from "sonner";
@@ -28,7 +42,7 @@ interface NewOpportunityModalProps {
 
 export function NewOpportunityModal({ isOpen, onClose, settings, initialData, leads = [] }: NewOpportunityModalProps) {
     const router = useRouter();
-    const isEditMode = !!initialData;
+    const isEditMode = !!(initialData && initialData.id); // Only edit if ID exists
     const [phone, setPhone] = useState<string | undefined>();
     const [name, setName] = useState("");
     const [role, setRole] = useState("");
@@ -47,6 +61,10 @@ export function NewOpportunityModal({ isOpen, onClose, settings, initialData, le
     const [source, setSource] = useState("");
     const [status, setStatus] = useState("New");
     const [responsible, setResponsible] = useState("");
+    const [qualification, setQualification] = useState("lead");
+    const [nextDate, setNextDate] = useState<Date | undefined>(undefined);
+
+
 
 
     // Sync with initialData when opening
@@ -66,7 +84,16 @@ export function NewOpportunityModal({ isOpen, onClose, settings, initialData, le
                 setCustomField(initialData.custom || "");
                 setSource(initialData.source || "");
                 setStatus(initialData.status || "New");
+                setStatus(initialData.status || "New");
                 setResponsible(initialData.responsible || "");
+                setQualification(initialData.qualification_status || "lead");
+                if (initialData.nextStep?.date && initialData.nextStep.date !== 'Pending') {
+                    setNextDate(new Date(initialData.nextStep.date));
+                } else {
+                    setNextDate(undefined);
+                }
+
+
 
                 // Next step logic reconstruction
                 if (initialData.nextStep?.progress === 6) {
@@ -90,7 +117,12 @@ export function NewOpportunityModal({ isOpen, onClose, settings, initialData, le
                 setCustomField("");
                 setSource("");
                 setStatus("New");
+                setStatus("New");
                 setResponsible("");
+                setQualification("lead");
+                setNextDate(undefined);
+
+
             }
         }
     }, [isOpen, initialData]);
@@ -189,6 +221,8 @@ export function NewOpportunityModal({ isOpen, onClose, settings, initialData, le
                     role,
                     product,
                     price: priceToUpdate,
+                    qualification_status: qualification,
+                    nextDate: nextDate ? format(nextDate, "yyyy-MM-dd") : undefined
                 });
             } else {
                 result = await createOpportunity({
@@ -207,7 +241,10 @@ export function NewOpportunityModal({ isOpen, onClose, settings, initialData, le
                     responsible,
                     touchpoint: engaged ? 6 : parseInt(touchpoint),
                     engaged,
-                    firstMessage
+
+                    firstMessage,
+                    qualification_status: qualification,
+                    nextDate: nextDate ? format(nextDate, "yyyy-MM-dd") : undefined
                 });
             }
 
@@ -234,6 +271,61 @@ export function NewOpportunityModal({ isOpen, onClose, settings, initialData, le
         { label: "Won", bg: "bg-green-500", text: "text-white" },
         { label: "Lost", bg: "bg-red-500", text: "text-white" }
     ];
+
+    // Auto-select single options
+    useEffect(() => {
+        if (isOpen && !isEditMode) {
+            // Category / Custom Field
+            if (CUSTOM_OPTIONS.length === 1 && !customField) {
+                const val = typeof CUSTOM_OPTIONS[0] === 'string' ? CUSTOM_OPTIONS[0] : CUSTOM_OPTIONS[0].label;
+                setCustomField(val);
+            }
+
+            // Source
+            if (SOURCES.length === 1 && !source) {
+                const val = typeof SOURCES[0] === 'string' ? SOURCES[0] : SOURCES[0].label;
+                setSource(val);
+            }
+
+            // Responsible
+            if (RESPONSIBLES.length === 1 && !responsible) {
+                const val = typeof RESPONSIBLES[0] === 'string' ? RESPONSIBLES[0] : RESPONSIBLES[0].label;
+                setResponsible(val);
+            }
+
+            // Status
+            if (STATUSES.length === 1) {
+                const val = typeof STATUSES[0] === 'string' ? STATUSES[0] : STATUSES[0].label;
+                if (status !== val) setStatus(val);
+            }
+
+            // Product
+            if (settings?.products?.length === 1 && (!product || product === '[]')) {
+                const p = settings.products[0];
+                setProduct(JSON.stringify([{ ...p, quantity: 1 }]));
+                setAmount(p.price);
+            }
+        }
+    }, [isOpen, isEditMode, settings]);
+
+    const QUALIFICATION_STATUSES = [
+        { label: "Lead", value: "lead", bg: "bg-gray-500", text: "text-white" },
+        { label: "MQL", value: "mql", bg: "bg-blue-500", text: "text-white" },
+
+        { label: "SQL", value: "sql", bg: "bg-emerald-500", text: "text-white" },
+        { label: "NQ", value: "nq", bg: "bg-red-500", text: "text-white" }
+    ];
+
+    const TOUCHPOINT_STEPS = [
+        { value: "0", label: "Select..." },
+        { value: "1", label: "Touchpoint 1" },
+        { value: "2", label: "Touchpoint 2" },
+        { value: "3", label: "Touchpoint 3" },
+        { value: "4", label: "Touchpoint 4" },
+        { value: "5", label: "Breakup Message" },
+        { value: "6", label: "Conversation Established" }
+    ];
+
 
     const isTouchpointDisabled = firstMessage.trim().length > 0;
     const isEngaged = touchpoint === "6";
@@ -346,6 +438,7 @@ export function NewOpportunityModal({ isOpen, onClose, settings, initialData, le
                                     }
                                     setTouchpoint(val);
                                 }}
+                                disabled={isTouchpointDisabled || isEngaged}
                             >
                                 <SelectTrigger
                                     disabled={isTouchpointDisabled}
@@ -354,13 +447,11 @@ export function NewOpportunityModal({ isOpen, onClose, settings, initialData, le
                                     <SelectValue placeholder="Select..." />
                                 </SelectTrigger>
                                 <SelectContent className="bg-[#1A1A1A] border-white/10 text-white z-[9999]">
-                                    <SelectItem value="0">Select...</SelectItem>
-                                    <SelectItem value="1">Touchpoint 1</SelectItem>
-                                    <SelectItem value="2">Touchpoint 2</SelectItem>
-                                    <SelectItem value="3">Touchpoint 3</SelectItem>
-                                    <SelectItem value="4">Touchpoint 4</SelectItem>
-                                    <SelectItem value="5">Breakup Message</SelectItem>
-                                    <SelectItem value="6" className="text-[#1C73E8] font-bold">Conversation Established</SelectItem>
+                                    {TOUCHPOINT_STEPS.map((step) => (
+                                        <SelectItem key={step.value} value={step.value}>
+                                            {step.label}
+                                        </SelectItem>
+                                    ))}
                                 </SelectContent>
                             </Select>
                         </div>
@@ -513,6 +604,53 @@ export function NewOpportunityModal({ isOpen, onClose, settings, initialData, le
                                     })}
                                 </SelectContent>
                             </Select>
+                        </div>
+
+                        {/* 16. Qualification */}
+                        <div className="flex flex-col gap-1.5">
+                            <label className="text-sm font-bold text-gray-400">Lead Qualification</label>
+                            <Select value={qualification} onValueChange={setQualification}>
+                                <SelectTrigger className="w-full h-10 bg-white/5 border-white/10 text-white rounded-sm">
+                                    <SelectValue placeholder="Select..." />
+                                </SelectTrigger>
+                                <SelectContent className="bg-[#1A1A1A] border-white/10 text-white z-[9999]">
+                                    {QUALIFICATION_STATUSES.map((status: any, idx: number) => (
+                                        <SelectItem key={idx} value={status.value}>
+                                            <Badge className={`${status.bg} ${status.text} border-none hover:opacity-80`}>
+                                                {status.label}
+                                            </Badge>
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+
+                        {/* Next Call Date - NEW */}
+                        <div className="flex flex-col gap-1.5">
+                            <label className="text-sm font-bold text-gray-400">Next Call Date</label>
+                            <Popover>
+                                <PopoverTrigger asChild>
+                                    <Button
+                                        variant={"outline"}
+                                        className={cn(
+                                            "w-full h-10 justify-start text-left font-normal bg-white/5 border-white/10 text-white hover:bg-white/10 hover:text-white",
+                                            !nextDate && "text-muted-foreground"
+                                        )}
+                                    >
+                                        <CalendarIcon className="mr-2 h-4 w-4" />
+                                        {nextDate ? format(nextDate, "PPP") : <span>Pick a date</span>}
+                                    </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-auto p-0 bg-[#1A1A1A] border-white/10 text-white" align="start">
+                                    <Calendar
+                                        mode="single"
+                                        selected={nextDate}
+                                        onSelect={setNextDate}
+                                        initialFocus
+                                        className="bg-[#1A1A1A] text-white"
+                                    />
+                                </PopoverContent>
+                            </Popover>
                         </div>
 
                     </div>

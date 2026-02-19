@@ -8,13 +8,14 @@ export interface TagItem {
     bg: string;
     text: string;
     email?: string;
+    temperature?: 'Cold' | 'Warm' | 'Hot';
 }
 
 export interface CrmSettings {
     id?: number;
     empresa_id?: string;
     products: { id?: number; name: string; price: string }[];
-    statuses: { id?: number; label: string; bg: string; text: string }[];
+    statuses: { id?: number; label: string; bg: string; text: string; phase?: 'not_started' | 'in_progress' | 'closing'; temperature?: 'Cold' | 'Warm' | 'Hot' }[];
     responsibles: (string | TagItem)[];
     sources: (string | TagItem)[];
     custom_fields: { name: string; options: (string | TagItem)[] };
@@ -25,6 +26,10 @@ export interface CrmSettings {
         sql: { type: string; value: string };
     };
     lost_reasons?: (string | TagItem)[];
+    temperatures?: (string | TagItem)[];
+    revenue_goal?: number;
+    avg_ticket?: number;
+    close_rate?: number;
 }
 
 const DEFAULT_SETTINGS: CrmSettings = {
@@ -35,12 +40,12 @@ const DEFAULT_SETTINGS: CrmSettings = {
         { id: 4, name: "Product D", price: "1000.00" }
     ],
     statuses: [
-        { label: "Not a good fit", bg: "bg-red-900", text: "text-red-100" },
-        { label: "Talk to", bg: "bg-blue-900", text: "text-blue-100" },
-        { label: "Talking", bg: "bg-green-900", text: "text-green-100" },
-        { label: "Talk Later", bg: "bg-yellow-900", text: "text-yellow-100" },
-        { label: "Not interested", bg: "bg-red-200", text: "text-red-900" },
-        { label: "Client", bg: "bg-emerald-900", text: "text-emerald-100" }
+        { label: "Not a good fit", bg: "bg-red-900", text: "text-red-100", phase: 'not_started' },
+        { label: "Talk to", bg: "bg-blue-900", text: "text-blue-100", phase: 'not_started' },
+        { label: "Talking", bg: "bg-green-900", text: "text-green-100", phase: 'in_progress' },
+        { label: "Talk Later", bg: "bg-yellow-900", text: "text-yellow-100", phase: 'not_started' },
+        { label: "Not interested", bg: "bg-red-200", text: "text-red-900", phase: 'not_started' },
+        { label: "Client", bg: "bg-emerald-900", text: "text-emerald-100", phase: 'closing' }
     ],
     responsibles: [
         { label: "Gabriel", bg: "bg-blue-900", text: "text-blue-100" },
@@ -68,7 +73,15 @@ const DEFAULT_SETTINGS: CrmSettings = {
         { label: "Competitor", bg: "bg-slate-800", text: "text-slate-100" },
         { label: "Features missing", bg: "bg-slate-800", text: "text-slate-100" },
         { label: "Bad timing", bg: "bg-slate-800", text: "text-slate-100" }
-    ]
+    ],
+    temperatures: [
+        { label: "Cold", bg: "bg-blue-900", text: "text-blue-100" },
+        { label: "Warm", bg: "bg-orange-900", text: "text-orange-100" },
+        { label: "Hot", bg: "bg-red-900", text: "text-red-100" }
+    ],
+    revenue_goal: 0,
+    avg_ticket: 0,
+    close_rate: 0
 };
 
 export async function getCrmSettings(companyId?: string): Promise<CrmSettings> {
@@ -119,6 +132,9 @@ export async function getCrmSettings(companyId?: string): Promise<CrmSettings> {
         return {
             ...DEFAULT_SETTINGS,
             ...data,
+            revenue_goal: data.revenue_goal || 0,
+            avg_ticket: data.avg_ticket || 0,
+            close_rate: data.close_rate || 0,
             statuses: migrateTags((data.statuses && data.statuses.length > 0) ? data.statuses : DEFAULT_SETTINGS.statuses),
             responsibles: (() => {
                 const baseResponsibles = migrateTags(data.responsibles);
@@ -144,7 +160,8 @@ export async function getCrmSettings(companyId?: string): Promise<CrmSettings> {
                 mql: { type: "text", value: "" },
                 sql: { type: "text", value: "" }
             },
-            lost_reasons: migrateTags(data.lost_reasons || [])
+            lost_reasons: migrateTags(data.lost_reasons || []),
+            temperatures: migrateTags(data.temperatures || DEFAULT_SETTINGS.temperatures)
         };
     }
 

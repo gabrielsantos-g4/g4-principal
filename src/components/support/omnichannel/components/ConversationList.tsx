@@ -46,6 +46,7 @@ export interface Conversation {
     qualification_status: "mql" | "sql" | "nq" | "pending";
     qualification_details?: any; // JSONB
     source: string;
+    temperature?: string;
     history: { id: string; message: string; date: Date }[];
     custom?: string;
     quem_atende?: string;

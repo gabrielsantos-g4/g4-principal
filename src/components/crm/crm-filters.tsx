@@ -1,7 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { ChevronDown, Settings, Plus, Calendar as CalendarIcon, RefreshCw, BarChart3, ListFilter, Search, Users, DollarSign, AlertCircle, CalendarClock, MessageSquare } from "lucide-react";
+import { ChevronDown, Settings, Plus, Calendar as CalendarIcon, RefreshCw, BarChart3, ListFilter, Search, Users, DollarSign, AlertCircle, CalendarClock, MessageSquare, X } from "lucide-react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { NewOpportunityModal } from "./new-opportunity-modal";
@@ -9,6 +9,7 @@ import { CrmSettingsModal } from "./crm-settings-modal";
 import { CrmReportsModal } from "./crm-reports-modal";
 import { GlobalInboxModal } from "./global-inbox-modal";
 import { CrmSearchModal } from "./crm-search-modal";
+import { PipelineHealthIndicator } from "./pipeline-health-indicator";
 import {
     Tooltip,
     TooltipContent,
@@ -33,6 +34,47 @@ import {
 
 import { CrmSettings, TagItem } from "@/actions/crm/get-crm-settings";
 import { CrmFilterState } from "./crm-container";
+
+
+function FilterDatePicker({ label, value, onSelect, placeholder = "Select date", align = "start" }: {
+    label: string,
+    value: Date | undefined,
+    onSelect: (date: Date | undefined) => void,
+    placeholder?: string,
+    align?: "start" | "center" | "end"
+}) {
+    const [open, setOpen] = useState(false);
+
+    return (
+        <div className="space-y-1">
+            <span className="text-[10px] text-gray-400">{label}</span>
+            <Popover open={open} onOpenChange={setOpen}>
+                <PopoverTrigger asChild>
+                    <button className={cn(
+                        "h-8 px-2.5 rounded-md bg-[#1A1A1A] border border-white/10 flex items-center text-xs justify-between hover:border-white/20 transition-colors w-full",
+                        value && "text-white border-[#1C73E8] bg-[#1C73E8]/10"
+                    )}>
+                        <span className={cn(value ? "font-medium" : "text-gray-400")}>
+                            {value ? format(value, "dd/MM/yy") : placeholder}
+                        </span>
+                        <CalendarIcon size={12} className={value ? "text-[#1C73E8]" : "text-gray-400"} />
+                    </button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0 bg-[#1A1A1A] border-white/10 text-white z-[9999]" align={align}>
+                    <Calendar
+                        mode="single"
+                        selected={value}
+                        onSelect={(date) => {
+                            onSelect(date);
+                            setOpen(false);
+                        }}
+                        initialFocus
+                    />
+                </PopoverContent>
+            </Popover>
+        </div>
+    );
+}
 
 interface CrmFiltersProps {
     settings: CrmSettings;
@@ -76,9 +118,13 @@ export function CrmFilters({ settings, filters, setFilters, leads, headerStats, 
             searchName: '',
             searchCompany: '',
             searchPhone: '',
-            date: undefined,
+            dateRange: undefined,
+            createdAtRange: undefined,
+
+
             product: [],
             status: '',
+
             source: '',
             responsible: '',
             customField: '',
@@ -97,6 +143,11 @@ export function CrmFilters({ settings, filters, setFilters, leads, headerStats, 
     if (viewerProfile?.active_agents?.includes('customer-jess') && !RESPONSIBLES.some((r: string | TagItem) => (typeof r === 'string' ? r : (r as TagItem).label) === 'Jess')) {
         RESPONSIBLES.push({ label: 'Jess', bg: 'bg-purple-900', text: 'text-purple-100' });
     }
+
+    const foundSource = SOURCES.find((s: any) => (typeof s === 'string' ? s : s.value) === filters.source);
+    const sourceLabel = filters.source
+        ? (typeof foundSource === 'object' ? foundSource.label : foundSource || filters.source)
+        : "Select source...";
 
     return (
         <TooltipProvider>
@@ -134,7 +185,7 @@ export function CrmFilters({ settings, filters, setFilters, leads, headerStats, 
                                 </span>
                             </button>
                         </TooltipTrigger>
-                        <TooltipContent side="bottom" sideOffset={2}>Search by Name, Company, or Phone</TooltipContent>
+                        <TooltipContent side="bottom" sideOffset={-5} avoidCollisions={false}>Search by Name, Company, or Phone</TooltipContent>
                     </Tooltip>
                 </div>
 
@@ -156,7 +207,7 @@ export function CrmFilters({ settings, filters, setFilters, leads, headerStats, 
                                         <span className="text-[10px] font-bold">{headerStats.totalLeads}</span>
                                     </button>
                                 </TooltipTrigger>
-                                <TooltipContent side="bottom" sideOffset={2}>All Leads</TooltipContent>
+                                <TooltipContent side="bottom" sideOffset={-5} avoidCollisions={false}>All Leads</TooltipContent>
                             </Tooltip>
 
                             <Tooltip>
@@ -171,7 +222,7 @@ export function CrmFilters({ settings, filters, setFilters, leads, headerStats, 
                                         <span className="text-[10px] opacity-80">{headerStats.qualification.mql}</span>
                                     </button>
                                 </TooltipTrigger>
-                                <TooltipContent side="bottom" sideOffset={2}>MQL</TooltipContent>
+                                <TooltipContent side="bottom" sideOffset={-5} avoidCollisions={false}>MQL</TooltipContent>
                             </Tooltip>
 
                             <Tooltip>
@@ -186,7 +237,7 @@ export function CrmFilters({ settings, filters, setFilters, leads, headerStats, 
                                         <span className="text-[10px] opacity-80">{headerStats.qualification.sql}</span>
                                     </button>
                                 </TooltipTrigger>
-                                <TooltipContent side="bottom" sideOffset={2}>SQL</TooltipContent>
+                                <TooltipContent side="bottom" sideOffset={-5} avoidCollisions={false}>SQL</TooltipContent>
                             </Tooltip>
 
                             <Tooltip>
@@ -201,7 +252,7 @@ export function CrmFilters({ settings, filters, setFilters, leads, headerStats, 
                                         <span className="text-[10px] opacity-80">{headerStats.qualification.not_qualified}</span>
                                     </button>
                                 </TooltipTrigger>
-                                <TooltipContent side="bottom" sideOffset={2}>NQ</TooltipContent>
+                                <TooltipContent side="bottom" sideOffset={-5} avoidCollisions={false}>NQ</TooltipContent>
                             </Tooltip>
                         </div>
 
@@ -229,7 +280,7 @@ export function CrmFilters({ settings, filters, setFilters, leads, headerStats, 
                                     <span className="text-[10px] font-bold">{headerStats.contacts.overdue}</span>
                                 </button>
                             </TooltipTrigger>
-                            <TooltipContent side="bottom" sideOffset={2}>Overdue</TooltipContent>
+                            <TooltipContent side="bottom" sideOffset={-5} avoidCollisions={false}>Overdue</TooltipContent>
                         </Tooltip>
 
                         <Tooltip>
@@ -244,7 +295,7 @@ export function CrmFilters({ settings, filters, setFilters, leads, headerStats, 
                                     <span className="text-[10px] font-bold">{headerStats.contacts.today}</span>
                                 </button>
                             </TooltipTrigger>
-                            <TooltipContent side="bottom" sideOffset={2}>Today</TooltipContent>
+                            <TooltipContent side="bottom" sideOffset={-5} avoidCollisions={false}>Today</TooltipContent>
                         </Tooltip>
 
                         <Tooltip>
@@ -259,44 +310,12 @@ export function CrmFilters({ settings, filters, setFilters, leads, headerStats, 
                                     <span className="text-[10px] font-bold">{headerStats.contacts.tomorrow}</span>
                                 </button>
                             </TooltipTrigger>
-                            <TooltipContent side="bottom" sideOffset={2}>Tomorrow</TooltipContent>
+                            <TooltipContent side="bottom" sideOffset={-5} avoidCollisions={false}>Tomorrow</TooltipContent>
                         </Tooltip>
                     </div>
 
                     <div className="flex items-center gap-1.5">
-                        {/* Date Picker */}
-                        <Popover>
-                            <PopoverTrigger asChild>
-                                <button className={cn(
-                                    "h-8 px-2.5 rounded-md bg-[#1A1A1A] border border-white/10 flex items-center text-xs justify-center hover:border-white/20 transition-colors cursor-pointer whitespace-nowrap gap-2",
-                                    filters.date && "text-white border-[#1C73E8] bg-[#1C73E8]/10"
-                                )}>
-                                    <CalendarIcon size={14} className={filters.date ? "text-[#1C73E8]" : "text-gray-400"} />
-                                    <span className={cn("hidden sm:inline", filters.date ? "font-medium" : "text-gray-400")}>
-                                        {filters.date ? format(filters.date, "dd/MM") : "Date"}
-                                    </span>
-                                </button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0 bg-[#1A1A1A] border-white/10 text-white z-[9999]" align="end">
-                                <Calendar
-                                    mode="single"
-                                    selected={filters.date}
-                                    onSelect={(date) => updateFilter('date', date)}
-                                    initialFocus
-                                />
-                                {filters.date && (
-                                    <div className="p-2 border-t border-white/10">
-                                        <Button
-                                            variant="ghost"
-                                            className="w-full h-8 text-xs text-red-400 hover:text-red-300 hover:bg-red-900/10"
-                                            onClick={() => updateFilter('date', undefined)}
-                                        >
-                                            Clear Date
-                                        </Button>
-                                    </div>
-                                )}
-                            </PopoverContent>
-                        </Popover>
+
 
                         {/* Advanced Filters */}
                         <Popover>
@@ -305,128 +324,251 @@ export function CrmFilters({ settings, filters, setFilters, leads, headerStats, 
                                     variant="outline"
                                     className={cn(
                                         "h-8 px-2.5 border-white/10 bg-[#1A1A1A] text-gray-400 hover:text-white hover:bg-white/5 text-xs font-normal gap-2 transition-colors",
-                                        (filters.searchCompany || filters.searchPhone || filters.product.length > 0 || filters.customField || filters.source || filters.status || filters.responsible) && "border-[#1C73E8] text-[#1C73E8] bg-[#1C73E8]/10"
+                                        (filters.dateRange?.from || filters.dateRange?.to || filters.createdAtRange?.from || filters.createdAtRange?.to || filters.searchCompany || filters.searchPhone || filters.product.length > 0 || filters.customField || filters.source || filters.status || filters.responsible) && "border-[#1C73E8] text-[#1C73E8] bg-[#1C73E8]/10"
                                     )}>
                                     <ListFilter size={14} />
                                     <span className="hidden md:inline">Filters</span>
-                                    {(filters.searchCompany || filters.searchPhone || filters.product.length > 0 || filters.customField || filters.source || filters.status || filters.responsible) && (
+                                    {(filters.dateRange?.from || filters.dateRange?.to || filters.createdAtRange?.from || filters.createdAtRange?.to || filters.searchCompany || filters.searchPhone || filters.product.length > 0 || filters.customField || filters.source || filters.status || filters.responsible) && (
                                         <span className="flex h-1.5 w-1.5 rounded-full bg-[#1C73E8]" />
                                     )}
                                 </Button>
                             </PopoverTrigger>
                             <PopoverContent className="w-[320px] p-4 bg-[#111] border-white/10 text-white z-[9999]" align="end">
                                 <div className="space-y-4">
-                                    <h4 className="font-medium text-sm text-gray-400 mb-2">Advanced Filters</h4>
-
                                     <div className="space-y-2">
-                                        <label className="text-[10px] uppercase text-gray-500 font-semibold">Properties</label>
-
-                                        <DropdownMenu>
-                                            <DropdownMenuTrigger asChild>
-                                                <div className="h-8 px-3 rounded-md bg-[#1A1A1A] border border-white/10 flex items-center text-xs text-gray-400 w-full justify-between hover:border-white/20 cursor-pointer">
-                                                    <span className="truncate">{filters.product?.length > 0 ? `${filters.product.length} selected` : "Product"}</span>
-                                                    <ChevronDown size={12} />
-                                                </div>
-                                            </DropdownMenuTrigger>
-                                            <DropdownMenuContent className="w-[280px] bg-[#1A1A1A] border-white/10 text-white z-[9999]">
-                                                <DropdownMenuItem onClick={() => updateFilter('product', [])} className="text-xs">All Products</DropdownMenuItem>
-                                                {PRODUCTS.map((prod) => (
-                                                    <DropdownMenuCheckboxItem
-                                                        key={prod.name}
-                                                        checked={filters.product?.includes(prod.name)}
-                                                        onCheckedChange={(checked) => {
-                                                            const current = filters.product || [];
-                                                            updateFilter('product', checked ? [...current, prod.name] : current.filter(p => p !== prod.name));
-                                                        }}
-                                                        className="text-xs"
-                                                    >
-                                                        {prod.name}
-                                                    </DropdownMenuCheckboxItem>
-                                                ))}
-                                            </DropdownMenuContent>
-                                        </DropdownMenu>
+                                        <label className="text-[10px] uppercase text-gray-500 font-semibold">Contact Date</label>
 
                                         <div className="grid grid-cols-2 gap-2">
-                                            <DropdownMenu>
-                                                <DropdownMenuTrigger asChild>
-                                                    <div className="h-8 px-3 rounded-md bg-[#1A1A1A] border border-white/10 flex items-center text-xs text-gray-400 w-full justify-between hover:border-white/20 cursor-pointer">
-                                                        <span className="truncate">{filters.customField || `${customFieldName}`}</span>
-                                                        <ChevronDown size={12} />
-                                                    </div>
-                                                </DropdownMenuTrigger>
-                                                <DropdownMenuContent className="w-[200px] bg-[#1A1A1A] border-white/10 text-white z-[9999]">
-                                                    <DropdownMenuItem onClick={() => updateFilter('customField', '')} className="text-xs">All</DropdownMenuItem>
-                                                    {CUSTOM_OPTIONS.map((opt) => (
-                                                        <DropdownMenuItem key={typeof opt === 'string' ? opt : (opt as TagItem).label} onClick={() => updateFilter('customField', typeof opt === 'string' ? opt : (opt as TagItem).label)} className="text-xs">
-                                                            {typeof opt !== 'string' && <span className={`w-2 h-2 rounded-full mr-2 ${(opt as TagItem).bg}`} />}
-                                                            {typeof opt === 'string' ? opt : (opt as TagItem).label}
-                                                        </DropdownMenuItem>
-                                                    ))}
-                                                </DropdownMenuContent>
-                                            </DropdownMenu>
+                                            {/* Start Date */}
+                                            <FilterDatePicker
+                                                label="From"
+                                                value={filters.dateRange?.from}
+                                                onSelect={(date) => updateFilter('dateRange', { ...filters.dateRange, from: date, to: filters.dateRange?.to })}
+                                                placeholder="Start"
+                                            />
 
-                                            <DropdownMenu>
-                                                <DropdownMenuTrigger asChild>
-                                                    <div className="h-8 px-3 rounded-md bg-[#1A1A1A] border border-white/10 flex items-center text-xs text-gray-400 w-full justify-between hover:border-white/20 cursor-pointer">
-                                                        <span className="truncate">{filters.source || "Source"}</span>
-                                                        <ChevronDown size={12} />
-                                                    </div>
-                                                </DropdownMenuTrigger>
-                                                <DropdownMenuContent className="w-[200px] bg-[#1A1A1A] border-white/10 text-white z-[9999]">
-                                                    <DropdownMenuItem onClick={() => updateFilter('source', '')} className="text-xs">All</DropdownMenuItem>
-                                                    {SOURCES.map((s) => (
-                                                        <DropdownMenuItem key={typeof s === 'string' ? s : (s as TagItem).label} onClick={() => updateFilter('source', typeof s === 'string' ? s : (s as TagItem).label)} className="text-xs">
-                                                            {typeof s !== 'string' && <span className={`w-2 h-2 rounded-full mr-2 ${(s as TagItem).bg}`} />}
-                                                            {typeof s === 'string' ? s : (s as TagItem).label}
-                                                        </DropdownMenuItem>
-                                                    ))}
-                                                </DropdownMenuContent>
-                                            </DropdownMenu>
+                                            {/* End Date */}
+                                            <FilterDatePicker
+                                                label="To"
+                                                value={filters.dateRange?.to}
+                                                onSelect={(date) => updateFilter('dateRange', { ...filters.dateRange, from: filters.dateRange?.from, to: date })}
+                                                placeholder="End"
+                                                align="end"
+                                            />
+                                        </div>
+                                    </div>
+                                    {/* Created At Date Filter */}
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] uppercase text-gray-500 font-semibold">Created Date</label>
 
-                                            <DropdownMenu>
-                                                <DropdownMenuTrigger asChild>
-                                                    <div className="h-8 px-3 rounded-md bg-[#1A1A1A] border border-white/10 flex items-center text-xs text-gray-400 w-full justify-between hover:border-white/20 cursor-pointer">
-                                                        <span className="truncate">{filters.status || "Status"}</span>
-                                                        <ChevronDown size={12} />
-                                                    </div>
-                                                </DropdownMenuTrigger>
-                                                <DropdownMenuContent className="w-[200px] bg-[#1A1A1A] border-white/10 text-white z-[9999]">
-                                                    <DropdownMenuItem onClick={() => updateFilter('status', '')} className="text-xs">All</DropdownMenuItem>
-                                                    {STATUSES.map((s) => (
-                                                        <DropdownMenuItem key={s.label} onClick={() => updateFilter('status', s.label)} className="text-xs">
-                                                            <span className={`w-2 h-2 rounded-full mr-2 ${s.bg}`} />
-                                                            {s.label}
-                                                        </DropdownMenuItem>
-                                                    ))}
-                                                </DropdownMenuContent>
-                                            </DropdownMenu>
+                                        <div className="grid grid-cols-2 gap-2">
+                                            {/* Start Date */}
+                                            <FilterDatePicker
+                                                label="From"
+                                                value={filters.createdAtRange?.from}
+                                                onSelect={(date) => updateFilter('createdAtRange', { ...filters.createdAtRange, from: date, to: filters.createdAtRange?.to })}
+                                                placeholder="Start"
+                                            />
 
-                                            <DropdownMenu>
-                                                <DropdownMenuTrigger asChild>
-                                                    <div className="h-8 px-3 rounded-md bg-[#1A1A1A] border border-white/10 flex items-center text-xs text-gray-400 w-full justify-between hover:border-white/20 cursor-pointer">
-                                                        <span className="truncate">{filters.responsible || "Responsible"}</span>
-                                                        <ChevronDown size={12} />
-                                                    </div>
-                                                </DropdownMenuTrigger>
-                                                <DropdownMenuContent className="w-[200px] bg-[#1A1A1A] border-white/10 text-white z-[9999]">
-                                                    <DropdownMenuItem onClick={() => updateFilter('responsible', '')} className="text-xs">All</DropdownMenuItem>
-                                                    {RESPONSIBLES.map((r) => (
-                                                        <DropdownMenuItem key={typeof r === 'string' ? r : (r as TagItem).label} onClick={() => updateFilter('responsible', typeof r === 'string' ? r : (r as TagItem).label)} className="text-xs">
-                                                            {typeof r !== 'string' && <span className={`w-2 h-2 rounded-full mr-2 ${(r as TagItem).bg}`} />}
-                                                            {typeof r === 'string' ? r : (r as TagItem).label}
-                                                        </DropdownMenuItem>
-                                                    ))}
-                                                </DropdownMenuContent>
-                                            </DropdownMenu>
+                                            {/* End Date */}
+                                            <FilterDatePicker
+                                                label="To"
+                                                value={filters.createdAtRange?.to}
+                                                onSelect={(date) => updateFilter('createdAtRange', { ...filters.createdAtRange, from: filters.createdAtRange?.from, to: date })}
+                                                placeholder="End"
+                                                align="end"
+                                            />
                                         </div>
                                     </div>
 
-                                    <div className="pt-2 border-t border-white/10 flex justify-between">
-                                        <Button variant="ghost" size="sm" onClick={clearFilters} className="text-xs text-gray-400 hover:text-white h-7">Clear All</Button>
+                                    {/* Status Filter */}
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] uppercase text-gray-500 font-semibold">Status</label>
+                                        <DropdownMenu>
+                                            <DropdownMenuTrigger asChild>
+                                                <Button variant="outline" className="w-full justify-between h-8 text-xs border-white/10 bg-[#1A1A1A] hover:bg-white/5 hover:text-white text-gray-300">
+                                                    {filters.status ? (STATUSES.find((s: any) => s.value === filters.status)?.label || filters.status) : "Select status..."}
+                                                    <ChevronDown size={14} className="opacity-50" />
+                                                </Button>
+                                            </DropdownMenuTrigger>
+                                            <DropdownMenuContent className="w-[280px] bg-[#1A1A1A] border-white/10 text-gray-300 z-[9999]">
+                                                <DropdownMenuItem onClick={() => updateFilter('status', '')} className="text-xs hover:bg-white/10 hover:text-white cursor-pointer">
+                                                    All Statuses
+                                                </DropdownMenuItem>
+                                                {STATUSES.map((status: any) => (
+                                                    <DropdownMenuItem
+                                                        key={status.value}
+                                                        onClick={() => updateFilter('status', status.value)}
+                                                        className={cn(
+                                                            "text-xs cursor-pointer mb-1 last:mb-0",
+                                                            status.bg,
+                                                            status.text,
+                                                            "hover:opacity-80 transition-opacity"
+                                                        )}
+                                                    >
+                                                        {status.label}
+                                                    </DropdownMenuItem>
+                                                ))}
+                                            </DropdownMenuContent>
+                                        </DropdownMenu>
+                                    </div>
+
+                                    {/* Product Filter */}
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] uppercase text-gray-500 font-semibold">Products</label>
+                                        <div className="flex flex-wrap gap-1">
+                                            {PRODUCTS.map((product: any) => {
+                                                const isSelected = filters.product.includes(product.name);
+                                                return (
+                                                    <button
+                                                        key={product.name}
+                                                        onClick={() => {
+                                                            const newProducts = isSelected
+                                                                ? filters.product.filter(p => p !== product.name)
+                                                                : [...filters.product, product.name];
+                                                            updateFilter('product', newProducts);
+                                                        }}
+                                                        className={cn(
+                                                            "text-[10px] px-2 py-1 rounded border transition-colors",
+                                                            isSelected
+                                                                ? "bg-[#1C73E8] border-[#1C73E8] text-white"
+                                                                : "bg-white/5 border-transparent text-gray-400 hover:text-white hover:bg-white/10"
+                                                        )}
+                                                    >
+                                                        {product.name}
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+
+                                    {/* Source Filter */}
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] uppercase text-gray-500 font-semibold">Source</label>
+                                        <DropdownMenu>
+                                            <DropdownMenuTrigger asChild>
+                                                <Button variant="outline" className="w-full justify-between h-8 text-xs border-white/10 bg-[#1A1A1A] hover:bg-white/5 hover:text-white text-gray-300">
+                                                    {sourceLabel}
+                                                    <ChevronDown size={14} className="opacity-50" />
+                                                </Button>
+                                            </DropdownMenuTrigger>
+                                            <DropdownMenuContent className="w-[280px] bg-[#1A1A1A] border-white/10 text-gray-300 max-h-[200px] overflow-y-auto custom-scrollbar z-[9999]">
+                                                <DropdownMenuItem onClick={() => updateFilter('source', '')} className="text-xs hover:bg-white/10 hover:text-white cursor-pointer">
+                                                    All Sources
+                                                </DropdownMenuItem>
+                                                {SOURCES.map((source: any) => (
+                                                    <DropdownMenuItem
+                                                        key={source.value}
+                                                        onClick={() => updateFilter('source', source.value)}
+                                                        className={cn(
+                                                            "text-xs cursor-pointer mb-1 last:mb-0",
+                                                            typeof source === 'object' ? `${source.bg} ${source.text}` : "hover:bg-white/10 hover:text-white"
+                                                        )}
+                                                    >
+                                                        {source.label}
+                                                    </DropdownMenuItem>
+                                                ))}
+                                            </DropdownMenuContent>
+                                        </DropdownMenu>
+                                    </div>
+
+                                    {/* Responsible Filter */}
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] uppercase text-gray-500 font-semibold">Responsible</label>
+                                        <DropdownMenu>
+                                            <DropdownMenuTrigger asChild>
+                                                <Button variant="outline" className="w-full justify-between h-8 text-xs border-white/10 bg-[#1A1A1A] hover:bg-white/5 hover:text-white text-gray-300">
+                                                    {filters.responsible || "Select responsible..."}
+                                                    <ChevronDown size={14} className="opacity-50" />
+                                                </Button>
+                                            </DropdownMenuTrigger>
+                                            <DropdownMenuContent className="w-[280px] bg-[#1A1A1A] border-white/10 text-gray-300 max-h-[200px] overflow-y-auto custom-scrollbar z-[9999]">
+                                                <DropdownMenuItem onClick={() => updateFilter('responsible', '')} className="text-xs hover:bg-white/10 hover:text-white cursor-pointer">
+                                                    All Responsibles
+                                                </DropdownMenuItem>
+                                                {RESPONSIBLES.map((resp: any) => {
+                                                    const label = typeof resp === 'string' ? resp : resp.label;
+                                                    const bg = typeof resp === 'string' ? '' : resp.bg;
+                                                    const text = typeof resp === 'string' ? '' : resp.text;
+                                                    return (
+                                                        <DropdownMenuItem
+                                                            key={label}
+                                                            onClick={() => updateFilter('responsible', label)}
+                                                            className={cn(
+                                                                "text-xs cursor-pointer mb-1 last:mb-0",
+                                                                bg ? `${bg} ${text}` : "hover:bg-white/10 hover:text-white"
+                                                            )}
+                                                        >
+                                                            {label}
+                                                        </DropdownMenuItem>
+                                                    );
+                                                })}
+                                            </DropdownMenuContent>
+                                        </DropdownMenu>
+                                    </div>
+
+                                    {/* Custom Field Filter */}
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] uppercase text-gray-500 font-semibold">{customFieldName}</label>
+                                        <DropdownMenu>
+                                            <DropdownMenuTrigger asChild>
+                                                <Button variant="outline" className="w-full justify-between h-8 text-xs border-white/10 bg-[#1A1A1A] hover:bg-white/5 hover:text-white text-gray-300">
+                                                    {filters.customField || `Select ${customFieldName.toLowerCase()}...`}
+                                                    <ChevronDown size={14} className="opacity-50" />
+                                                </Button>
+                                            </DropdownMenuTrigger>
+                                            <DropdownMenuContent className="w-[280px] bg-[#1A1A1A] border-white/10 text-gray-300 max-h-[200px] overflow-y-auto custom-scrollbar z-[9999]">
+                                                <DropdownMenuItem onClick={() => updateFilter('customField', '')} className="text-xs hover:bg-white/10 hover:text-white cursor-pointer">
+                                                    All Options
+                                                </DropdownMenuItem>
+                                                {CUSTOM_OPTIONS.map((option: any) => {
+                                                    const label = typeof option === 'string' ? option : option.label;
+                                                    const bg = typeof option === 'string' ? '' : option.bg;
+                                                    const text = typeof option === 'string' ? '' : option.text;
+                                                    return (
+                                                        <DropdownMenuItem
+                                                            key={label}
+                                                            onClick={() => updateFilter('customField', label)}
+                                                            className={cn(
+                                                                "text-xs cursor-pointer mb-1 last:mb-0",
+                                                                bg ? `${bg} ${text}` : "hover:bg-white/10 hover:text-white"
+                                                            )}
+                                                        >
+                                                            {label}
+                                                        </DropdownMenuItem>
+                                                    );
+                                                })}
+                                            </DropdownMenuContent>
+                                        </DropdownMenu>
                                     </div>
                                 </div>
+
+                                <div className="pt-2 border-t border-white/10 flex justify-between">
+                                    <Button variant="ghost" size="sm" onClick={clearFilters} className="text-xs text-gray-400 hover:text-white h-7">Clear All</Button>
+                                </div>
+
                             </PopoverContent>
                         </Popover>
+
+                        {(filters.searchName || filters.searchCompany || filters.searchPhone || filters.status || filters.source || filters.responsible || filters.product.length > 0 || filters.customField || filters.qualification || filters.contactFilter || filters.dateRange?.from || filters.dateRange?.to || filters.createdAtRange?.from || filters.createdAtRange?.to) && (
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Button
+                                        size="icon"
+                                        variant="ghost"
+                                        className="h-8 w-8 text-red-500 hover:bg-red-500/10 hover:text-red-400"
+                                        onClick={clearFilters}
+                                    >
+                                        <X size={16} />
+                                    </Button>
+                                </TooltipTrigger>
+                                <TooltipContent side="bottom" sideOffset={-5} avoidCollisions={false}>Clear All Filters</TooltipContent>
+                            </Tooltip>
+                        )}
+
+                        <div className="h-6 w-px bg-white/10 shrink-0" />
+
+                        <PipelineHealthIndicator leads={leads} settings={settings} />
 
                         <div className="h-6 w-px bg-white/10 shrink-0" />
 
@@ -438,7 +580,7 @@ export function CrmFilters({ settings, filters, setFilters, leads, headerStats, 
                                         <Plus size={16} />
                                     </Button>
                                 </TooltipTrigger>
-                                <TooltipContent side="bottom" sideOffset={2}>New Opportunity</TooltipContent>
+                                <TooltipContent side="bottom" sideOffset={-5} avoidCollisions={false}>New Opportunity</TooltipContent>
                             </Tooltip>
 
                             <Tooltip>
@@ -447,7 +589,7 @@ export function CrmFilters({ settings, filters, setFilters, leads, headerStats, 
                                         <RefreshCw size={16} />
                                     </Button>
                                 </TooltipTrigger>
-                                <TooltipContent side="bottom" sideOffset={2}>Refresh</TooltipContent>
+                                <TooltipContent side="bottom" sideOffset={-5} avoidCollisions={false}>Refresh</TooltipContent>
                             </Tooltip>
 
                             <Tooltip>
@@ -456,7 +598,7 @@ export function CrmFilters({ settings, filters, setFilters, leads, headerStats, 
                                         <Settings size={16} />
                                     </Button>
                                 </TooltipTrigger>
-                                <TooltipContent side="bottom" sideOffset={2}>Settings</TooltipContent>
+                                <TooltipContent side="bottom" sideOffset={-5} avoidCollisions={false}>Settings</TooltipContent>
                             </Tooltip>
 
                             <Tooltip>
@@ -465,7 +607,7 @@ export function CrmFilters({ settings, filters, setFilters, leads, headerStats, 
                                         <BarChart3 size={16} />
                                     </Button>
                                 </TooltipTrigger>
-                                <TooltipContent side="bottom" sideOffset={2}>Reports</TooltipContent>
+                                <TooltipContent side="bottom" sideOffset={-5} avoidCollisions={false}>Reports</TooltipContent>
                             </Tooltip>
 
                             <div className="h-4 w-px bg-white/10 mx-1" />
@@ -486,7 +628,7 @@ export function CrmFilters({ settings, filters, setFilters, leads, headerStats, 
                                         <MessageSquare size={16} />
                                     </Button>
                                 </TooltipTrigger>
-                                <TooltipContent side="bottom" sideOffset={2}>Global Inbox (Emily Hub)</TooltipContent>
+                                <TooltipContent side="bottom" sideOffset={-5} avoidCollisions={false}>Global Inbox (Emily Hub)</TooltipContent>
                             </Tooltip>
                         </div>
                     </div>

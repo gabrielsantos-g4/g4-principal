@@ -26,12 +26,15 @@ interface CreateOpportunityParams {
     engaged?: boolean; // if true, progress = 6
     firstMessage?: string;
     amount?: number;
+    qualification_status?: string;
+    nextDate?: string;
 }
 
 export async function createOpportunity(params: CreateOpportunityParams) {
     const {
         name, company, phone, email, linkedin, website, role, product, customField,
-        status, source, responsible, touchpoint, engaged, firstMessage, amount: providedAmount
+        status, source, responsible, touchpoint, engaged, firstMessage, amount: providedAmount,
+        qualification_status, nextDate
     } = params;
 
     // Validação básica
@@ -113,8 +116,9 @@ export async function createOpportunity(params: CreateOpportunityParams) {
                 status: status || 'New',
                 source: source || '',
                 responsible: responsible || '',
-                next_step: { progress: progress, total: 5, date: 'Pending' },
-                history_log: history_log
+                next_step: { progress: progress, total: 5, date: nextDate || 'Pending' },
+                history_log: history_log,
+                qualification_status: qualification_status || ''
             });
 
         if (error) {

@@ -1,7 +1,7 @@
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
-import { Phone, Mail, Linkedin, Instagram, Facebook, MessageSquare, ChevronDown, MessageCircle, LayoutGrid, GraduationCap, ListChecks, Waypoints, BarChart3, PanelRight } from "lucide-react";
+import { Phone, Mail, Linkedin, Instagram, Facebook, MessageSquare, ChevronDown, MessageCircle, LayoutGrid, GraduationCap, ListChecks, Waypoints, BarChart3, PanelRight, Plus, Trash2, GripVertical } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
@@ -176,6 +176,7 @@ export function LeadDetails({
         onUpdateLead({ source: newSource });
         await updateLead(id, { source: newSource });
     }
+
 
 
     if (!selectedConversation) {
@@ -390,13 +391,7 @@ export function LeadDetails({
                                     <DropdownMenuContent className="w-[200px] bg-[#1A1A1A] border-white/10 text-white">
                                         {SOURCES.map((s: any) => {
                                             const label = typeof s === 'string' ? s : s.label;
-                                            // Use bg color if available, or generate one based on label hash or default
                                             const bgColor = typeof s === 'string' ? "bg-slate-500" : (s.bg?.replace('/10', '') || "bg-slate-500");
-
-                                            // Handle potential "text-" classes in bg by mistake, but usually bg is "bg-..."
-                                            // If s.bg is "bg-pink-900/10" or "bg-pink-900", we want the dot to be visible. 
-                                            // Usually badges use dark bg + light text. Dots should probably be the "base" color.
-                                            // If we strip /10 it might be better.
 
                                             return (
                                                 <DropdownMenuItem
@@ -413,6 +408,42 @@ export function LeadDetails({
                                         })}
                                     </DropdownMenuContent>
                                 </DropdownMenu>
+                            </div>
+
+                            {/* Temperature (Derived) */}
+                            <div className="space-y-1.5">
+                                <span className="text-xs text-gray-400">Temperature (Derived)</span>
+                                <div className="flex items-center justify-between text-xs px-3 h-9 rounded-md w-full border border-white/10 bg-white/5 text-gray-300">
+                                    {(() => {
+                                        const currentStatus = STATUSES.find((s: any) => s.label === selectedConversation.status);
+                                        const temp = currentStatus?.temperature || "Cold";
+
+                                        // Try to find custom config
+                                        const tempDefs = crmSettings?.temperatures || [];
+                                        const matchedTemp = tempDefs.find((t: any) => (typeof t === 'string' ? t : t.label) === temp);
+
+                                        let bgColor = 'bg-gray-500';
+                                        if (matchedTemp) {
+                                            if (typeof matchedTemp === 'string') bgColor = 'bg-slate-500';
+                                            else bgColor = matchedTemp.bg?.replace('/10', '') || matchedTemp.bg || 'bg-slate-500';
+                                        } else {
+                                            // Fallback default map
+                                            const colorMap: Record<string, string> = {
+                                                'Cold': 'bg-blue-500',
+                                                'Warm': 'bg-orange-500',
+                                                'Hot': 'bg-red-500'
+                                            };
+                                            bgColor = colorMap[temp] || 'bg-gray-500';
+                                        }
+
+                                        return (
+                                            <div className="flex items-center">
+                                                <div className={`w-2 h-2 rounded-full mr-2 ${bgColor}`} />
+                                                <span>{temp}</span>
+                                            </div>
+                                        );
+                                    })()}
+                                </div>
                             </div>
 
                             {/* Status Section */}

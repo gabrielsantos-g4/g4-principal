@@ -12,7 +12,8 @@ export interface CrmFilterState {
     searchName: string;
     searchCompany: string;
     searchPhone: string;
-    date: Date | undefined;
+    dateRange: { from: Date | undefined; to: Date | undefined } | undefined;
+    createdAtRange: { from: Date | undefined; to: Date | undefined } | undefined;
     product: string[];
     status: string;
     source: string;
@@ -32,6 +33,19 @@ interface CrmContainerProps {
 // Helper to parse dates consistently with CrmTable
 function parseDateStr(str: string): Date {
     if (!str || str === "Pending") return new Date(8640000000000000); // Max safe integer
+
+    // FIX: Handle YYYY-MM-DD explicitly as local date to prevent UTC timezone shift
+    if (str.includes('-')) {
+        const parts = str.split('-');
+        if (parts.length === 3) {
+            const year = parseInt(parts[0], 10);
+            const month = parseInt(parts[1], 10) - 1;
+            const day = parseInt(parts[2], 10);
+            if (!isNaN(year) && !isNaN(month) && !isNaN(day)) {
+                return new Date(year, month, day);
+            }
+        }
+    }
 
     const isoDate = new Date(str);
     if (!isNaN(isoDate.getTime()) && str.includes('-')) {
@@ -65,7 +79,8 @@ export function CrmContainer({ initialLeads, stats: initialStats, settings, view
         searchName: '',
         searchCompany: '',
         searchPhone: '',
-        date: undefined,
+        dateRange: undefined,
+        createdAtRange: undefined,
         product: [],
         status: '',
         source: '',
@@ -86,7 +101,13 @@ export function CrmContainer({ initialLeads, stats: initialStats, settings, view
         nextStep: l.next_step || { date: "Pending", progress: 0, total: 6 },
         amount: l.amount ? parseFloat(l.amount.toString().replace(/[^0-9.-]+/g, "")) : 0,
         qualification_status: l.qualification_status?.toLowerCase(),
-        conversation_channel: l.conversation_channel || "WhatsApp"
+        conversation_channel: l.conversation_channel || "WhatsApp",
+        // Add missing fields for CrmTable
+        history: Array.isArray(l.history_log) ? l.history_log.map((h: any) => ({
+            ...h,
+            date: h.date ? new Date(h.date) : new Date()
+        })) : [],
+        date: l.created_at || new Date().toISOString()
     })), [initialLeads]);
 
     // 2. Base Filter (Everything EXCEPT Qualification) - Used for Stats
@@ -107,7 +128,23 @@ export function CrmContainer({ initialLeads, stats: initialStats, settings, view
             if (filters.searchPhone && !lead.phone?.toLowerCase().includes(filters.searchPhone.toLowerCase())) return false;
 
             // Product Filter
-            if (filters.product?.length > 0 && !filters.product.includes(lead.product)) return false;
+            if (filters.product?.length > 0) {
+                let leadProducts: string[] = [];
+                try {
+                    // Handle JSON array string or simple string
+                    if (lead.product.startsWith('[')) {
+                        leadProducts = JSON.parse(lead.product);
+                    } else if (lead.product) {
+                        leadProducts = [lead.product];
+                    }
+                } catch (e) {
+                    leadProducts = lead.product ? [lead.product] : [];
+                }
+
+                // Check if lead has ANY of the selected products
+                const hasMatch = leadProducts.some(p => filters.product.includes(p));
+                if (!hasMatch) return false;
+            }
 
             // Custom Field Filter
             if (filters.customField && lead.custom !== filters.customField) return false;
@@ -121,10 +158,45 @@ export function CrmContainer({ initialLeads, stats: initialStats, settings, view
             // Responsible Filter
             if (filters.responsible && lead.responsible !== filters.responsible) return false;
 
-            // Date Filter
-            if (filters.date) {
-                const filterDateStr = format(filters.date, "EEE, dd/MMM");
-                if (lead.nextStep?.date !== filterDateStr) return false;
+            // Date Range Filter
+            if (filters.dateRange?.from || filters.dateRange?.to) {
+                const nextStepDate = parseDateStr(lead.nextStep?.date);
+                // Ensure valid date
+                if (nextStepDate.getTime() >= 8640000000000000) return false;
+
+                const checkDate = new Date(nextStepDate.getFullYear(), nextStepDate.getMonth(), nextStepDate.getDate());
+
+                if (filters.dateRange.from) {
+                    const fromDate = new Date(filters.dateRange.from);
+                    fromDate.setHours(0, 0, 0, 0);
+                    if (checkDate < fromDate) return false;
+                }
+
+                if (filters.dateRange.to) {
+                    const toDate = new Date(filters.dateRange.to);
+                    toDate.setHours(0, 0, 0, 0);
+                    if (checkDate > toDate) return false;
+                }
+            }
+
+            // Created At Range Filter
+            if (filters.createdAtRange?.from || filters.createdAtRange?.to) {
+                const createdDate = lead.date ? new Date(lead.date) : null;
+                if (!createdDate) return false;
+
+                const checkDate = new Date(createdDate.getFullYear(), createdDate.getMonth(), createdDate.getDate());
+
+                if (filters.createdAtRange.from) {
+                    const fromDate = new Date(filters.createdAtRange.from);
+                    fromDate.setHours(0, 0, 0, 0);
+                    if (checkDate < fromDate) return false;
+                }
+
+                if (filters.createdAtRange.to) {
+                    const toDate = new Date(filters.createdAtRange.to);
+                    toDate.setHours(0, 0, 0, 0);
+                    if (checkDate > toDate) return false;
+                }
             }
 
             // Contact Filter (Overdue/Today/Tomorrow)
@@ -213,7 +285,8 @@ export function CrmContainer({ initialLeads, stats: initialStats, settings, view
                 viewerProfile={viewerProfile}
             />
             <CrmTable
-                initialLeads={initialLeads}
+                initialLeads={[]} // Deprecated/Unused
+                filteredLeads={finalFilteredLeads}
                 settings={settings}
                 filters={filters}
             />

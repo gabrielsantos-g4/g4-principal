@@ -205,6 +205,33 @@ export function CrmReportsModal({ isOpen, onClose, leads, settings }: CrmReports
             .map(([name, value]) => ({ name, value }))
             .sort((a, b) => b.value - a.value);
 
+        // --- Temperature Distribution (Derived from Status) ---
+        const temperatureCount: Record<string, number> = {
+            'Cold': 0,
+            'Warm': 0,
+            'Hot': 0
+        };
+
+        const statusMap = new Map();
+        (settings.statuses || []).forEach((s: any) => {
+            if (s.label) statusMap.set(s.label, s.temperature || 'Cold');
+        });
+
+        filteredLeads.forEach(l => {
+            const statusLabel = l.status || 'New';
+            // Default to Cold if status not found or no temperature set
+            const temp = statusMap.get(statusLabel) || 'Cold';
+            if (temperatureCount[temp] !== undefined) {
+                temperatureCount[temp]++;
+            } else {
+                // Fallback for unexpected values
+                temperatureCount['Cold']++;
+            }
+        });
+
+        const temperatureData = Object.entries(temperatureCount)
+            .map(([name, value]) => ({ name, value }));
+
 
         // --- Category Distribution ---
         const allCategories = settings.custom_fields?.options || [];
@@ -417,6 +444,7 @@ export function CrmReportsModal({ isOpen, onClose, leads, settings }: CrmReports
             statusData,
             productData,
             sourceData,
+            temperatureData,
             categoryData,
             responsibleData,
             timelineData,
@@ -777,8 +805,8 @@ export function CrmReportsModal({ isOpen, onClose, leads, settings }: CrmReports
                             </motion.div>
                         </div>
 
-                        {/* Pies Row */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
+                        {/* Middle Charts Row: Product & Temperature */}
+                        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 w-full">
                             {/* Product Distribution */}
                             <motion.div variants={itemVariants} className="bg-[#141414] p-6 rounded-2xl border border-white/5 flex flex-col h-[400px]">
                                 <h3 className="text-lg font-semibold text-white mb-6 flex items-center gap-2">
@@ -804,7 +832,7 @@ export function CrmReportsModal({ isOpen, onClose, leads, settings }: CrmReports
                                                 itemStyle={{ color: '#fff' }}
                                                 cursor={{ fill: 'rgba(255,255,255,0.05)' }}
                                             />
-                                            <Bar dataKey="value" fill="#a855f7" radius={[0, 4, 4, 0]} barSize={20}>
+                                            <Bar dataKey="value" fill="#8884d8" radius={[0, 4, 4, 0]} barSize={20}>
                                                 <LabelList dataKey="value" position="right" fill="#fff" />
                                             </Bar>
                                         </BarChart>
@@ -812,7 +840,58 @@ export function CrmReportsModal({ isOpen, onClose, leads, settings }: CrmReports
                                 </div>
                             </motion.div>
 
-                            {/* Category Distribution */}
+                            {/* Temperature Distribution */}
+                            <motion.div variants={itemVariants} className="bg-[#141414] p-6 rounded-2xl border border-white/5 flex flex-col h-[400px]">
+                                <h3 className="text-lg font-semibold text-white mb-6 flex items-center gap-2">
+                                    <BarChart3 size={18} className="text-orange-500" />
+                                    Lead Maturity (Temperature)
+                                </h3>
+                                <div className="flex-1 w-full relative min-w-0">
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <BarChart data={stats.temperatureData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                                            <CartesianGrid strokeDasharray="3 3" stroke="#333" vertical={false} />
+                                            <XAxis
+                                                dataKey="name"
+                                                stroke="#666"
+                                                tick={{ fill: '#888', fontSize: 12 }}
+                                                axisLine={false}
+                                                tickLine={false}
+                                            />
+                                            <YAxis
+                                                stroke="#666"
+                                                tick={{ fill: '#888', fontSize: 12 }}
+                                                axisLine={false}
+                                                tickLine={false}
+                                            />
+                                            <RechartsTooltip
+                                                contentStyle={{ backgroundColor: '#1f1f1f', borderColor: '#333', borderRadius: '8px', color: '#fff' }}
+                                                itemStyle={{ color: '#fff' }}
+                                                cursor={{ fill: 'rgba(255,255,255,0.05)' }}
+                                            />
+                                            <Bar dataKey="value" radius={[4, 4, 0, 0]} barSize={40}>
+                                                {stats.temperatureData.map((entry, index) => {
+                                                    const tempSetting = settings.temperatures?.find(t => (typeof t === 'string' ? t : t.label) === entry.name);
+                                                    const bg = typeof tempSetting === 'string' ? null : tempSetting?.bg;
+                                                    let color = '#8884d8';
+                                                    if (bg) {
+                                                        // Fallback colors for CSS classes
+                                                        if (bg.includes('blue')) color = '#3b82f6';
+                                                        else if (bg.includes('orange')) color = '#f97316';
+                                                        else if (bg.includes('red')) color = '#ef4444';
+                                                        else if (bg.includes('slate')) color = '#64748b';
+                                                    }
+                                                    return <Cell key={`cell-${index}`} fill={color} />;
+                                                })}
+                                                <LabelList dataKey="value" position="top" fill="#fff" />
+                                            </Bar>
+                                        </BarChart>
+                                    </ResponsiveContainer>
+                                </div>
+                            </motion.div>
+                        </div>
+
+                        {/* Category Distribution */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
                             <motion.div variants={itemVariants} className="bg-[#141414] p-6 rounded-2xl border border-white/5 flex flex-col h-[400px]">
                                 <h3 className="text-lg font-semibold text-white mb-6 flex items-center gap-2">
                                     <PieChart size={18} className="text-orange-500" />

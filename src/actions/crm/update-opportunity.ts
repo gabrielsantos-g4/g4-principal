@@ -17,6 +17,8 @@ interface UpdateOpportunityParams {
     product?: string;
     customField?: string;
     price?: number; // Optional, to update amount if product changes
+    qualification_status?: string;
+    nextDate?: string;
 }
 
 export async function updateOpportunity(data: UpdateOpportunityParams) {
@@ -37,7 +39,29 @@ export async function updateOpportunity(data: UpdateOpportunityParams) {
         role: data.role,
         product: data.product,
         custom_field: data.customField,
+        qualification_status: data.qualification_status,
     };
+
+    if (data.nextDate) {
+        // We need to fetch current next_step to merge, or we assume structure.
+        // For simplicity/robustness, we can try to update just the date inside the JSONB if possible?
+        // Supabase/Postgres allows updating specific keys in JSONB but via raw SQL mostly or careful update.
+        // OR we just fetch the item first?
+        // Actually, let's fetch the current item to preserve 'progress' if we want to be safe,
+        // OR we just assume we might overwrite 'date' in the object if we constructed it again.
+        // Wait, 'next_step' is a JSONB column.
+        // Ideally we should do a patch.
+        // But for now, let's just create a new object if we don't have the old one?
+        // Ah, typically we want to keep the 'progress'.
+        // Let's fetch the item first to get 'next_step'.
+        const { data: currentItem } = await supabase.from('main_crm').select('next_step').eq('id', data.id).single();
+        const currentNextStep = currentItem?.next_step || { progress: 0, total: 5, date: 'Pending' };
+
+        updateData.next_step = {
+            ...currentNextStep,
+            date: data.nextDate
+        };
+    }
 
     // If price is provided (product changed), update amount
     if (data.price !== undefined) {
