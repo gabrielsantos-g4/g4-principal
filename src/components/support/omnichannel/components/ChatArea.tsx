@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { MoreVertical, Phone, Paperclip, Mic, Smile, Send, Check, CheckCheck, Clock, Download, FileAudio, Play, Pause } from "lucide-react";
+import { MoreVertical, Phone, Paperclip, Mic, Smile, Send, Check, CheckCheck, Clock, Download, FileAudio, Play, Pause, ArrowLeftRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Conversation } from "./ConversationList"; // Assuming type sharing
 
@@ -20,6 +20,9 @@ interface ChatAreaProps {
     onToggleResponsibility: (status?: string) => void;
     isToggling: boolean;
     onUpload?: (file: File) => void; // Placeholder for future
+    onToggleQuemAtende?: () => void;
+    isTogglingQuemAtende?: boolean;
+    isAgentInbox?: boolean;
 }
 
 const CHANNEL_COLORS: Record<string, string> = {
@@ -42,7 +45,10 @@ export function ChatArea({
     onSendMessage,
     onToggleResponsibility,
     isToggling,
-    onUpload
+    onUpload,
+    onToggleQuemAtende,
+    isTogglingQuemAtende,
+    isAgentInbox
 }: ChatAreaProps) {
     const scrollRef = useRef<HTMLDivElement>(null);
     const [messageInput, setMessageInput] = useState("");
@@ -282,6 +288,30 @@ export function ChatArea({
                     >
                         <Send size={18} className={cn("ml-0.5", isSending && "animate-pulse")} />
                     </Button>
+                    {isAgentInbox && (
+                    <Button
+                        size="sm"
+                        className={cn(
+                            "h-10 shrink-0 rounded-lg transition-all text-xs gap-1.5 px-3",
+                            selectedConversation.quem_atende?.toLowerCase() === 'humano'
+                                ? "bg-purple-600/20 text-purple-300 hover:bg-purple-600/30 border border-purple-500/20"
+                                : "bg-emerald-600/20 text-emerald-300 hover:bg-emerald-600/30 border border-emerald-500/20"
+                        )}
+                        onClick={onToggleQuemAtende}
+                        disabled={isTogglingQuemAtende}
+                    >
+                        {isTogglingQuemAtende ? (
+                            <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                        ) : (
+                            <>
+                                <ArrowLeftRight size={14} />
+                                {selectedConversation.quem_atende?.toLowerCase() === 'humano'
+                                    ? 'Transfer to Agent'
+                                    : 'Transfer to Human'}
+                            </>
+                        )}
+                    </Button>
+                    )}
                 </div>
             </div>
         </div>

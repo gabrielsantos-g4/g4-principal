@@ -492,7 +492,7 @@ export function LeadDetails({
                                     </SelectTrigger>
                                     <SelectContent className="bg-[#1a1a1a] border-white/10 text-white">
                                         {messagingUsers
-                                            .filter(user => user.id !== currentUserId)
+                                            .filter(user => user.id !== selectedConversation.responsibleId)
                                             .map((user) => (
                                                 <SelectItem
                                                     key={user.id}

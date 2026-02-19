@@ -15,6 +15,7 @@ interface UpdateLeadParams {
     lost_reason?: string;
     temperature?: string;
     qualification_details?: any; // JSONB
+    quem_atende?: string;
 }
 
 export async function updateLead(id: number, data: UpdateLeadParams) {

@@ -4,42 +4,73 @@ import { createClient, createAdminClient } from '@/lib/supabase'
 import { revalidatePath } from 'next/cache'
 import { logAction } from '@/actions/audit'
 
-export async function transferConversation(conversationId: string, newResponsibleName: string) {
+export async function transferConversation(
+    conversationId: string,
+    targetUserId: string
+) {
     try {
         const supabase = await createClient()
         const { data: { user } } = await supabase.auth.getUser()
-
-        if (!user) {
-            return { error: 'Unauthorized' }
-        }
+        if (!user) return { error: 'Unauthorized' }
 
         const supabaseAdmin = await createAdminClient()
 
-        // Verify the conversation exists and belongs to the company (RLS check/security)
-        // For simplicity with admin client, we just update ensuring the ID matches.
-        // Ideally we should check if the user has access to this lead, but given it's "Support" / "Inbox",
-        // typically they do if they can see it.
+        // 1. Resolve target user name from profile
+        const { data: targetProfile } = await supabaseAdmin
+            .from('main_profiles')
+            .select('name')
+            .eq('id', targetUserId)
+            .single()
 
-        // Update the lead's responsible field
-        const { error } = await supabaseAdmin
-            .from('main_crm')
-            .update({ responsible: newResponsibleName })
+        if (!targetProfile) return { error: 'Target user not found' }
+
+        // 2. Get the lead ID from camp_conversas
+        const { data: conv } = await supabaseAdmin
+            .from('camp_conversas')
+            .select('id, contact_id, main_crm!camp_conversas_contact_id_fkey ( id )')
             .eq('id', conversationId)
+            .single()
 
-        if (error) {
-            console.error('Error transferring conversation:', error)
-            return { error: 'Failed to transfer conversation' }
+        if (!conv) return { error: 'Conversation not found' }
+
+        const leadId = (conv as any).main_crm?.id
+
+        // 3. Update main_crm: responsible (name) + responsible_id (uuid)
+        if (leadId) {
+            const { error: crmError } = await supabaseAdmin
+                .from('main_crm')
+                .update({
+                    responsible: targetProfile.name,
+                    responsible_id: targetUserId
+                })
+                .eq('id', leadId)
+
+            if (crmError) {
+                console.error('Error updating main_crm:', crmError)
+                return { error: 'Failed to update lead responsible' }
+            }
         }
 
-        // Revalidate inbox pages
-        revalidatePath('/dashboard/support')
+        // 4. Update camp_conversas: responsible_id (uuid)
+        const { error: convError } = await supabaseAdmin
+            .from('camp_conversas')
+            .update({ responsible_id: targetUserId })
+            .eq('id', conversationId)
+
+        if (convError) {
+            console.error('Error updating camp_conversas:', convError)
+            return { error: 'Failed to update conversation responsible' }
+        }
+
+        revalidatePath('/dashboard/customer-support')
         revalidatePath('/dashboard/orchestrator')
 
-        // Log the conversation transfer
         await logAction('CONVERSATION_TRANSFERRED', {
             conversation_id: conversationId,
-            new_responsible: newResponsibleName,
-            via: 'crm_transfer'
+            lead_id: leadId,
+            new_responsible_name: targetProfile.name,
+            new_responsible_id: targetUserId,
+            via: 'inbox_transfer'
         })
 
         return { success: true }

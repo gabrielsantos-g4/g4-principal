@@ -29,7 +29,7 @@ export function OrchestratorTabs({ company, activeAgents, userProfile, crmSettin
     // Determine default tab based on permissions
     // If no tab param, default to 'chats' if enabled, else 'company'
     const tabParam = searchParams.get('tab')
-    const activeTab = tabParam || (userProfile?.has_messaging_access ? 'chats' : 'company')
+    const activeTab = tabParam || ((userProfile?.has_messaging_access || userProfile?.role === 'admin') ? 'chats' : 'company')
 
     // State
     const [currency, setCurrency] = useState<'USD' | 'BRL'>('USD')
@@ -69,7 +69,7 @@ export function OrchestratorTabs({ company, activeAgents, userProfile, crmSettin
         <div className="w-full h-full flex flex-col">
             {/* NO TABS HEADER HERE - Controlled via URL from Header/Sidebar */}
 
-            {activeTab === "chats" && userProfile?.has_messaging_access && (
+            {activeTab === "chats" && (userProfile?.has_messaging_access || userProfile?.role === 'admin') && (
                 <div className="flex-1 h-full overflow-hidden">
                     <DashboardCard>
                         <OmnichannelInbox

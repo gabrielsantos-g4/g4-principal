@@ -1,6 +1,6 @@
 'use server';
 
-import { createClient } from "@/lib/supabase";
+import { createAdminClient } from "@/lib/supabase";
 import { getEmpresaId } from "@/lib/get-empresa-id";
 
 export interface MessagingUser {
@@ -11,7 +11,7 @@ export interface MessagingUser {
 }
 
 export async function getMessagingUsers(): Promise<MessagingUser[]> {
-    const supabase = await createClient();
+    const supabase = await createAdminClient();
     const empresaId = await getEmpresaId();
 
     if (!empresaId) return [];
@@ -20,7 +20,7 @@ export async function getMessagingUsers(): Promise<MessagingUser[]> {
         .from('main_profiles')
         .select('id, name, avatar_url, email')
         .eq('empresa_id', empresaId)
-        .or('has_messaging_access.eq.true,role.in.(admin,owner)')
+        .eq('has_messaging_access', true)
         .order('name');
 
     if (error) {
@@ -28,5 +28,6 @@ export async function getMessagingUsers(): Promise<MessagingUser[]> {
         return [];
     }
 
+    console.log("[getMessagingUsers] Found users:", data?.map(u => u.name));
     return data || [];
 }

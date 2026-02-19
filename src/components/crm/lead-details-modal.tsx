@@ -46,7 +46,9 @@ export function LeadDetailsModal({ isOpen, onClose, lead, onNewDeal }: LeadDetai
             setCreatedDate(lead.date);
             // Handle phone format if needed, simplistic for now
             if (lead.phone && lead.phone !== "↗" && lead.phone !== "1↗") {
-                setPhone(lead.phone);
+                // Ensure E.164 format (must start with +)
+                const normalized = lead.phone.startsWith('+') ? lead.phone : `+${lead.phone}`;
+                setPhone(normalized);
             } else {
                 setPhone(undefined);
             }

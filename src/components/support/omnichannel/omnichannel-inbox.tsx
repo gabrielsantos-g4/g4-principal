@@ -9,6 +9,7 @@ import { LeadDetails } from "./components/LeadDetails";
 import { MessageSquare } from "lucide-react";
 
 import { createBrowserClient } from "@supabase/ssr";
+import { AGENTS } from "@/lib/agents";
 import { signout } from "@/app/login/actions";
 import { useBrowserNotification } from "@/hooks/use-browser-notification";
 import { markAsRead } from "@/actions/crm/mark-as-read";
@@ -196,19 +197,23 @@ export function OmnichannelInbox({
 
     // Realtime Refresh Logic
     const [refreshTrigger, setRefreshTrigger] = useState(0);
+    const isInitialLoad = useRef(true);
 
     useEffect(() => {
         let isMounted = true;
         async function fetchData() {
-            setIsLoading(true);
+            // Only show loading spinner on initial load, not on realtime refreshes
+            const showLoading = isInitialLoad.current;
+            if (showLoading) setIsLoading(true);
+
             try {
-                // Fetch real data in parallel
                 const [convData, usersData] = await Promise.all([
                     getConversations(targetUserId),
                     getMessagingUsers()
                 ]);
 
                 if (isMounted) {
+                    console.log("[INBOX DEBUG] messagingUsers received:", usersData?.map((u: any) => u.name));
                     setConversations(convData as Conversation[]);
                     setMessagingUsers(usersData);
 
@@ -219,9 +224,12 @@ export function OmnichannelInbox({
                 }
             } catch (error) {
                 console.error("Failed to fetch data", error);
-                toast.error("Failed to load inbox");
+                if (showLoading) toast.error("Failed to load inbox");
             } finally {
-                if (isMounted) setIsLoading(false);
+                if (isMounted) {
+                    setIsLoading(false);
+                    isInitialLoad.current = false;
+                }
             }
         }
         fetchData();
@@ -288,6 +296,34 @@ export function OmnichannelInbox({
     // Handle Responsibility Toggle
     const [isToggling, setIsToggling] = useState(false);
     const [isLostModalOpen, setIsLostModalOpen] = useState(false);
+    const [isTogglingQuemAtende, setIsTogglingQuemAtende] = useState(false);
+
+    async function handleToggleQuemAtende() {
+        if (!selectedConversation?.leadId) return;
+
+        setIsTogglingQuemAtende(true);
+        try {
+            const { updateLead } = await import('@/actions/crm/update-lead');
+            const current = (selectedConversation.quem_atende || 'agente').toLowerCase();
+            const newValue = current === 'humano' ? 'Agente' : 'Humano';
+
+            const result = await updateLead(selectedConversation.leadId, { quem_atende: newValue });
+            if (!result.success) throw new Error(result.error);
+
+            // Optimistic update
+            setConversations(prev => prev.map(c =>
+                c.id === selectedConversation.id
+                    ? { ...c, quem_atende: newValue }
+                    : c
+            ));
+            toast.success(`Transferred to ${newValue}`);
+        } catch (error) {
+            console.error("Failed to toggle quem_atende", error);
+            toast.error("Failed to transfer");
+        } finally {
+            setIsTogglingQuemAtende(false);
+        }
+    }
 
     async function handleToggleResponsibility(status?: string) {
         if (!selectedConversation) return;
@@ -472,6 +508,9 @@ export function OmnichannelInbox({
                 onSendMessage={handleSendMessage}
                 onToggleResponsibility={handleToggleResponsibility}
                 isToggling={isToggling}
+                onToggleQuemAtende={handleToggleQuemAtende}
+                isTogglingQuemAtende={isTogglingQuemAtende}
+                isAgentInbox={!!AGENTS.find(a => a.id === targetUserId)}
             />
 
             <LeadDetails
@@ -481,9 +520,9 @@ export function OmnichannelInbox({
                 currentUserId={currentUserId}
                 onUpdateLead={handleUpdateLead}
                 onTransfer={async (userId) => {
-                    if (!selectedConversation?.leadId) return;
+                    if (!selectedConversationId) return;
                     const { transferConversation } = await import('@/actions/crm/transfer-conversation');
-                    toast.promise(transferConversation(selectedConversation.leadId.toString(), userId), {
+                    toast.promise(transferConversation(selectedConversationId, userId), {
                         loading: 'Transferring...',
                         success: () => {
                             setConversations(prev => prev.filter(c => c.id !== selectedConversationId));

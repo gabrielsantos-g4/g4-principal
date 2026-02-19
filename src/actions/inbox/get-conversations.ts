@@ -6,126 +6,75 @@ import { AGENTS } from "@/lib/agents";
 import { unstable_noStore as noStore } from 'next/cache';
 
 export async function getConversations(targetUserId?: string) {
-    noStore(); // Prevent Next.js from caching this response
+    noStore();
     const empresaId = await getEmpresaId();
     if (!empresaId) return [];
 
     const supabaseAdmin = await createAdminClient();
 
-    let responsibleName: string | undefined;
-    let isAdmin = false;
+    let responsibleUserId: string | undefined;
+    let isAgent = false;
 
-    // 1. Determine context: admin sees all, agent sees all, member sees own inbox
+    // 1. Determine context
     if (targetUserId) {
-        // Check if it's an AI Agent — agents see ALL conversations (they serve the whole company)
         const agent = AGENTS.find(a => a.id === targetUserId);
         if (agent) {
-            // Agent inbox: show all conversations, no responsible filter needed
-            isAdmin = true; // reuse admin path (no filter)
+            isAgent = true; // Agent: sees only unassigned conversations (responsible_id IS NULL)
         } else {
-            // Human member inbox: filter by their name
-            const { data: profile } = await supabaseAdmin
-                .from('main_profiles')
-                .select('name')
-                .eq('id', targetUserId)
-                .single();
-            if (profile) responsibleName = profile.name;
+            responsibleUserId = targetUserId; // Any human (including admin): filter by UUID
         }
     } else {
-        // No target — check if current user is admin
         const supabase = await createClient();
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
-            const { data: profile } = await supabaseAdmin
-                .from('main_profiles')
-                .select('name, role')
-                .eq('id', user.id)
-                .single();
-            if (profile?.role === 'admin') {
-                isAdmin = true;
-            } else if (profile) {
-                responsibleName = profile.name;
-            }
+            responsibleUserId = user.id; // Default: filter by own UUID
         }
     }
 
-    // 2. Query camp_conversas filtered by empresa_id
-    const leadSelect = `
+    // 2. Build query
+    const selectFields = `
+        id,
+        contact_id,
+        instance_id,
+        responsible_id,
+        created_at,
+        updated_at,
+        main_crm!camp_conversas_contact_id_fkey (
             id,
-            contact_id,
-            instance_id,
-            created_at,
-            updated_at,
-            main_crm!camp_conversas_contact_id_fkey (
-                id,
-                name,
-                phone,
-                email,
-                company,
-                role,
-                status,
-                next_step,
-                amount,
-                product,
-                qualification_status,
-                source,
-                history_log,
-                custom_field,
-                quem_atende,
-                conversation_channel,
-                is_read_by_responsible,
-                ctt_jid,
-                responsible
-            )
-        `;
-
-    const leadSelectInner = `
-            id,
-            contact_id,
-            instance_id,
-            created_at,
-            updated_at,
-            main_crm!camp_conversas_contact_id_fkey!inner (
-                id,
-                name,
-                phone,
-                email,
-                company,
-                role,
-                status,
-                next_step,
-                amount,
-                product,
-                qualification_status,
-                source,
-                history_log,
-                custom_field,
-                quem_atende,
-                conversation_channel,
-                is_read_by_responsible,
-                ctt_jid,
-                responsible
-            )
-        `;
+            name,
+            phone,
+            email,
+            company,
+            role,
+            status,
+            next_step,
+            amount,
+            product,
+            qualification_status,
+            source,
+            history_log,
+            custom_field,
+            quem_atende,
+            conversation_channel,
+            is_read_by_responsible,
+            ctt_jid,
+            responsible
+        )
+    `;
 
     let query = supabaseAdmin
         .from('camp_conversas')
-        .select(leadSelect)
+        .select(selectFields)
         .eq('empresa_id', empresaId)
         .order('updated_at', { ascending: false });
 
-    if (responsibleName) {
-        query = supabaseAdmin
-            .from('camp_conversas')
-            .select(leadSelectInner)
-            .eq('empresa_id', empresaId)
-            .ilike('main_crm.responsible', responsibleName)
-            .order('updated_at', { ascending: false });
-    } else if (!isAdmin) {
-        // Not admin and no responsible name resolved — no access
+    if (isAgent) {
+        query = query.is('responsible_id', null);
+    } else if (responsibleUserId) {
+        query = query.eq('responsible_id', responsibleUserId);
+    } else {
         return [];
     }
-    // If isAdmin and no responsibleName, query stays as the default (all conversations)
 
     const { data: conversations, error } = await query;
 
@@ -136,8 +85,7 @@ export async function getConversations(targetUserId?: string) {
 
     if (!conversations) return [];
 
-
-    // Helper to fetch last message for a conversation
+    // Helper to fetch last message
     const fetchLastMessage = async (conversationId: string) => {
         const { data: lastMsg } = await supabaseAdmin
             .from('camp_mensagens')
@@ -149,42 +97,34 @@ export async function getConversations(targetUserId?: string) {
         return lastMsg;
     };
 
-    // 4. Transform to Conversation objects
-    // We need to fetch last messages in parallel for efficiency
+    // 3. Transform to Conversation objects
     const payload = await Promise.all(conversations.map(async (conv: any) => {
         const lead = conv.main_crm;
+        if (!lead) return null;
 
-        if (!lead) return null; // Should not happen with inner join, but safe guard
-
-        // Determine channel
         const rawChannel = lead.conversation_channel?.toLowerCase() || 'whatsapp';
         let channel = rawChannel;
         if (channel === 'webchat') channel = 'web';
         if (channel === 'phone') channel = 'sms';
 
-        // Get Last Message
         let lastMessage = "New conversation";
         let lastMessageAt = conv.updated_at ? new Date(conv.updated_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "";
 
-        // Try to fetch real last message from camp_mensagens
         const lastMsg = await fetchLastMessage(conv.id);
-
         const messages = [];
 
         if (lastMsg) {
             lastMessage = lastMsg.body || (lastMsg.media_url ? '[Media]' : 'Message');
             lastMessageAt = new Date(lastMsg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-
             messages.push({
                 id: `msg-${conv.id}-last`,
                 content: lastMessage,
-                senderId: 'contact', // simplified
+                senderId: 'contact',
                 timestamp: lastMessageAt,
                 status: lastMsg.status || 'read',
                 type: 'text'
             });
         } else if (Array.isArray(lead.history_log) && lead.history_log.length > 0) {
-            // Fallback to history log if no chat messages
             const lastLog = lead.history_log[lead.history_log.length - 1];
             lastMessage = lastLog.message || "Interacted";
             if (lastLog.date) {
@@ -200,10 +140,9 @@ export async function getConversations(targetUserId?: string) {
             });
         }
 
-
         return {
-            id: conv.id, // This is now the camp_conversas ID (UUID)
-            leadId: lead.id, // CRM Lead ID
+            id: conv.id,
+            leadId: lead.id,
             channel: channel,
             contact: {
                 id: `c-${lead.id}`,
@@ -219,12 +158,10 @@ export async function getConversations(targetUserId?: string) {
                 phone: lead.phone || "",
                 tags: []
             },
-            lastMessage: lastMessage,
-            lastMessageAt: lastMessageAt,
+            lastMessage,
+            lastMessageAt,
             unreadCount: lead.is_read_by_responsible ? 0 : 1,
-            messages: messages,
-
-            // CRM Fields
+            messages,
             status: lead.status || "New",
             nextStep: lead.next_step || { date: "Pending", progress: 0, total: 6 },
             amount: lead.amount?.toString() || "0",
@@ -233,7 +170,8 @@ export async function getConversations(targetUserId?: string) {
             source: lead.source || "",
             history: Array.isArray(lead.history_log) ? lead.history_log : [],
             custom: lead.custom_field || "",
-            quem_atende: lead.quem_atende
+            quem_atende: lead.quem_atende,
+            responsibleId: conv.responsible_id || null
         };
     }));
 

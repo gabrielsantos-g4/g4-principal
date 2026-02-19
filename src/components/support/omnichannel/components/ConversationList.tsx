@@ -22,6 +22,7 @@ import { markAsRead } from "@/actions/crm/mark-as-read";
 // For now, defining minimal interfaces based on usage.
 export interface Conversation {
     id: string;
+    leadId?: number; // CRM Lead ID
     contact: {
         id: string;
         name: string;
@@ -50,6 +51,7 @@ export interface Conversation {
     history: { id: string; message: string; date: Date }[];
     custom?: string;
     quem_atende?: string;
+    responsibleId?: string | null;
     permission?: string;
 }
 
