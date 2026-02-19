@@ -122,53 +122,77 @@ export function OmnichannelInbox({
     const hasUnread = conversations.some(c => c.unreadCount > 0);
     useBrowserNotification(hasUnread);
 
-    useEffect(() => {
-        const supabase = createBrowserClient(
+    // Stable Supabase client ref to avoid creating multiple instances
+    const supabaseRef = useRef<ReturnType<typeof createBrowserClient> | null>(null);
+    if (!supabaseRef.current) {
+        supabaseRef.current = createBrowserClient(
             process.env.NEXT_PUBLIC_SUPABASE_URL!,
             process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
         );
+    }
+
+    useEffect(() => {
+        if (!crmSettings?.empresa_id) return;
+
+        const supabase = supabaseRef.current!;
 
         // Get current user
         supabase.auth.getUser().then(({ data: { user } }) => {
             if (user) setCurrentUserId(user.id);
         });
 
+        const empresaId = crmSettings.empresa_id;
+        // Unique channel names to avoid collisions on Strict Mode re-mounts
+        const channelSuffix = `${empresaId}-${Date.now()}`;
+        console.log('[RT] Subscribing with empresa_id:', empresaId);
+
         // Realtime: Lead/CRM updates
         const channelLeads = supabase
-            .channel(`inbox-leads-${Date.now()}`)
+            .channel(`omnichannel-leads-${channelSuffix}`)
             .on(
                 'postgres_changes',
-                { event: '*', schema: 'public', table: 'main_crm' },
-                (payload) => {
-                    console.log('[RT leads]', payload);
+                {
+                    event: '*',
+                    schema: 'public',
+                    table: 'main_crm',
+                    filter: `empresa_id=eq.${empresaId}`
+                },
+                (payload: any) => {
+                    console.log('[RT leads] change received:', payload);
                     setRefreshTrigger(prev => prev + 1);
                 }
             )
-            .subscribe((status) => {
-                console.log('[RT leads] status:', status);
+            .subscribe((status, err) => {
+                console.log('[RT leads] status:', status, err);
             });
 
         // Realtime: New messages — directly reload messages
         const channelMsgs = supabase
-            .channel(`inbox-messages-${Date.now()}`)
+            .channel(`omnichannel-messages-${channelSuffix}`)
             .on(
                 'postgres_changes',
-                { event: 'INSERT', schema: 'public', table: 'camp_mensagens' },
-                (payload) => {
-                    console.log('[RT messages] new message:', payload);
+                {
+                    event: 'INSERT',
+                    schema: 'public',
+                    table: 'camp_mensagens',
+                    filter: `empresa_id=eq.${empresaId}`
+                },
+                (payload: any) => {
+                    console.log('[RT messages] new message received:', payload);
                     silentReloadMessages();
                     setRefreshTrigger(prev => prev + 1);
                 }
             )
-            .subscribe((status) => {
-                console.log('[RT messages] status:', status);
+            .subscribe((status, err) => {
+                console.log('[RT messages] status:', status, err);
             });
 
         return () => {
+            console.log('[RT] Cleaning up channels...');
             supabase.removeChannel(channelLeads);
             supabase.removeChannel(channelMsgs);
         };
-    }, []);
+    }, [crmSettings?.empresa_id]);
 
     // Realtime Refresh Logic
     const [refreshTrigger, setRefreshTrigger] = useState(0);
@@ -280,8 +304,8 @@ export function OmnichannelInbox({
             if (status) {
                 const toastId = toast.loading(`Updating status to ${status}...`);
                 const { updateLead } = await import('@/actions/crm/update-lead');
-                const leadId = parseInt(selectedConversation.id);
-                if (!isNaN(leadId)) {
+                const leadId = selectedConversation.leadId;
+                if (leadId) {
                     const result = await updateLead(leadId, { status });
                     if (!result.success) throw new Error(result.error);
                     toast.success("Status updated", { id: toastId });
@@ -309,9 +333,9 @@ export function OmnichannelInbox({
         try {
             const toastId = toast.loading("Marking as Lost...");
             const { updateLead } = await import('@/actions/crm/update-lead');
-            const leadId = parseInt(selectedConversation.id);
+            const leadId = selectedConversation.leadId;
 
-            if (!isNaN(leadId)) {
+            if (leadId) {
                 // Update status AND reason
                 const result = await updateLead(leadId, {
                     status: 'Lost',
@@ -373,8 +397,8 @@ export function OmnichannelInbox({
             const toastId = toast.loading(`Updating status to ${updates.status}...`);
             try {
                 const { updateLead } = await import('@/actions/crm/update-lead');
-                const leadId = parseInt(selectedConversation.id);
-                if (isNaN(leadId)) throw new Error("Invalid Lead ID");
+                const leadId = selectedConversation.leadId;
+                if (!leadId) throw new Error("Invalid Lead ID");
 
                 const result = await updateLead(leadId, { status: updates.status });
 
@@ -457,9 +481,9 @@ export function OmnichannelInbox({
                 currentUserId={currentUserId}
                 onUpdateLead={handleUpdateLead}
                 onTransfer={async (userId) => {
-                    if (!selectedConversationId) return;
+                    if (!selectedConversation?.leadId) return;
                     const { transferConversation } = await import('@/actions/crm/transfer-conversation');
-                    toast.promise(transferConversation(selectedConversationId, userId), {
+                    toast.promise(transferConversation(selectedConversation.leadId.toString(), userId), {
                         loading: 'Transferring...',
                         success: () => {
                             setConversations(prev => prev.filter(c => c.id !== selectedConversationId));

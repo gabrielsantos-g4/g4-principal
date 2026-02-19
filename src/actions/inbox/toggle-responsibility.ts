@@ -5,11 +5,36 @@ import { getEmpresaId } from "@/lib/get-empresa-id";
 import { revalidatePath } from "next/cache";
 import { logAction } from '@/actions/audit';
 
-export async function toggleResponsibility(leadId: string, currentStatus?: string) {
+export async function toggleResponsibility(conversationId: string, currentStatus?: string) {
     const empresaId = await getEmpresaId();
     if (!empresaId) return { success: false, message: "Unauthorized" };
 
     const supabaseAdmin = await createAdminClient();
+
+    // 1. Resolve Lead from Conversation ID
+    const { data: conversation, error: convError } = await supabaseAdmin
+        .from('camp_conversas')
+        .select(`
+            main_crm!camp_conversas_contact_id_fkey (
+                id,
+                quem_atende
+            )
+        `)
+        .eq('id', conversationId)
+        .eq('empresa_id', empresaId)
+        .single();
+
+    if (convError || !conversation || !conversation.main_crm) {
+        console.error("Error resolving conversation to lead:", convError);
+        return { success: false, message: "Conversation/Lead not found" };
+    }
+
+    const lead = conversation.main_crm;
+    // @ts-ignore
+    const leadId = lead.id;
+    // @ts-ignore
+    const leadStatus = lead.quem_atende;
+
 
     // Determine new status
     // Logic: 
@@ -18,23 +43,13 @@ export async function toggleResponsibility(leadId: string, currentStatus?: strin
     // Default fallback if unknown: 'Humano' (taking over)
 
     let newStatus = 'Humano';
-    if (!currentStatus) {
-        // Fetch if not provided
-        const { data: lead } = await supabaseAdmin
-            .from('main_crm')
-            .select('quem_atende')
-            .eq('id', leadId)
-            .eq('empresa_id', empresaId)
-            .single();
 
-        const status = lead?.quem_atende?.toLowerCase();
-        if (status === 'humano') newStatus = 'Agente';
-        // Assign currentStatus for logging if it was missing
-        currentStatus = lead?.quem_atende;
-    } else {
-        const status = currentStatus.toLowerCase();
-        if (status === 'humano') newStatus = 'Agente';
-    }
+    // Use the status from DB if currentStatus was not provided or differs (safety)
+    // But respecting the passed argument if it exists for optimistic consistency? 
+    // actually safer to use DB value if we just fetched it.
+    const statusToCheck = (currentStatus || leadStatus || '').toLowerCase();
+
+    if (statusToCheck === 'humano') newStatus = 'Agente';
 
     const { error } = await supabaseAdmin
         .from('main_crm')
@@ -52,7 +67,7 @@ export async function toggleResponsibility(leadId: string, currentStatus?: strin
     // Log the responsibility toggle
     await logAction('RESPONSIBILITY_TOGGLED', {
         lead_id: leadId,
-        old_status: currentStatus,
+        old_status: statusToCheck,
         new_status: newStatus,
         via: 'inbox_toggle' // helpful context
     });

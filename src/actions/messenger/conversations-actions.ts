@@ -46,7 +46,7 @@ export async function getConversations() {
             contact_id,
             instance_id,
             created_at,
-            leads (
+            main_crm!camp_conversas_contact_id_fkey (
                 name,
                 phone
             )
@@ -72,8 +72,8 @@ export async function getConversations() {
         return {
             id: conv.id,
             contact_id: conv.contact_id,
-            contact_name: conv.leads?.name || conv.leads?.phone || 'Desconhecido',
-            contact_phone: conv.leads?.phone || '',
+            contact_name: conv.main_crm?.name || conv.main_crm?.phone || 'Desconhecido',
+            contact_phone: conv.main_crm?.phone || '',
             instance_id: conv.instance_id,
             last_message: lastMsg?.body || (lastMsg ? 'Mídia' : ''),
             last_message_at: lastMsg?.created_at,
