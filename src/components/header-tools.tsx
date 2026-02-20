@@ -67,9 +67,9 @@ export function HeaderTools({ userProfile }: HeaderToolsProps) {
                             <Waypoints size={14} className="text-gray-400" />
                             <span>Connections</span>
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleJessTabSelection('reports')} className="gap-2 cursor-pointer focus:bg-white/5">
+                        <DropdownMenuItem onClick={() => handleJessTabSelection('results')} className="gap-2 cursor-pointer focus:bg-white/5">
                             <BarChart3 size={14} className="text-gray-400" />
-                            <span>Reports</span>
+                            <span>Results</span>
                         </DropdownMenuItem>
                     </DropdownMenuContent>
                 </DropdownMenu>

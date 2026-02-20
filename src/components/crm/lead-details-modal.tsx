@@ -17,8 +17,13 @@ interface Lead {
     phone: string;
     email: string;
     linkedin: string;
-    amount: string;
+    website?: string;
+    role?: string;
+    amount: string | number;
     status: string;
+    source?: string;
+    custom?: string;
+    responsible?: string;
 }
 
 interface LeadDetailsModalProps {

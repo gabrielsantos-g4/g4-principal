@@ -1483,7 +1483,8 @@ export function CrmTable({ initialLeads, filteredLeads: propFilteredLeads, setti
                 lead={selectedLead}
                 onNewDeal={(lead) => {
                     setIsLeadDetailsOpen(false);
-                    const newDealData = {
+                    const newDealData: LeadType = {
+                        id: lead.id,
                         name: lead.name,
                         company: lead.company,
                         phone: lead.phone,
@@ -1491,13 +1492,15 @@ export function CrmTable({ initialLeads, filteredLeads: propFilteredLeads, setti
                         linkedin: lead.linkedin,
                         website: lead.website,
                         role: lead.role,
-                        responsible: lead.responsible,
+                        responsible: lead.responsible || "",
                         product: "[]",
                         amount: 0,
                         status: "New",
-                        touchpoint: 0,
-                        nextStep: undefined,
-                        history_log: []
+                        source: lead.source || "",
+                        custom: lead.custom || "",
+                        nextStep: { date: "Pending", progress: 0, total: 3 },
+                        history: [],
+                        date: new Date().toISOString()
                     };
                     setEditLead(newDealData); // Using setEditLead reusing NewOpportunityModal logic
                 }}

@@ -20,7 +20,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 
 interface Product {
-    id?: number;
+    id?: string | number;
     name: string;
     price: string;
 }

@@ -261,11 +261,98 @@ export function RightSidebar({ agent, userId, companyId, userName = 'there', ini
                 const numberMatch = text.match(/(\d+)/)
             } catch (error) {
                 console.error('Amanda Webhook Error:', error)
-                setIsTyping(false)
                 setMessages(prev => [...prev, {
                     id: Date.now().toString(),
                     role: 'assistant',
                     content: "Sorry, I encountered an error while processing your request. Please try again later."
+                }])
+            }
+        }
+
+        // Lauren (Organic Social) Logic - Internal Backend with OpenAI
+        else if (agent?.slug === 'organic-social') {
+            try {
+                // Prepare messages to send to backend (only user and assistant roles)
+                const apiMessages = [...messages, newMessage].map(m => ({
+                    role: m.role,
+                    content: m.content
+                }))
+
+                const response = await fetch('/api/chats/organic', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        messages: apiMessages,
+                        company_id: companyId,
+                        user_name: userFullName || userName,
+                    })
+                })
+
+                if (!response.ok) {
+                    throw new Error('Failed to get response from Lauren backend')
+                }
+
+                // Handle Streaming Response
+                if (!response.body) throw new Error('No response body')
+
+                const reader = response.body.getReader()
+                const decoder = new TextDecoder()
+                let aiResponseText = ''
+
+                // Create a placeholder message in UI
+                const tempId = Date.now().toString() + '-ai'
+                setMessages(prev => [...prev, {
+                    id: tempId,
+                    role: 'assistant',
+                    content: ''
+                }])
+                setIsTyping(false) // Turn off bouncing dots since we are streaming text
+
+                while (true) {
+                    const { done, value } = await reader.read()
+                    if (done) break
+
+                    // Decode the chunk (Vercel AI SDK streamText sends special format, 
+                    // usually text chunks start with '0:' e.g. '0:"Hello"')
+                    const chunkText = decoder.decode(value, { stream: true })
+                    const lines = chunkText.split('\n')
+
+                    for (const line of lines) {
+                        if (line.startsWith('0:')) {
+                            // Extract actual text chunk
+                            try {
+                                const payload = JSON.parse(line.substring(2))
+                                aiResponseText += payload
+
+                                // Update UI message incrementally
+                                setMessages(prev => prev.map(m =>
+                                    m.id === tempId ? { ...m, content: aiResponseText } : m
+                                ))
+                            } catch (e) {
+                                // Ignore parse errors for partial chunks
+                            }
+                        }
+                    }
+                }
+
+                // Persist Agent Message when stream completes
+                if (companyId && userId && agent?.name) {
+                    persistMessage({
+                        empresa_id: companyId,
+                        user_id: userId,
+                        agent_name: agent.name,
+                        message: aiResponseText,
+                        sender: 'AGENT'
+                    })
+                }
+
+            } catch (error) {
+                console.error('Lauren AI Error:', error)
+                setIsTyping(false)
+                setMessages(prev => [...prev, {
+                    id: Date.now().toString(),
+                    role: 'assistant',
+                    content: "Sorry, I had trouble connecting to the knowledge base. Please try again."
                 }])
             }
         }

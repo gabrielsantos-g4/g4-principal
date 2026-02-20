@@ -138,9 +138,10 @@ export function OmnichannelInbox({
         const supabase = supabaseRef.current!;
 
         // Get current user
-        supabase.auth.getUser().then(({ data: { user } }) => {
+        (async () => {
+            const { data: { user } } = await supabase.auth.getUser();
             if (user) setCurrentUserId(user.id);
-        });
+        })();
 
         const empresaId = crmSettings.empresa_id;
         // Unique channel names to avoid collisions on Strict Mode re-mounts
@@ -163,8 +164,8 @@ export function OmnichannelInbox({
                     setRefreshTrigger(prev => prev + 1);
                 }
             )
-            .subscribe((status, err) => {
-                console.log('[RT leads] status:', status, err);
+            .subscribe((status: string) => {
+                console.log('[RT leads] status:', status);
             });
 
         // Realtime: New messages — directly reload messages
@@ -184,8 +185,8 @@ export function OmnichannelInbox({
                     setRefreshTrigger(prev => prev + 1);
                 }
             )
-            .subscribe((status, err) => {
-                console.log('[RT messages] status:', status, err);
+            .subscribe((status: string) => {
+                console.log('[RT messages] status:', status);
             });
 
         return () => {
@@ -217,8 +218,7 @@ export function OmnichannelInbox({
                     setConversations(convData as Conversation[]);
                     setMessagingUsers(usersData);
 
-                    // Select first if none selected
-                    if (convData.length > 0 && !selectedConversationId) {
+                    if (convData.length > 0 && !selectedConversationId && convData[0]) {
                         setSelectedConversationId(convData[0].id);
                     }
                 }

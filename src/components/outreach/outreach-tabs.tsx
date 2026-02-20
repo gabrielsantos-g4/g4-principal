@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { toast } from "sonner"
 import { ICPForm } from "./icp-form"
 import { ProspectsGrid } from "./prospects-grid"
@@ -12,40 +12,26 @@ interface OutreachTabsProps {
     initialProspects: any[] | null
     initialDemands?: any[]
     initialSavedIcps?: any[]
+    activeTab?: string
 }
 
-export function OutreachTabs({ initialIcp, initialProspects, initialDemands = [], initialSavedIcps = [] }: OutreachTabsProps) {
+export function OutreachTabs({ initialIcp, initialProspects, initialDemands = [], initialSavedIcps = [], activeTab: propActiveTab }: OutreachTabsProps) {
+    const searchParams = useSearchParams();
     const router = useRouter();
     const hasLeads = initialProspects && initialProspects.length > 0
-    const [activeTab, setActiveTab] = useState<"targeting" | "leads">((initialIcp || hasLeads) ? "leads" : "targeting")
     const hasICP = !!initialIcp
+    const defaultTab = (hasICP || hasLeads) ? "leads" : "targeting"
+    const activeTab = propActiveTab || defaultTab
+
+    const setActiveTab = (tab: string) => {
+        const params = new URLSearchParams(searchParams.toString())
+        params.set('tab', tab)
+        router.push(`?${params.toString()}`)
+    }
 
     return (
-        <div className="w-full mx-auto flex flex-col gap-8">
-            <div className="flex items-center justify-between">
-                {/* Tabs Header */}
-                <div className="flex items-center gap-1 bg-[#171717] p-1 rounded-lg border border-white/10 w-fit">
-                    <button
-                        onClick={() => setActiveTab("targeting")}
-                        className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${activeTab === "targeting"
-                            ? "bg-[#2a2a2a] text-white shadow-sm"
-                            : "text-gray-400 hover:text-white hover:bg-white/5"
-                            }`}
-                    >
-                        <Target size={16} />
-                        Targeting (Demand)
-                    </button>
-                    <button
-                        onClick={() => setActiveTab("leads")}
-                        className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${activeTab === "leads"
-                            ? "bg-[#2a2a2a] text-white shadow-sm"
-                            : "text-gray-400 hover:text-white hover:bg-white/5"
-                            }`}
-                    >
-                        <LayoutList size={16} />
-                        Leads List
-                    </button>
-                </div>
+        <div className="w-full h-full flex flex-col gap-4">
+            <div className="flex items-center justify-end">
 
                 <div className="flex items-center gap-2">
                     <button
@@ -68,7 +54,7 @@ export function OutreachTabs({ initialIcp, initialProspects, initialDemands = []
             </div>
 
             {/* Tab Content */}
-            <div className="flex-1">
+            <div className="flex-1 h-full overflow-y-auto px-4 pb-20">
                 {activeTab === "targeting" ? (
                     <ICPForm
                         key={hasICP ? 'edit' : 'create'}

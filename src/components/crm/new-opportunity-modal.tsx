@@ -303,7 +303,7 @@ export function NewOpportunityModal({ isOpen, onClose, settings, initialData, le
             if (settings?.products?.length === 1 && (!product || product === '[]')) {
                 const p = settings.products[0];
                 setProduct(JSON.stringify([{ ...p, quantity: 1 }]));
-                setAmount(p.price);
+                setAmount(parseFloat(p.price) || 0);
             }
         }
     }, [isOpen, isEditMode, settings]);

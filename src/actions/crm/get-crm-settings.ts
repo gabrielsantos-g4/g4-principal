@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase";
 import { getEmpresaId } from "@/lib/get-empresa-id";
 
 export interface TagItem {
+    id?: string | number;
     label: string;
     bg: string;
     text: string;
@@ -14,8 +15,8 @@ export interface TagItem {
 export interface CrmSettings {
     id?: number;
     empresa_id?: string;
-    products: { id?: number; name: string; price: string }[];
-    statuses: { id?: number; label: string; bg: string; text: string; phase?: 'not_started' | 'in_progress' | 'closing'; temperature?: 'Cold' | 'Warm' | 'Hot' }[];
+    products: { id?: string | number; name: string; price: string }[];
+    statuses: { id?: string | number; label: string; bg: string; text: string; phase?: 'not_started' | 'in_progress' | 'closing'; temperature?: 'Cold' | 'Warm' | 'Hot' }[];
     responsibles: (string | TagItem)[];
     sources: (string | TagItem)[];
     custom_fields: { name: string; options: (string | TagItem)[] };

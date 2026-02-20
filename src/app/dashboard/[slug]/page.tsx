@@ -39,6 +39,23 @@ import { StrategyOverviewDashboard } from '@/components/strategy/strategy-overvi
 import { NotesScratchpad } from '@/components/common/notes-scratchpad'
 import { PaidSocialDashboard } from '@/components/paid-social/paid-social-dashboard'
 import { UserInboxDashboard } from '@/components/dashboard/user-inbox-dashboard'
+import { DashboardTabs } from '@/components/dashboard-tabs'
+
+function InProgressResults() {
+    return (
+        <div className="h-full w-full flex flex-col items-center justify-center gap-3 text-center px-8">
+            <div className="w-12 h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center">
+                <svg className="w-5 h-5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zm6.75-3.375c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v10.125c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V9.75zm6.75-3c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v13.125c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V6.75z" />
+                </svg>
+            </div>
+            <div>
+                <p className="text-sm font-medium text-slate-400">In Progress</p>
+                <p className="text-xs text-slate-600 mt-1">Results will appear here as the agent delivers outputs</p>
+            </div>
+        </div>
+    )
+}
 
 interface AgentPageProps {
     params: Promise<{
@@ -46,9 +63,9 @@ interface AgentPageProps {
     }>
 }
 
-export default async function AgentPage({ params, searchParams }: AgentPageProps & { searchParams: Promise<{ chatId?: string, competitorId?: string }> }) {
+export default async function AgentPage({ params, searchParams }: AgentPageProps & { searchParams: Promise<{ chatId?: string, competitorId?: string, tab?: string }> }) {
     const { slug } = await params
-    const { chatId, competitorId } = await searchParams
+    const { chatId, competitorId, tab } = await searchParams
     const agent = AGENTS.find(a => a.slug === slug)
     // Debug: Force Rebuild 12345
     const isOrchestrator = !slug || slug === 'orchestrator'
@@ -307,9 +324,17 @@ export default async function AgentPage({ params, searchParams }: AgentPageProps
 
 
     if (slug === 'organic-social') {
+        const organicSocialTabs = [
+            { value: 'goal', label: 'Goal' },
+            { value: 'planning', label: 'Planning' },
+            { value: 'design', label: 'Design' },
+            { value: 'publishing', label: 'Publishing' },
+            { value: 'results', label: 'Results' }
+        ]
+
         return (
             <div className="flex-1 min-h-0 bg-black text-white font-sans flex flex-col overflow-hidden">
-                <DashboardHeader />
+                <DashboardHeader centerContent={<DashboardTabs tabs={organicSocialTabs} defaultValue="goal" />} />
                 <MobileDashboardLayout
                     withCard={true}
                     rightSidebar={
@@ -329,16 +354,24 @@ export default async function AgentPage({ params, searchParams }: AgentPageProps
                         />
                     }
                 >
-                    <OrganicSocialDashboard />
+                    <OrganicSocialDashboard
+                        activeTab={tab || 'goal'}
+                        companyId={companyId || ''}
+                        userName={(user?.user_metadata?.full_name || user?.user_metadata?.name || 'there').split(' ')[0]}
+                    />
                 </MobileDashboardLayout>
             </div>
         )
     }
 
     if (slug === 'organic-search') {
+        const seoTabs = [
+            { value: 'overview', label: 'Overview' },
+            { value: 'results', label: 'Results' }
+        ]
         return (
             <div className="flex-1 min-h-0 bg-black text-white font-sans flex flex-col overflow-hidden">
-                <DashboardHeader />
+                <DashboardHeader centerContent={<DashboardTabs tabs={seoTabs} defaultValue="overview" />} />
                 <MobileDashboardLayout
                     withCard={true}
                     rightSidebar={
@@ -358,16 +391,20 @@ export default async function AgentPage({ params, searchParams }: AgentPageProps
                         />
                     }
                 >
-                    <SeoDashboard />
+                    {tab === 'results' ? <InProgressResults /> : <SeoDashboard />}
                 </MobileDashboardLayout>
             </div>
         )
     }
 
     if (isCrm) {
+        const crmTabs = [
+            { value: 'pipeline', label: 'Pipeline' },
+            { value: 'results', label: 'Results' }
+        ]
         return (
             <div className="flex-1 min-h-0 bg-black text-white font-sans flex flex-col overflow-hidden">
-                <DashboardHeader />
+                <DashboardHeader centerContent={<DashboardTabs tabs={crmTabs} defaultValue="pipeline" />} />
                 <MobileDashboardLayout
                     withCard={true}
                     rightSidebar={
@@ -387,7 +424,11 @@ export default async function AgentPage({ params, searchParams }: AgentPageProps
                         />
                     }
                 >
-                    <CrmDashboard agent={agent} viewerProfile={profile} />
+                    {tab === 'results' ? (
+                        <InProgressResults />
+                    ) : (
+                        <CrmDashboard agent={agent} viewerProfile={profile} />
+                    )}
                 </MobileDashboardLayout>
             </div>
         )
@@ -396,9 +437,17 @@ export default async function AgentPage({ params, searchParams }: AgentPageProps
     if (isSupport) {
         const trainings = await getTrainings()
 
+        const supportTabs = [
+            { value: 'omnichannel', label: 'Omnichannel' },
+            { value: 'training', label: 'Training' },
+            { value: 'parameters', label: 'Parameters' },
+            { value: 'connectors', label: 'Connectors' },
+            { value: 'results', label: 'Results' }
+        ]
+
         return (
             <div className="flex-1 min-h-0 bg-black text-white font-sans flex flex-col overflow-hidden">
-                <DashboardHeader />
+                <DashboardHeader centerContent={<DashboardTabs tabs={supportTabs} defaultValue="omnichannel" />} />
                 <MobileDashboardLayout
                     withCard={true}
                     rightSidebar={
@@ -424,6 +473,7 @@ export default async function AgentPage({ params, searchParams }: AgentPageProps
                         companyId={companyId}
                         viewerProfile={profile}
                         crmSettings={await getCrmSettings(companyId)}
+                        activeTab={tab || 'omnichannel'}
                     />
                 </MobileDashboardLayout>
             </div>
@@ -433,9 +483,17 @@ export default async function AgentPage({ params, searchParams }: AgentPageProps
     if (isDesign) {
         const designRequests = await getDesignRequests()
 
+        const designTabs = [
+            { value: 'design-request', label: 'Design Request' },
+            { value: 'design-deliverables', label: 'Design Deliverables' },
+            { value: 'video-request', label: 'Video Request' },
+            { value: 'video-deliverables', label: 'Video Deliverables' },
+            { value: 'results', label: 'Results' }
+        ]
+
         return (
             <div className="flex-1 min-h-0 bg-black text-white font-sans flex flex-col overflow-hidden">
-                <DashboardHeader />
+                <DashboardHeader centerContent={<DashboardTabs tabs={designTabs} defaultValue="design-request" />} />
                 <MobileDashboardLayout
                     withCard={true}
                     rightSidebar={
@@ -462,15 +520,20 @@ export default async function AgentPage({ params, searchParams }: AgentPageProps
                             id: user?.id,
                             name: profile?.name || user?.email
                         }}
+                        activeTab={tab || 'design-request'}
                     />
                 </MobileDashboardLayout>
             </div>
         )
     }
     if (slug === 'paid-social') {
+        const paidSocialTabs = [
+            { value: 'setup', label: 'Setup' },
+            { value: 'results', label: 'Results' }
+        ]
         return (
             <div className="flex-1 min-h-0 bg-black text-white font-sans flex flex-col overflow-hidden">
-                <DashboardHeader />
+                <DashboardHeader centerContent={<DashboardTabs tabs={paidSocialTabs} defaultValue="setup" />} />
                 <MobileDashboardLayout
                     withCard={true}
                     rightSidebar={
@@ -489,7 +552,7 @@ export default async function AgentPage({ params, searchParams }: AgentPageProps
                         />
                     }
                 >
-                    <PaidSocialDashboard />
+                    {tab === 'results' ? <InProgressResults /> : <PaidSocialDashboard />}
                 </MobileDashboardLayout>
             </div>
         )
@@ -497,10 +560,13 @@ export default async function AgentPage({ params, searchParams }: AgentPageProps
 
     if (slug === 'strategy-overview') {
         const initiatives = await getInitiatives()
-
+        const strategyTabs = [
+            { value: 'overview', label: 'Overview' },
+            { value: 'results', label: 'Results' }
+        ]
         return (
             <div className="flex-1 min-h-0 bg-black text-white font-sans flex flex-col overflow-hidden">
-                <DashboardHeader />
+                <DashboardHeader centerContent={<DashboardTabs tabs={strategyTabs} defaultValue="overview" />} />
                 <MobileDashboardLayout
                     withCard={true}
                     rightSidebar={
@@ -522,16 +588,20 @@ export default async function AgentPage({ params, searchParams }: AgentPageProps
                         />
                     }
                 >
-                    <StrategyOverviewDashboard agent={agent} initialCards={initiatives} />
+                    {tab === 'results' ? <InProgressResults /> : <StrategyOverviewDashboard agent={agent} initialCards={initiatives} />}
                 </MobileDashboardLayout>
             </div>
         )
     }
 
     if (slug === 'ceo-positioning') {
+        const ceoTabs = [
+            { value: 'overview', label: 'Overview' },
+            { value: 'results', label: 'Results' }
+        ]
         return (
             <div className="flex-1 min-h-0 bg-black text-white font-sans flex flex-col overflow-hidden">
-                <DashboardHeader />
+                <DashboardHeader centerContent={<DashboardTabs tabs={ceoTabs} defaultValue="overview" />} />
                 <MobileDashboardLayout
                     withCard={true}
                     rightSidebar={
@@ -550,7 +620,7 @@ export default async function AgentPage({ params, searchParams }: AgentPageProps
                         />
                     }
                 >
-                    <BrianDashboard agent={agent} />
+                    {tab === 'results' ? <InProgressResults /> : <BrianDashboard agent={agent} />}
                 </MobileDashboardLayout>
             </div>
         )
@@ -605,9 +675,16 @@ export default async function AgentPage({ params, searchParams }: AgentPageProps
         )
     }
 
+    const defaultOutreachTab = (icpData || (outreachData && outreachData.length > 0)) ? 'leads' : 'targeting'
+    const outreachTabs = [
+        { value: 'targeting', label: 'Targeting (Demand)' },
+        { value: 'leads', label: 'Leads List' },
+        { value: 'results', label: 'Results' }
+    ]
+
     return (
         <div className="h-full bg-black text-white font-sans flex flex-col overflow-hidden">
-            <DashboardHeader />
+            <DashboardHeader centerContent={isOutreach ? <DashboardTabs tabs={outreachTabs} defaultValue={defaultOutreachTab} /> : undefined} />
 
             <MobileDashboardLayout
                 withCard={true}
@@ -644,18 +721,19 @@ export default async function AgentPage({ params, searchParams }: AgentPageProps
                         <div className="hidden md:flex flex-1 bg-black overflow-hidden relative">
                             <NotesScratchpad agentName={agent.name} />
                         </div>
-                        {/* On Mobile, Content tab shows List. Chat tab shows RightSidebar (which handles the chat UI) */}
                     </div>
+                ) : tab === 'results' ? (
+                    <InProgressResults />
                 ) : (
                     // Default View (Outreach, etc)
                     <>
-                        {/* Conditional Content based on Agent */}
                         {isOutreach ? (
                             <OutreachTabs
                                 initialIcp={icpData}
                                 initialProspects={outreachData || []}
                                 initialDemands={outreachDemands || []}
                                 initialSavedIcps={initialSavedIcps || []}
+                                activeTab={tab || defaultOutreachTab}
                             />
                         ) : (
                             // Default Print View for other agents

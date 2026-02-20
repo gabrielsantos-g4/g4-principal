@@ -26,12 +26,13 @@ interface SupportTabsProps {
     agent?: Agent
     viewerProfile?: any
     crmSettings?: any
+    activeTab?: string
 }
 
-export function SupportTabs({ trainings, companyId, agent, viewerProfile, crmSettings }: SupportTabsProps) {
+export function SupportTabs({ trainings, companyId, agent, viewerProfile, crmSettings, activeTab: propActiveTab }: SupportTabsProps) {
     const searchParams = useSearchParams()
     const router = useRouter()
-    const activeTab = (searchParams.get('tab') || 'omnichannel') as "training" | "parameters" | "connectors" | "omnichannel" | "reports"
+    const activeTab = propActiveTab || (searchParams.get('tab') || 'omnichannel') as "training" | "parameters" | "connectors" | "omnichannel" | "results"
 
     const setActiveTab = (tab: string) => {
         const params = new URLSearchParams(searchParams.toString())
@@ -98,7 +99,7 @@ export function SupportTabs({ trainings, companyId, agent, viewerProfile, crmSet
                     </div>
                 )}
 
-                {activeTab === "reports" && (
+                {activeTab === "results" && (
                     <div className="flex flex-col gap-6">
                         <div className="flex items-center justify-between">
                             <h3 className="text-lg font-bold text-white">Live Metrics</h3>
