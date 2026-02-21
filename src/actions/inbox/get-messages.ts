@@ -30,7 +30,7 @@ export async function getChatMessages(conversationId: string) {
         id: msg.id,
         content: msg.body || (msg.media_url ? '[Media]' : ''),
         senderId: (msg.direction === 'outbound' || msg.direction === 'OUT') ? 'me' : 'contact',
-        timestamp: new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        timestamp: msg.created_at || '',
         status: msg.status || 'sent',
         type: msg.media_type === 'image' || msg.media_type === 'video' || msg.media_type === 'audio' ? msg.media_type : 'text',
         mediaUrl: msg.media_url

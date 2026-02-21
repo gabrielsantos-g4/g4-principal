@@ -30,6 +30,7 @@ export async function Sidebar() {
             job_title,
             avatar_url,
             active_agents,
+            has_messaging_access,
             email,
             main_empresas (
                 name,
@@ -67,23 +68,23 @@ export async function Sidebar() {
     const userRole = orchestrator?.job_title || ((orchestrator?.role === 'admin' || orchestrator?.role === 'owner') ? 'Orchestrador, Principal' : 'Member')
     const userAvatar = orchestrator?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(userName)}&background=random`
 
-    let activeAgents = profile?.active_agents || null
-
-    // RBAC: If not admin/owner, inherit agents from Admin
+    // RBAC: Each user sees only their own assigned agents.
+    // Admins/owners with null active_agents see ALL agents.
+    // Members always respect their own active_agents (empty list = see nothing).
     const isAdmin = profile?.role === 'admin' || profile?.role === 'owner'
-    if (!isAdmin && profile?.empresa_id) {
-        const { data: adminProfile } = await supabaseAdmin
-            .from('main_profiles')
-            .select('active_agents')
-            .eq('empresa_id', profile.empresa_id)
-            .in('role', ['admin', 'owner'])
-            .limit(1)
-            .maybeSingle()
+    const activeAgents = isAdmin
+        ? (profile?.active_agents || null)
+        : (profile?.active_agents ?? [])
 
-        if (adminProfile?.active_agents) {
-            activeAgents = adminProfile.active_agents
-        }
-    }
+    // Messaging access: admins always have it; members only if the flag is set.
+    const hasMessagingAccess = isAdmin || !!((profile as any)?.has_messaging_access)
+
+    // Sidebar human members visibility:
+    // Admins see all human members.
+    // Members only see themselves (they should not see other colleagues in their sidebar).
+    const visibleHumanMembers = isAdmin
+        ? (humanMembers || [])
+        : (humanMembers || []).filter(m => m.id === profile?.id)
 
     return (
         <SidebarWrapper>
@@ -92,7 +93,8 @@ export async function Sidebar() {
                 agents={AGENTS}
                 activeAgents={activeAgents}
                 teamOrder={teamOrder}
-                humanMembers={humanMembers || []}
+                humanMembers={visibleHumanMembers}
+                hasMessagingAccess={hasMessagingAccess}
                 user={{
                     id: orchestrator?.id || '',
                     name: userName,

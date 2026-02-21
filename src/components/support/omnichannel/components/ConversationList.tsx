@@ -1,6 +1,6 @@
 
 import { useState } from "react";
-import { Search, Filter, ListFilter, Check, ChevronDown, MessageSquare, LogOut } from "lucide-react";
+import { Search, ListFilter, Check, ChevronDown, MessageSquare, LogOut } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -18,11 +18,9 @@ import { cn, formatWhatsAppDate } from "@/lib/utils";
 import { signout } from "@/app/login/actions";
 import { markAsRead } from "@/actions/crm/mark-as-read";
 
-// Reusing types locally or importing if they were exported. 
-// For now, defining minimal interfaces based on usage.
 export interface Conversation {
     id: string;
-    leadId?: number; // CRM Lead ID
+    leadId?: number;
     contact: {
         id: string;
         name: string;
@@ -38,14 +36,13 @@ export interface Conversation {
     lastMessage: string;
     lastMessageAt: string;
     unreadCount: number;
-    messages: any[]; // Changed from Message[] to any[] temporarily to avoid circular dep or extra complexity
-    // CRM Fields
+    messages: any[];
     status: "New" | "Won" | "Lost" | "Talk to" | "Talking" | "Talk Later" | "Not interested" | "Client";
     nextStep: { date: string; progress: number; total: number };
     amount: string;
     product: string;
     qualification_status: "mql" | "sql" | "nq" | "pending";
-    qualification_details?: any; // JSONB
+    qualification_details?: any;
     source: string;
     temperature?: string;
     history: { id: string; message: string; date: Date }[];
@@ -73,17 +70,29 @@ interface ConversationListProps {
     targetUserId?: string;
     accessibleInboxes?: any[];
     onInboxChange?: (id: string) => void;
+    instanceAvatar?: string;
 }
 
-const CHANNEL_COLORS: Record<string, string> = {
-    whatsapp: "bg-[#25D366]",
-    linkedin: "bg-[#0A66C2]",
-    instagram: "bg-[#E4405F]",
-    facebook: "bg-[#1877F2]",
-    email: "bg-orange-500",
-    sms: "bg-purple-500",
-    phone: "bg-blue-500",
-    web: "bg-gray-400"
+const CHANNEL_ICONS: Record<string, string> = {
+    whatsapp: "💬",
+    linkedin: "💼",
+    instagram: "📸",
+    facebook: "👥",
+    email: "✉️",
+    sms: "📱",
+    phone: "📞",
+    web: "🌐"
+};
+
+const STATUS_COLORS: Record<string, string> = {
+    New: "bg-blue-500",
+    Talking: "bg-emerald-500",
+    "Talk to": "bg-yellow-500",
+    "Talk Later": "bg-orange-500",
+    Won: "bg-green-500",
+    Lost: "bg-red-500",
+    "Not interested": "bg-gray-500",
+    Client: "bg-purple-500",
 };
 
 export function ConversationList({
@@ -103,35 +112,30 @@ export function ConversationList({
     targetUser,
     targetUserId,
     accessibleInboxes = [],
-    onInboxChange
+    onInboxChange,
+    instanceAvatar
 }: ConversationListProps) {
 
-    // Helper unique statuses
     const availableStatuses = Array.from(new Set(conversations.map(c => c.status))).filter(Boolean).sort();
 
-    // Toggle unread logic
     const toggleUnread = async (convId: string, e: React.MouseEvent) => {
         e.stopPropagation();
         const conversation = conversations.find(c => c.id === convId);
         if (!conversation) return;
 
         const isCurrentlyUnread = conversation.unreadCount > 0 || manuallyUnreadIds.has(convId);
-        const statusToSet = isCurrentlyUnread; // If unread, mark as read (true) in DB
-
         setManuallyUnreadIds(prev => {
             const newSet = new Set(prev);
-            if (!statusToSet) { // Setting to UNREAD
+            if (!isCurrentlyUnread) {
                 newSet.add(convId);
-            } else { // Setting to READ
+            } else {
                 newSet.delete(convId);
             }
             return newSet;
         });
-
-        await markAsRead(convId, statusToSet);
+        await markAsRead(convId, isCurrentlyUnread);
     };
 
-    // Filter Logic
     const filteredConversations = conversations.filter(conv => {
         let matchesSearch = true;
         if (searchQuery) {
@@ -144,33 +148,35 @@ export function ConversationList({
 
         const isUnread = conv.unreadCount > 0 || manuallyUnreadIds.has(conv.id);
         let matchesReadStatus = true;
-        if (filterStatus === 'unread') {
-            matchesReadStatus = isUnread;
-        } else if (filterStatus === 'read') {
-            matchesReadStatus = !isUnread;
-        }
+        if (filterStatus === 'unread') matchesReadStatus = isUnread;
+        else if (filterStatus === 'read') matchesReadStatus = !isUnread;
 
         let matchesStatusFilter = true;
-        if (statusFilter) {
-            matchesStatusFilter = conv.status === statusFilter;
-        }
+        if (statusFilter) matchesStatusFilter = conv.status === statusFilter;
 
         return matchesSearch && matchesReadStatus && matchesStatusFilter;
     });
 
+    const unreadTotal = conversations.filter(c => c.unreadCount > 0 || manuallyUnreadIds.has(c.id)).length;
+
     return (
-        <div className="w-80 border-r border-white/10 flex flex-col bg-[#111] h-full overflow-hidden">
-            {/* Header / Search */}
-            <div className="p-4 border-b border-white/10 space-y-4">
+        <div className="w-[300px] border-r border-white/8 flex flex-col bg-[#111] h-full overflow-hidden shrink-0">
+            {/* Header */}
+            <div className="p-4 border-b border-white/8 space-y-3">
                 {mode === 'global' ? (
-                    <div className="flex items-center gap-3 p-2 bg-[#1C73E8]/10 rounded-lg border border-[#1C73E8]/20">
-                        <div className="h-10 w-10 bg-[#1C73E8] rounded-lg flex items-center justify-center text-white shadow-[0_0_15px_rgba(28,115,232,0.3)]">
-                            <MessageSquare size={20} />
+                    <div className="flex items-center gap-3 px-2 py-2 bg-[#1C73E8]/8 rounded-xl border border-[#1C73E8]/15">
+                        <div className="h-9 w-9 bg-[#1C73E8] rounded-lg flex items-center justify-center text-white shadow-[0_0_15px_rgba(28,115,232,0.25)] shrink-0">
+                            <MessageSquare size={18} />
                         </div>
                         <div className="flex-1 min-w-0">
-                            <h3 className="text-sm font-bold text-white truncate leading-none mb-1">Global Inbox</h3>
-                            <p className="text-[10px] text-[#1C73E8] truncate leading-none uppercase tracking-wider font-bold">Unified View</p>
+                            <h3 className="text-sm font-bold text-white leading-tight">Global Inbox</h3>
+                            <p className="text-[10px] text-[#1C73E8]/80 uppercase tracking-wider font-semibold">Unified View</p>
                         </div>
+                        {unreadTotal > 0 && (
+                            <span className="shrink-0 h-5 min-w-[20px] bg-[#1C73E8] rounded-full flex items-center justify-center text-[10px] font-bold text-white px-1.5">
+                                {unreadTotal}
+                            </span>
+                        )}
                     </div>
                 ) : (
                     accessibleInboxes.length > 1 && onInboxChange ? (
@@ -178,13 +184,13 @@ export function ConversationList({
                             <Select value={targetUserId} onValueChange={onInboxChange}>
                                 <SelectTrigger className="w-full h-14 bg-white/5 border-white/10 text-white p-2 flex items-center gap-3">
                                     <div className="flex items-center gap-3 flex-1 min-w-0 text-left">
-                                        <Avatar className="h-10 w-10 border border-[#1C73E8]">
+                                        <Avatar className="h-9 w-9 border border-[#1C73E8]/40">
                                             <AvatarImage src={targetUser?.avatar || targetUser?.avatar_url} />
-                                            <AvatarFallback>{targetUser?.name?.[0] || '?'}</AvatarFallback>
+                                            <AvatarFallback className="text-xs font-bold">{targetUser?.name?.[0] || '?'}</AvatarFallback>
                                         </Avatar>
                                         <div className="flex-1 min-w-0">
-                                            <h3 className="text-xs font-bold text-white truncate leading-tight">Inbox of</h3>
-                                            <p className="text-sm text-[#1C73E8] truncate leading-tight font-bold">{targetUser?.name || 'Select Inbox'}</p>
+                                            <p className="text-[10px] text-gray-500 font-medium uppercase tracking-wider leading-tight">Inbox of</p>
+                                            <h3 className="text-sm text-white font-bold truncate leading-tight">{targetUser?.name || 'Select Inbox'}</h3>
                                         </div>
                                     </div>
                                 </SelectTrigger>
@@ -194,7 +200,7 @@ export function ConversationList({
                                             <div className="flex items-center gap-2">
                                                 <Avatar className="h-6 w-6 border border-white/10">
                                                     <AvatarImage src={inbox.avatar} />
-                                                    <AvatarFallback>{inbox.name[0]}</AvatarFallback>
+                                                    <AvatarFallback className="text-[9px]">{inbox.name[0]}</AvatarFallback>
                                                 </Avatar>
                                                 <span>{inbox.name}</span>
                                                 {inbox.type === 'agent' && <Badge variant="secondary" className="bg-purple-500/20 text-purple-300 ml-auto text-[10px] px-1 h-5">Agent</Badge>}
@@ -204,63 +210,66 @@ export function ConversationList({
                                 </SelectContent>
                             </Select>
                             <form action={signout}>
-                                <Button variant="ghost" size="icon" className="h-14 w-10 text-slate-400 hover:text-white hover:bg-white/10 border border-white/10 rounded-lg">
-                                    <LogOut size={18} />
-                                </Button>
-                            </form>
-                        </div>
-                    ) : targetUser ? (
-                        <div className="flex items-center gap-3 p-2 bg-white/5 rounded-lg border border-white/10 relative">
-                            <Avatar className="h-10 w-10 border border-[#1C73E8]">
-                                <AvatarImage src={targetUser.avatar_url || targetUser.avatar} />
-                                <AvatarFallback>{targetUser.name[0]}</AvatarFallback>
-                            </Avatar>
-                            <div className="flex-1 min-w-0">
-                                <h3 className="text-xs font-bold text-white truncate leading-tight">All conversations of</h3>
-                                <p className="text-sm text-[#1C73E8] truncate leading-tight font-bold">{targetUser.name}</p>
-                            </div>
-                            <form action={signout}>
-                                <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-white hover:bg-white/10">
+                                <Button variant="ghost" size="icon" className="h-14 w-10 text-slate-500 hover:text-white hover:bg-white/8 border border-white/10 rounded-lg">
                                     <LogOut size={16} />
                                 </Button>
                             </form>
                         </div>
+                    ) : targetUser ? (
+                        <div className="flex items-center gap-3 px-2 py-1.5 bg-white/4 rounded-xl border border-white/8">
+                            <Avatar className="h-9 w-9 border border-[#1C73E8]/40">
+                                <AvatarImage src={instanceAvatar || targetUser.avatar_url || targetUser.avatar} />
+                                <AvatarFallback className="text-xs font-bold">{targetUser.name[0]}</AvatarFallback>
+                            </Avatar>
+                            <div className="flex-1 min-w-0">
+                                <p className="text-[10px] text-gray-500 font-medium uppercase tracking-wider leading-tight">Conversations of</p>
+                                <h3 className="text-sm text-white font-bold truncate leading-tight">{targetUser.name}</h3>
+                            </div>
+                            <form action={signout}>
+                                <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-500 hover:text-white hover:bg-white/8 rounded-lg">
+                                    <LogOut size={14} />
+                                </Button>
+                            </form>
+                        </div>
                     ) : (
-                        <div className="flex items-center justify-between">
+                        <div className="flex items-center justify-between px-1">
                             <h3 className="font-bold text-white">Inbox</h3>
-                            <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-400">
-                                <Filter size={16} />
-                            </Button>
+                            {unreadTotal > 0 && (
+                                <span className="h-5 min-w-[20px] bg-[#1C73E8] rounded-full flex items-center justify-center text-[10px] font-bold text-white px-1.5">
+                                    {unreadTotal}
+                                </span>
+                            )}
                         </div>
                     )
                 )}
 
-                {/* Search Bar */}
+                {/* Search */}
                 <div className="relative">
-                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
+                    <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-gray-600" />
                     <Input
-                        placeholder="Search..."
-                        className="pl-9 bg-white/5 border-white/10 text-white h-9 focus-visible:ring-transparent"
+                        placeholder="Search conversations..."
+                        className="pl-8 bg-white/4 border-white/8 text-white text-sm h-9 placeholder:text-gray-600 focus-visible:ring-[#1C73E8]/30 focus-visible:border-[#1C73E8]/40 transition-all"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                     />
                 </div>
 
-                {/* Filter Controls Row */}
+                {/* Filter row */}
                 <div className="flex items-center justify-between">
-                    <div className="flex gap-2 text-xs">
+                    <div className="flex gap-1.5">
                         {(['all', 'unread', 'read'] as const).map((status) => (
-                            <Badge
+                            <button
                                 key={status}
-                                variant={filterStatus === status ? "secondary" : "outline"}
-                                className={cn(
-                                    "cursor-pointer transition-colors capitalize",
-                                    filterStatus === status ? "bg-white/10 hover:bg-white/20" : "text-gray-400 border-white/10 hover:bg-white/5"
-                                )}
                                 onClick={() => setFilterStatus(status)}
+                                className={cn(
+                                    "text-[11px] px-2.5 py-1 rounded-full font-medium capitalize transition-all",
+                                    filterStatus === status
+                                        ? "bg-[#1C73E8]/20 text-[#6ea8fe] border border-[#1C73E8]/30"
+                                        : "text-gray-600 hover:text-gray-400 border border-transparent"
+                                )}
                             >
                                 {status}
-                            </Badge>
+                            </button>
                         ))}
                     </div>
 
@@ -270,32 +279,30 @@ export function ConversationList({
                                 variant="ghost"
                                 size="icon"
                                 className={cn(
-                                    "h-6 w-6 rounded-full hover:bg-white/10",
-                                    statusFilter ? "text-[#1C73E8] bg-white/10" : "text-gray-400"
+                                    "h-7 w-7 rounded-lg transition-all",
+                                    statusFilter ? "text-[#1C73E8] bg-[#1C73E8]/10" : "text-gray-600 hover:text-gray-400 hover:bg-white/5"
                                 )}
                             >
-                                <ListFilter size={16} />
+                                <ListFilter size={14} />
                             </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-56 bg-[#1f1f1f] border-white/10 text-white">
-                            <DropdownMenuItem
-                                onClick={() => setStatusFilter(null)}
-                                className="cursor-pointer hover:bg-white/5 focus:bg-white/5"
-                            >
-                                <span className={!statusFilter ? "font-bold text-[#1C73E8]" : ""}>All Statuses</span>
-                                {!statusFilter && <Check size={14} className="ml-auto text-[#1C73E8]" />}
+                        <DropdownMenuContent align="end" className="w-52 bg-[#1a1a1a] border-white/10 text-white">
+                            <DropdownMenuItem onClick={() => setStatusFilter(null)} className="cursor-pointer hover:bg-white/5 focus:bg-white/5 text-xs">
+                                <span className={!statusFilter ? "font-bold text-[#1C73E8]" : "text-gray-300"}>All Statuses</span>
+                                {!statusFilter && <Check size={12} className="ml-auto text-[#1C73E8]" />}
                             </DropdownMenuItem>
-                            <Separator className="my-1 bg-white/10" />
+                            <Separator className="my-1 bg-white/8" />
                             {availableStatuses.map(status => (
                                 <DropdownMenuItem
                                     key={status}
                                     onClick={() => setStatusFilter(status)}
-                                    className="cursor-pointer hover:bg-white/5 focus:bg-white/5"
+                                    className="cursor-pointer hover:bg-white/5 focus:bg-white/5 text-xs"
                                 >
-                                    <span className={statusFilter === status ? "font-bold text-[#1C73E8]" : ""}>
-                                        {status}
-                                    </span>
-                                    {statusFilter === status && <Check size={14} className="ml-auto text-[#1C73E8]" />}
+                                    <div className="flex items-center gap-2">
+                                        <div className={cn("w-1.5 h-1.5 rounded-full", STATUS_COLORS[status] || "bg-gray-500")} />
+                                        <span className={statusFilter === status ? "font-bold text-[#1C73E8]" : "text-gray-300"}>{status}</span>
+                                    </div>
+                                    {statusFilter === status && <Check size={12} className="ml-auto text-[#1C73E8]" />}
                                 </DropdownMenuItem>
                             ))}
                         </DropdownMenuContent>
@@ -303,25 +310,40 @@ export function ConversationList({
                 </div>
             </div>
 
-            {/* List */}
+            {/* Conversation List */}
             <ScrollArea className="flex-1">
                 <div className="flex flex-col">
                     {isLoading ? (
-                        <div className="p-4 text-center text-gray-500 text-xs">Loading conversations...</div>
+                        // Loading skeletons
+                        <div className="flex flex-col gap-0">
+                            {[...Array(5)].map((_, i) => (
+                                <div key={i} className="flex items-center gap-3 p-4 border-b border-white/5 animate-pulse">
+                                    <div className="w-10 h-10 rounded-full bg-white/8 shrink-0" />
+                                    <div className="flex-1 space-y-2">
+                                        <div className="h-3 bg-white/8 rounded w-3/4" />
+                                        <div className="h-2.5 bg-white/5 rounded w-full" />
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
                     ) : filteredConversations.length === 0 ? (
-                        <div className="p-4 text-center text-gray-500 text-xs text-gray-400">No conversations found.</div>
+                        <div className="flex flex-col items-center justify-center py-16 gap-3 text-center px-6">
+                            <div className="text-3xl opacity-20">🔍</div>
+                            <p className="text-gray-600 text-sm">No conversations found</p>
+                            {searchQuery && <p className="text-gray-700 text-xs">Try a different search term</p>}
+                        </div>
                     ) : (
                         filteredConversations.map(conv => {
                             const isUnread = conv.unreadCount > 0 || manuallyUnreadIds.has(conv.id);
-                            // Using a simple logic for border color based on channel, similar to previous implementation
-                            // Note: Previous implementation used CHANNEL_COLORS for specific UI elements, here refined.
+                            const isSelected = selectedConversationId === conv.id;
+                            const channelIcon = CHANNEL_ICONS[conv.channel] || "💬";
+                            const statusColor = STATUS_COLORS[conv.status] || "bg-gray-500";
 
                             return (
                                 <div
                                     key={conv.id}
                                     onClick={() => {
                                         onSelectConversation(conv.id);
-                                        // Mark as read immediately if it's currently unread
                                         if (conv.unreadCount > 0 || manuallyUnreadIds.has(conv.id)) {
                                             if (manuallyUnreadIds.has(conv.id)) {
                                                 setManuallyUnreadIds(prev => {
@@ -334,55 +356,74 @@ export function ConversationList({
                                         }
                                     }}
                                     className={cn(
-                                        "flex items-start gap-3 p-4 text-left transition-colors border-b border-white/5 relative group cursor-pointer",
-                                        selectedConversationId === conv.id ? "bg-white/5" : "hover:bg-white/[0.02]"
+                                        "flex items-start gap-3 px-4 py-3.5 text-left border-b border-white/5 relative group cursor-pointer transition-all duration-150",
+                                        isSelected
+                                            ? "bg-[#1C73E8]/8 border-l-2 border-l-[#1C73E8] pl-[14px]"
+                                            : "hover:bg-white/[0.025] border-l-2 border-l-transparent"
                                     )}
                                 >
+                                    {/* Context menu (hover) */}
                                     <div className="absolute right-2 top-2 z-20 opacity-0 group-hover:opacity-100 transition-opacity">
                                         <DropdownMenu>
                                             <DropdownMenuTrigger asChild>
-                                                <Button variant="ghost" size="icon" className="h-6 w-6 rounded-full hover:bg-white/20">
-                                                    <ChevronDown size={14} className="text-gray-400" />
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    className="h-6 w-6 rounded-full bg-[#2a2a2a] hover:bg-[#333] text-gray-400 hover:text-white"
+                                                    onClick={(e) => e.stopPropagation()}
+                                                >
+                                                    <ChevronDown size={12} />
                                                 </Button>
                                             </DropdownMenuTrigger>
-                                            <DropdownMenuContent align="end" className="bg-[#2a2a2a] border-white/10 text-white">
+                                            <DropdownMenuContent align="end" className="bg-[#2a2a2a] border-white/10 text-white w-40">
                                                 <DropdownMenuItem
                                                     onClick={(e) => toggleUnread(conv.id, e)}
                                                     className="hover:bg-white/10 cursor-pointer text-xs"
                                                 >
-                                                    {isUnread ? "Mark as read" : "Mark as unread"}
+                                                    {isUnread ? "✓  Mark as read" : "●  Mark as unread"}
                                                 </DropdownMenuItem>
                                             </DropdownMenuContent>
                                         </DropdownMenu>
                                     </div>
 
-                                    <div className="relative flex-shrink-0">
-                                        <Avatar className="h-10 w-10 border border-white/10">
+                                    {/* Avatar + channel icon */}
+                                    <div className="relative shrink-0">
+                                        <Avatar className={cn("h-10 w-10", isUnread ? "border-2 border-[#25D366]/60" : "border border-white/10")}>
                                             <AvatarImage src={conv.contact.avatar} />
-                                            <AvatarFallback>{conv.contact.name[0]}</AvatarFallback>
+                                            <AvatarFallback className={cn("text-xs font-bold", isSelected ? "bg-[#1C73E8]/20 text-[#6ea8fe]" : "bg-white/5 text-gray-400")}>
+                                                {conv.contact.name[0]}
+                                            </AvatarFallback>
                                         </Avatar>
-                                        {/* Channel indicator if needed, simplified for now */}
+                                        <span className="absolute -bottom-0.5 -right-0.5 text-[10px] leading-none">{channelIcon}</span>
                                     </div>
 
-                                    <div className="flex-1 min-w-0 overflow-hidden">
-                                        <div className="flex justify-between items-start mb-0.5">
-                                            <h4 className={cn("text-sm font-medium truncate pr-2", isUnread ? "text-white font-bold" : "text-gray-300")}>
+                                    {/* Content */}
+                                    <div className="flex-1 min-w-0 overflow-hidden pr-6">
+                                        <div className="flex items-center justify-between gap-2 mb-0.5">
+                                            <h4 className={cn("text-sm truncate leading-tight", isUnread ? "text-white font-semibold" : "text-gray-300 font-medium")}>
                                                 {conv.contact.name}
                                             </h4>
-                                            {conv.lastMessageAt && (
-                                                <span className={cn("text-[10px] whitespace-nowrap", isUnread ? "text-[#25D366]" : "text-gray-500")}>
-                                                    {formatWhatsAppDate(conv.lastMessageAt)}
-                                                </span>
-                                            )}
+                                            <span className={cn("text-[11px] whitespace-nowrap shrink-0", isUnread ? "text-[#25D366] font-semibold" : "text-gray-600")}>
+                                                {conv.lastMessageAt
+                                                    ? new Date(conv.lastMessageAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                                                    : ""}
+                                            </span>
                                         </div>
-                                        <p className={cn("text-xs truncate", isUnread ? "text-white font-medium" : "text-gray-500")}>
-                                            {conv.permission === 'assigned' && <span className="text-[#1C73E8] mr-1">You:</span>}
-                                            {conv.lastMessage}
-                                        </p>
+                                        <div className="overflow-hidden">
+                                            <p className={cn("text-[12px] truncate leading-tight", isUnread ? "text-gray-300" : "text-gray-600")}>
+                                                {conv.permission === 'assigned' && <span className="text-[#1C73E8] font-medium">You: </span>}
+                                                {conv.lastMessage}
+                                            </p>
+                                        </div>
                                     </div>
 
+                                    {/* Unread count badge (WhatsApp style) */}
                                     {isUnread && (
-                                        <div className="absolute right-4 top-1/2 -translate-y-1/2 w-2 h-2 bg-[#25D366] rounded-full" />
+                                        <div className="absolute right-3 bottom-3.5 min-w-[18px] h-[18px] bg-[#25D366] rounded-full flex items-center justify-center px-1 shadow-[0_0_8px_rgba(37,211,102,0.4)]">
+                                            <span className="text-[10px] font-bold text-white leading-none">
+                                                {conv.unreadCount > 0 ? conv.unreadCount : ""}
+                                            </span>
+                                        </div>
                                     )}
                                 </div>
                             );

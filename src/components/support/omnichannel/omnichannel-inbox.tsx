@@ -12,8 +12,8 @@ import { createBrowserClient } from "@supabase/ssr";
 import { AGENTS } from "@/lib/agents";
 import { signout } from "@/app/login/actions";
 import { useBrowserNotification } from "@/hooks/use-browser-notification";
-import { markAsRead } from "@/actions/crm/mark-as-read";
 import { getMessagingUsers, MessagingUser } from "@/actions/users/get-messaging-users";
+import { getInstanceAvatarByAgent } from "@/actions/inbox/get-instance-avatar";
 import { LostLeadModal } from "@/components/crm/lost-lead-modal";
 
 // --- Types & Mock Data ---
@@ -87,37 +87,12 @@ export function OmnichannelInbox({
     onInboxChange?: (id: string) => void,
     onNavigate?: (tab: string) => void
 }) {
-    // Permission Check
-    const hasAccess = viewerProfile?.role === 'admin' || viewerProfile?.has_messaging_access;
-
-    const DebugBanner = () => (
-        <div className="bg-red-900/90 text-white p-2 text-[10px] font-mono border-b border-red-500/50 w-full z-50 flex justify-between">
-            <span>[DEBUG] ID: {viewerProfile?.id?.substring(0, 8)}... | Role: {viewerProfile?.role} | Target: {targetUserId?.substring(0, 8) || 'Current'}</span>
-            <span>Refresh Trigger: {refreshTrigger} | Convs: {conversations.length}</span>
-        </div>
-    );
-
-    if (!hasAccess) {
-        return (
-            <div className="flex flex-col h-full bg-[#111]">
-                <DebugBanner />
-                <div className="flex flex-col items-center justify-center p-8 text-center flex-1">
-                    <div className="bg-white/5 p-4 rounded-full mb-6">
-                        <MessageSquare size={48} className="text-gray-500" />
-                    </div>
-                    <h3 className="text-xl font-medium text-white mb-2">Access Restricted</h3>
-                    <p className="text-gray-400 max-w-md">
-                        You don’t have access to messages yet, but you can still collaborate with your team using the panel on the left.
-                    </p>
-                </div>
-            </div>
-        )
-    }
     const [conversations, setConversations] = useState<Conversation[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
     const [messagingUsers, setMessagingUsers] = useState<MessagingUser[]>([]);
     const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+    const [instanceAvatar, setInstanceAvatar] = useState<string | undefined>(undefined);
 
     // Browser Notification Logic
     const hasUnread = conversations.some(c => c.unreadCount > 0);
@@ -146,7 +121,6 @@ export function OmnichannelInbox({
         const empresaId = crmSettings.empresa_id;
         // Unique channel names to avoid collisions on Strict Mode re-mounts
         const channelSuffix = `${empresaId}-${Date.now()}`;
-        console.log('[RT] Subscribing with empresa_id:', empresaId);
 
         // Realtime: Lead/CRM updates
         const channelLeads = supabase
@@ -159,14 +133,11 @@ export function OmnichannelInbox({
                     table: 'main_crm',
                     filter: `empresa_id=eq.${empresaId}`
                 },
-                (payload: any) => {
-                    console.log('[RT leads] change received:', payload);
+                () => {
                     setRefreshTrigger(prev => prev + 1);
                 }
             )
-            .subscribe((status: string) => {
-                console.log('[RT leads] status:', status);
-            });
+            .subscribe();
 
         // Realtime: New messages — directly reload messages
         const channelMsgs = supabase
@@ -179,18 +150,14 @@ export function OmnichannelInbox({
                     table: 'camp_mensagens',
                     filter: `empresa_id=eq.${empresaId}`
                 },
-                (payload: any) => {
-                    console.log('[RT messages] new message received:', payload);
+                () => {
                     silentReloadMessages();
                     setRefreshTrigger(prev => prev + 1);
                 }
             )
-            .subscribe((status: string) => {
-                console.log('[RT messages] status:', status);
-            });
+            .subscribe();
 
         return () => {
-            console.log('[RT] Cleaning up channels...');
             supabase.removeChannel(channelLeads);
             supabase.removeChannel(channelMsgs);
         };
@@ -214,9 +181,18 @@ export function OmnichannelInbox({
                 ]);
 
                 if (isMounted) {
-                    console.log("[INBOX DEBUG] messagingUsers received:", usersData?.map((u: any) => u.name));
                     setConversations(convData as Conversation[]);
                     setMessagingUsers(usersData);
+
+                    // Fetch instance avatar if targetUserId is an agent
+                    const agent = AGENTS.find(a => a.id === targetUserId);
+                    if (agent) {
+                        getInstanceAvatarByAgent(agent.name).then(avatar => {
+                            if (isMounted && avatar) setInstanceAvatar(avatar);
+                        });
+                    } else {
+                        setInstanceAvatar(undefined);
+                    }
 
                     if (convData.length > 0 && !selectedConversationId && convData[0]) {
                         setSelectedConversationId(convData[0].id);
@@ -497,6 +473,7 @@ export function OmnichannelInbox({
                     onInboxChange?.(val);
                     setSearchQuery("");
                 }}
+                instanceAvatar={instanceAvatar}
             />
 
             <ChatArea
@@ -511,6 +488,9 @@ export function OmnichannelInbox({
                 onToggleQuemAtende={handleToggleQuemAtende}
                 isTogglingQuemAtende={isTogglingQuemAtende}
                 isAgentInbox={!!AGENTS.find(a => a.id === targetUserId)}
+                agentAvatar={instanceAvatar || targetUser?.avatar || targetUser?.avatar_url}
+                agentName={targetUser?.name}
+                instanceAvatar={instanceAvatar}
             />
 
             <LeadDetails

@@ -106,24 +106,11 @@ export default async function AgentPage({ params, searchParams }: AgentPageProps
         .from('main_profiles')
         .select('id, empresa_id, active_agents, name, avatar_url, role, email, has_messaging_access')
         .eq('id', user?.id)
-        .eq('id', user?.id)
         .single()
 
-    // RBAC: If not admin/owner, inherit agents from Admin
+    // RBAC: Each user sees only their own assigned agents.
+    // Admins with null active_agents see ALL. Members always use their own list.
     const isAdmin = profile?.role === 'admin' || profile?.role === 'owner'
-    if (!isAdmin && profile?.empresa_id) {
-        const { data: adminProfile } = await supabaseAdmin
-            .from('main_profiles')
-            .select('active_agents')
-            .eq('empresa_id', profile.empresa_id)
-            .in('role', ['admin', 'owner'])
-            .limit(1)
-            .maybeSingle()
-
-        if (adminProfile?.active_agents) {
-            profile.active_agents = adminProfile.active_agents
-        }
-    }
 
     const companyId = profile?.empresa_id
 
@@ -184,10 +171,9 @@ export default async function AgentPage({ params, searchParams }: AgentPageProps
             .eq('id', targetUserId)
             .single()
 
-        // PERMISSION CHECK:
+        // PERMISSION CHECK 1:
         // Only Admins can view other users' dashboards.
         // Members can only view their own.
-        // If unauthorized, show "Restricted Access" screen instead of redirecting.
         if (profile?.role !== 'admin' && profile?.id !== targetUserId) {
             return (
                 <div className="flex-1 min-h-0 bg-black text-white font-sans flex flex-col overflow-hidden">
@@ -201,6 +187,26 @@ export default async function AgentPage({ params, searchParams }: AgentPageProps
                         <h3 className="text-xl font-bold mb-2">Restricted Access</h3>
                         <p className="max-w-md text-sm text-gray-400">
                             You do not have permission to view {targetProfile?.name || 'this user'}'s inbox.
+                        </p>
+                    </div>
+                </div>
+            )
+        }
+
+        // PERMISSION CHECK 2:
+        // Members viewing their own inbox must have messaging access enabled.
+        const memberIsAdmin = profile?.role === 'admin' || profile?.role === 'owner'
+        if (!memberIsAdmin && !profile?.has_messaging_access) {
+            const firstName = (profile?.name || '').split(' ')[0] || 'there'
+            return (
+                <div className="flex-1 min-h-0 bg-black text-white font-sans flex flex-col overflow-hidden">
+                    <DashboardHeader />
+                    <div className="flex-1 w-full h-full flex flex-col items-center justify-center p-8 text-center">
+                        <h3 className="text-3xl font-medium text-white tracking-tight">
+                            Hi {firstName}, what are we doing today?
+                        </h3>
+                        <p className="mt-3 text-sm text-slate-500">
+                            Select an agent from the sidebar to get started.
                         </p>
                     </div>
                 </div>
@@ -230,6 +236,31 @@ export default async function AgentPage({ params, searchParams }: AgentPageProps
         redirect('/dashboard')
     }
 
+    // RBAC: Guard direct URL access to agent dashboards.
+    // Members with a restricted active_agents list cannot access unauthorized agents.
+    if (!isAdmin && profile?.active_agents) {
+        const permitted = profile.active_agents as string[]
+        if (!permitted.includes(agent.id)) {
+            return (
+                <div className="flex-1 min-h-0 bg-black text-white font-sans flex flex-col overflow-hidden">
+                    <DashboardHeader />
+                    <div className="flex-1 w-full h-full flex flex-col items-center justify-center p-8 text-center opacity-60">
+                        <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mb-6">
+                            <svg className="w-8 h-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                            </svg>
+                        </div>
+                        <h3 className="text-xl font-bold mb-2">Restricted Access</h3>
+                        <p className="max-w-md text-sm text-gray-400">
+                            You do not have permission to access this agent.
+                            Please contact your administrator.
+                        </p>
+                    </div>
+                </div>
+            )
+        }
+    }
+
     if (isOutreach) {
         // Parallel fetching for performance
         const [prospects, icp, demands, savedIcps] = await Promise.all([
@@ -238,14 +269,10 @@ export default async function AgentPage({ params, searchParams }: AgentPageProps
             getDemands(),
             getSavedICPs()
         ])
-        console.log('DEBUG: AgentPage - Fetched demands:', demands?.length)
-        console.log('DEBUG: AgentPage - Fetched saved ICPs:', savedIcps?.length)
 
         outreachData = prospects
         icpData = icp
         outreachDemands = demands
-        // savedIcps will be passed to OrchestratorTabs -> OutreachTabs -> ICPForm
-        // We'll need to update the prop drilling
         initialSavedIcps = savedIcps
         hasICP = !!icp
     }
@@ -438,10 +465,10 @@ export default async function AgentPage({ params, searchParams }: AgentPageProps
         const trainings = await getTrainings()
 
         const supportTabs = [
-            { value: 'omnichannel', label: 'Omnichannel' },
+            { value: 'omnichannel', label: 'Chats' },
             { value: 'training', label: 'Training' },
             { value: 'parameters', label: 'Parameters' },
-            { value: 'connectors', label: 'Connectors' },
+            { value: 'connectors', label: 'Connections' },
             { value: 'results', label: 'Results' }
         ]
 

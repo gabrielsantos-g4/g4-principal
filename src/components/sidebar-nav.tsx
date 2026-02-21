@@ -24,6 +24,7 @@ interface SidebarNavProps {
     activeAgents: string[] | null
     teamOrder: string[]
     humanMembers: any[]
+    hasMessagingAccess: boolean
     user: {
         id: string
         name: string
@@ -39,7 +40,7 @@ interface SidebarNavProps {
     }
 }
 
-export function SidebarNav({ agents, activeAgents, teamOrder, humanMembers, user, loggedUser }: SidebarNavProps) {
+export function SidebarNav({ agents, activeAgents, teamOrder, humanMembers, hasMessagingAccess, user, loggedUser }: SidebarNavProps) {
     const pathname = usePathname()
     const [isPricingOpen, setIsPricingOpen] = useState(false)
     const { isCollapsed } = useSidebar()
@@ -111,41 +112,61 @@ export function SidebarNav({ agents, activeAgents, teamOrder, humanMembers, user
             <div className="space-y-2">
 
                 {/* User Profile (Orchestrator) - Fixed Top */}
+                {/* Only render as a clickable link if the logged user has messaging access */}
                 <div className="relative group">
-                    <Link
-                        href="/dashboard/orchestrator?tab=chats"
-                        className={`w-full flex items-center gap-3 py-3 rounded-lg transition-all duration-200 text-left outline-none ${pathname === '/dashboard/orchestrator'
-                            ? 'bg-white/10 text-white shadow-[0_0_15px_rgba(28,115,232,0.1)] border border-white/5'
-                            : 'text-slate-300 hover:text-white hover:bg-white/5 border border-transparent'
-                            } ${sidebarCollapsed ? 'justify-center px-0' : 'px-4'}`}
-                    >
-                        <div className={`w-10 h-10 rounded-full overflow-hidden border transition-all shrink-0 relative ${pathname === '/dashboard/orchestrator'
-                            ? 'border-[#1C73E8]'
-                            : 'border-white/10 group-hover:border-[#1C73E8]'
-                            } ${user.id === loggedUser.id ? 'ring-2 ring-[#1C73E8] ring-offset-2 ring-offset-[#0C0C0C] shadow-[0_0_15px_rgba(28,115,232,0.4)]' : ''}`}>
-                            <img
-                                src={user.avatar}
-                                alt={user.name}
-                                className="w-full h-full object-cover"
-                            />
-                            {user.id === loggedUser.id && (
-                                <div className="absolute inset-0 rounded-full animate-pulse border-2 border-white/20 pointer-events-none" />
+                    {hasMessagingAccess ? (
+                        <Link
+                            href="/dashboard/orchestrator?tab=chats"
+                            className={`w-full flex items-center gap-3 py-3 rounded-lg transition-all duration-200 text-left outline-none ${pathname === '/dashboard/orchestrator'
+                                ? 'bg-white/10 text-white shadow-[0_0_15px_rgba(28,115,232,0.1)] border border-white/5'
+                                : 'text-slate-300 hover:text-white hover:bg-white/5 border border-transparent'
+                                } ${sidebarCollapsed ? 'justify-center px-0' : 'px-4'}`}
+                        >
+                            <div className={`w-10 h-10 rounded-full overflow-hidden border transition-all shrink-0 relative ${pathname === '/dashboard/orchestrator'
+                                ? 'border-[#1C73E8]'
+                                : 'border-white/10 group-hover:border-[#1C73E8]'
+                                } ${user.id === loggedUser.id ? 'ring-2 ring-[#1C73E8] ring-offset-2 ring-offset-[#0C0C0C] shadow-[0_0_15px_rgba(28,115,232,0.4)]' : ''}`}>
+                                <img
+                                    src={user.avatar}
+                                    alt={user.name}
+                                    className="w-full h-full object-cover"
+                                />
+                                {user.id === loggedUser.id && (
+                                    <div className="absolute inset-0 rounded-full animate-pulse border-2 border-white/20 pointer-events-none" />
+                                )}
+                            </div>
+
+                            {!sidebarCollapsed && (
+                                <div className="flex flex-col overflow-hidden">
+                                    <div className="flex items-center gap-1.5">
+                                        <span className={`text-sm font-bold truncate transition-colors leading-tight ${pathname === '/dashboard/orchestrator' ? 'text-white' : 'text-slate-300 group-hover:text-white'
+                                            }`}>{user.name}</span>
+                                        {user.id === loggedUser.id && (
+                                            <div className="w-1.5 h-1.5 rounded-full bg-blue-500 shadow-[0_0_5px_rgba(28,115,232,0.8)]" />
+                                        )}
+                                    </div>
+                                    <span className="text-xs text-slate-400 truncate leading-tight">{user.role || 'Orchestrator'}</span>
+                                </div>
+                            )}
+                        </Link>
+                    ) : (
+                        // Non-clickable orchestrator card for members without messaging access
+                        <div className={`w-full flex items-center gap-3 py-3 rounded-lg border border-transparent ${sidebarCollapsed ? 'justify-center px-0' : 'px-4'}`}>
+                            <div className={`w-10 h-10 rounded-full overflow-hidden border border-white/10 shrink-0 relative ${user.id === loggedUser.id ? 'ring-2 ring-[#1C73E8] ring-offset-2 ring-offset-[#0C0C0C]' : ''}`}>
+                                <img
+                                    src={user.avatar}
+                                    alt={user.name}
+                                    className="w-full h-full object-cover"
+                                />
+                            </div>
+                            {!sidebarCollapsed && (
+                                <div className="flex flex-col overflow-hidden">
+                                    <span className="text-sm font-bold truncate leading-tight text-slate-300">{user.name}</span>
+                                    <span className="text-xs text-slate-400 truncate leading-tight">{user.role || 'Orchestrator'}</span>
+                                </div>
                             )}
                         </div>
-
-                        {!sidebarCollapsed && (
-                            <div className="flex flex-col overflow-hidden">
-                                <div className="flex items-center gap-1.5">
-                                    <span className={`text-sm font-bold truncate transition-colors leading-tight ${pathname === '/dashboard/orchestrator' ? 'text-white' : 'text-slate-300 group-hover:text-white'
-                                        }`}>{user.name}</span>
-                                    {user.id === loggedUser.id && (
-                                        <div className="w-1.5 h-1.5 rounded-full bg-blue-500 shadow-[0_0_5px_rgba(28,115,232,0.8)]" />
-                                    )}
-                                </div>
-                                <span className="text-xs text-slate-400 truncate leading-tight">{user.role || 'Orchestrator'}</span>
-                            </div>
-                        )}
-                    </Link>
+                    )}
                 </div>
 
                 {/* Team Members List */}

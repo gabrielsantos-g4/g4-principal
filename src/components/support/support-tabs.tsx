@@ -63,41 +63,28 @@ export function SupportTabs({ trainings, companyId, agent, viewerProfile, crmSet
                     </div>
                 )}
 
-                {activeTab !== "omnichannel" && (
-                    <div className="flex flex-col gap-6 w-full h-full overflow-y-auto pb-8">
-                        {/* Back Button */}
-                        <div className="max-w-5xl mx-auto w-full pt-4">
-                            <button
-                                onClick={() => setActiveTab("omnichannel")}
-                                className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors mb-4"
-                            >
-                                <MessageSquare size={16} />
-                                <span>Back to Chats</span>
-                            </button>
+                <div className="flex flex-col gap-6 w-full h-full overflow-y-auto pb-8">
+                    {activeTab === "training" && (
+                        <div className="flex flex-col gap-6 max-w-5xl mx-auto w-full">
+                            <KnowledgeBaseUpload companyId={companyId} />
+                            <TrainingsList trainings={trainings} />
+                            <FineTuneForm companyId={companyId} />
                         </div>
+                    )}
 
-                        {activeTab === "training" && (
-                            <div className="flex flex-col gap-6 max-w-5xl mx-auto w-full">
-                                <KnowledgeBaseUpload companyId={companyId} />
-                                <TrainingsList trainings={trainings} />
-                                <FineTuneForm companyId={companyId} />
-                            </div>
-                        )}
+                    {activeTab === "parameters" && (
+                        <div className="flex flex-col gap-6 max-w-5xl mx-auto w-full">
+                            <QualificationParametersForm />
+                            <QualificationActionsForm />
+                        </div>
+                    )}
 
-                        {activeTab === "parameters" && (
-                            <div className="flex flex-col gap-6 max-w-5xl mx-auto w-full">
-                                <QualificationParametersForm />
-                                <QualificationActionsForm />
-                            </div>
-                        )}
-
-                        {activeTab === "connectors" && (
-                            <div className="flex flex-col gap-6 max-w-5xl mx-auto w-full">
-                                <ChannelsConfig companyId={companyId} />
-                            </div>
-                        )}
-                    </div>
-                )}
+                    {activeTab === "connectors" && (
+                        <div className="flex flex-col gap-6 max-w-5xl mx-auto w-full">
+                            <ChannelsConfig companyId={companyId} />
+                        </div>
+                    )}
+                </div>
 
                 {activeTab === "results" && (
                     <div className="flex flex-col gap-6">

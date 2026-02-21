@@ -108,14 +108,14 @@ export async function getConversations(targetUserId?: string) {
         if (channel === 'phone') channel = 'sms';
 
         let lastMessage = "New conversation";
-        let lastMessageAt = conv.updated_at ? new Date(conv.updated_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "";
+        let lastMessageAt = conv.updated_at || "";
 
         const lastMsg = await fetchLastMessage(conv.id);
         const messages = [];
 
         if (lastMsg) {
             lastMessage = lastMsg.body || (lastMsg.media_url ? '[Media]' : 'Message');
-            lastMessageAt = new Date(lastMsg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            lastMessageAt = lastMsg.created_at || conv.updated_at || "";
             messages.push({
                 id: `msg-${conv.id}-last`,
                 content: lastMessage,
@@ -140,6 +140,10 @@ export async function getConversations(targetUserId?: string) {
             });
         }
 
+        // Clean phone: strip JID suffixes like @lid, @s.whatsapp.net, etc.
+        const cleanPhone = (lead.phone || '').replace(/@.*$/, '').trim();
+        const cleanJid = (lead.ctt_jid || '').replace(/@.*$/, '').trim();
+
         return {
             id: conv.id,
             leadId: lead.id,
@@ -148,9 +152,11 @@ export async function getConversations(targetUserId?: string) {
                 id: `c-${lead.id}`,
                 name: (lead.name && lead.name.trim() !== "")
                     ? lead.name
-                    : (lead.phone && lead.phone.trim() !== "")
-                        ? lead.phone
-                        : (lead.ctt_jid ? lead.ctt_jid.split('@')[0] : "Desconhecido"),
+                    : cleanPhone
+                        ? cleanPhone
+                        : cleanJid
+                            ? cleanJid
+                            : "Name not yet identified",
                 avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(lead.name || 'U')}&background=random`,
                 company: lead.company || "",
                 role: lead.role || "",

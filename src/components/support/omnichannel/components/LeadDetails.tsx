@@ -181,69 +181,72 @@ export function LeadDetails({
 
     if (!selectedConversation) {
         return (
-            <div className="w-12 border-l border-white/10 bg-[#111] h-full flex items-center justify-center text-gray-500 text-sm">
-                <PanelRight size={16} className="opacity-20" />
+            <div className="w-12 border-l border-white/8 bg-[#111] h-full flex items-center justify-center">
+                <div className="w-0.5 h-12 bg-white/5 rounded-full" />
             </div>
         );
     }
 
     return (
-        <div className="border-l border-white/10 bg-[#111] flex h-full w-[260px] overflow-hidden">
+        <div className="border-l border-white/8 bg-[#111] flex h-full w-[260px] overflow-hidden shrink-0">
             {/* Content Area */}
             <div className="flex-1 flex flex-col min-w-0 opacity-100 visible">
                 <div className="flex-1 overflow-y-auto">
-                    <div className="p-6 text-center">
-                        <Avatar className="h-20 w-20 mx-auto mb-3">
+                    {/* Contact Header */}
+                    <div className="p-5 text-center border-b border-white/5">
+                        <Avatar className="h-16 w-16 mx-auto mb-3 border-2 border-white/10">
                             <AvatarImage src={selectedConversation.contact.avatar} />
-                            <AvatarFallback className="text-lg">{selectedConversation.contact.name[0]}</AvatarFallback>
+                            <AvatarFallback className="text-base font-bold bg-[#1C73E8]/15 text-[#6ea8fe]">{selectedConversation.contact.name[0]}</AvatarFallback>
                         </Avatar>
-                        <h3 className="font-bold text-white text-lg truncate px-2">{selectedConversation.contact.name}</h3>
-                        <p className="text-sm text-gray-400 font-medium mb-1 truncate px-2">{selectedConversation.contact.company}</p>
+                        <h3 className="font-bold text-white leading-tight truncate px-2">{selectedConversation.contact.name}</h3>
+                        {selectedConversation.contact.company && (
+                            <p className="text-xs text-gray-500 mt-0.5 truncate px-2">{selectedConversation.contact.company}</p>
+                        )}
 
-                        {/* Channel specific info */}
-                        <p className="text-xs text-gray-500">
+                        {/* Channel contact info */}
+                        <p className="text-xs text-gray-600 mt-1">
                             {(selectedConversation.channel === 'whatsapp' || selectedConversation.channel === 'sms') && (
-                                <span className="flex items-center justify-center gap-2">
-                                    <Phone size={12} />
+                                <span className="flex items-center justify-center gap-1.5">
+                                    <Phone size={11} />
                                     {/* @ts-ignore - dynamic prop */}
                                     {selectedConversation.contact.phone}
                                 </span>
                             )}
-                            {(selectedConversation.channel === 'email') && (
-                                <span className="flex items-center justify-center gap-2">
-                                    <Mail size={12} />
+                            {selectedConversation.channel === 'email' && (
+                                <span className="flex items-center justify-center gap-1.5">
+                                    <Mail size={11} />
                                     {/* @ts-ignore */}
                                     {selectedConversation.contact.email}
                                 </span>
                             )}
-                            {(selectedConversation.channel === 'linkedin') && (
-                                <span className="flex items-center justify-center gap-2">
-                                    <Linkedin size={12} />
+                            {selectedConversation.channel === 'linkedin' && (
+                                <span className="flex items-center justify-center gap-1.5">
+                                    <Linkedin size={11} />
                                     /in/{selectedConversation.contact.name.toLowerCase().replace(/\s+/g, '')}
                                 </span>
                             )}
-                            {(selectedConversation.channel === 'instagram') && (
-                                <span className="flex items-center justify-center gap-2">
-                                    <Instagram size={12} />
+                            {selectedConversation.channel === 'instagram' && (
+                                <span className="flex items-center justify-center gap-1.5">
+                                    <Instagram size={11} />
                                     @{selectedConversation.contact.name.toLowerCase().replace(/\s+/g, '')}
                                 </span>
                             )}
-                            {(selectedConversation.channel === 'facebook') && (
-                                <span className="flex items-center justify-center gap-2">
-                                    <Facebook size={12} />
+                            {selectedConversation.channel === 'facebook' && (
+                                <span className="flex items-center justify-center gap-1.5">
+                                    <Facebook size={11} />
                                     /{selectedConversation.contact.name.toLowerCase().replace(/\s+/g, '')}
                                 </span>
                             )}
-                            {(selectedConversation.channel === 'web') && (
-                                <span className="flex items-center justify-center gap-2">
-                                    <MessageSquare size={12} />
+                            {selectedConversation.channel === 'web' && (
+                                <span className="flex items-center justify-center gap-1.5">
+                                    <MessageSquare size={11} />
                                     Global Visitor
                                 </span>
                             )}
                         </p>
                     </div>
 
-                    <div className="px-6 pb-6 flex flex-col gap-8">
+                    <div className="px-4 pb-6 flex flex-col gap-6">
                         <div className="flex flex-col gap-6">
 
 

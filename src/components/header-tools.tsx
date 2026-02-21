@@ -47,33 +47,7 @@ export function HeaderTools({ userProfile }: HeaderToolsProps) {
 
     return (
         <div className="flex items-center gap-2">
-            {isJessPage && (
-                <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                        <button className="p-2 border border-white/20 rounded text-gray-400 hover:text-white hover:bg-white/5 transition-colors flex items-center justify-center h-9 w-9 data-[state=open]:bg-white/10 data-[state=open]:text-white">
-                            <LayoutGrid size={16} />
-                        </button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent className="w-48 bg-[#171717] border-white/10 text-white" align="end">
-                        <DropdownMenuItem onClick={() => handleJessTabSelection('training')} className="gap-2 cursor-pointer focus:bg-white/5">
-                            <GraduationCap size={14} className="text-gray-400" />
-                            <span>Training</span>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleJessTabSelection('parameters')} className="gap-2 cursor-pointer focus:bg-white/5">
-                            <ListChecks size={14} className="text-gray-400" />
-                            <span>Parameters</span>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleJessTabSelection('connectors')} className="gap-2 cursor-pointer focus:bg-white/5">
-                            <Waypoints size={14} className="text-gray-400" />
-                            <span>Connections</span>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleJessTabSelection('results')} className="gap-2 cursor-pointer focus:bg-white/5">
-                            <BarChart3 size={14} className="text-gray-400" />
-                            <span>Results</span>
-                        </DropdownMenuItem>
-                    </DropdownMenuContent>
-                </DropdownMenu>
-            )}
+
 
             <button
                 className="p-2 border border-white/20 rounded text-gray-400 hover:text-white hover:bg-white/5 transition-colors flex items-center justify-center h-9 w-9"
