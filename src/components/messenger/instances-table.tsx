@@ -51,8 +51,9 @@ export function InstancesTable({ initialInstances, empresaId }: InstancesTablePr
             return
         }
 
+        const channelId = `realtime-instances-${empresaId}-${Date.now()}`;
         const channel = supabase
-            .channel('realtime-instances')
+            .channel(channelId)
             .on(
                 'postgres_changes',
                 {
@@ -81,8 +82,17 @@ export function InstancesTable({ initialInstances, empresaId }: InstancesTablePr
                     router.refresh()
                 }
             )
-            .subscribe((status) => {
-                console.log('Realtime subscription status:', status)
+            .subscribe((status, err) => {
+                console.log('[InstancesTable] Realtime subscription status:', status);
+                console.log('[InstancesTable] Channel ID:', channelId);
+                if (err) {
+                    console.error('[InstancesTable] Realtime subscription error:', err);
+                    console.error('[InstancesTable] Error type:', err?.message || err);
+                }
+                if (status === 'CHANNEL_ERROR') {
+                    console.error('[InstancesTable] ❌ Failed to subscribe to instances channel');
+                    console.error('[InstancesTable] Channel ID that failed:', channelId);
+                }
             })
 
         return () => {

@@ -38,9 +38,10 @@ interface NewOpportunityModalProps {
     settings?: CrmSettings;
     initialData?: any;
     leads?: any[];
+    currentUserName?: string;
 }
 
-export function NewOpportunityModal({ isOpen, onClose, settings, initialData, leads = [] }: NewOpportunityModalProps) {
+export function NewOpportunityModal({ isOpen, onClose, settings, initialData, leads = [], currentUserName }: NewOpportunityModalProps) {
     const router = useRouter();
     const isEditMode = !!(initialData && initialData.id); // Only edit if ID exists
     const [phone, setPhone] = useState<string | undefined>();
@@ -118,7 +119,7 @@ export function NewOpportunityModal({ isOpen, onClose, settings, initialData, le
                 setSource("");
                 setStatus("New");
                 setStatus("New");
-                setResponsible("");
+                setResponsible(currentUserName || "");
                 setQualification("lead");
                 setNextDate(undefined);
 
@@ -171,29 +172,31 @@ export function NewOpportunityModal({ isOpen, onClose, settings, initialData, le
         const normalize = (str: string) => str ? str.trim().toLowerCase() : "";
         const currentId = initialData?.id;
 
-        // Strict Check: Name (Blocker)
-        const nameExists = leads?.find(l =>
-            normalize(l.name) === normalize(name) && l.id !== currentId
+        // Strict Check: Name + Phone (Blocker)
+        // Only block if BOTH name AND phone match
+        const duplicateExists = leads?.find(l =>
+            normalize(l.name) === normalize(name) && 
+            l.phone === phone && 
+            l.id !== currentId
         );
 
-        if (nameExists) {
+        if (duplicateExists) {
             toast.error("Lead already exists!", {
-                description: `A lead with the name "${name}" is already registered. Please use a different name to create a new record.`
+                description: `A lead with the name "${name}" and phone "${phone}" is already registered.`
             });
             return;
         }
 
-        // Soft Check: Phone/Email/LinkedIn (Warning)
+        // Soft Check: Email/LinkedIn (Warning)
         const duplicateFields = [];
         if (leads) {
-            if (phone && leads.some(l => l.phone === phone && l.id !== currentId)) duplicateFields.push("Phone");
             if (email && leads.some(l => normalize(l.email) === normalize(email) && l.id !== currentId)) duplicateFields.push("Email");
             if (linkedin && leads.some(l => normalize(l.linkedin) === normalize(linkedin) && l.id !== currentId)) duplicateFields.push("LinkedIn");
         }
 
         if (duplicateFields.length > 0) {
             toast("Potential Duplicate Detected", {
-                description: `Found existing lead with same ${duplicateFields.join(", ")}. Saving anyway as Name is unique.`,
+                description: `Found existing lead with same ${duplicateFields.join(", ")}. Saving anyway.`,
                 duration: 4000,
             });
         }

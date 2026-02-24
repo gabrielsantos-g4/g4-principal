@@ -6,6 +6,16 @@ import { revalidatePath } from "next/cache";
 import { logAction } from "@/actions/audit";
 
 interface UpdateLeadParams {
+    // Contact fields
+    name?: string;
+    company?: string;
+    role?: string;
+    phone?: string;
+    email?: string;
+    linkedin?: string;
+    website?: string;
+    
+    // CRM fields
     status?: string;
     source?: string;
     responsible?: string;
@@ -16,6 +26,7 @@ interface UpdateLeadParams {
     temperature?: string;
     qualification_details?: any; // JSONB
     quem_atende?: string;
+    qualification_status?: string;
 }
 
 export async function updateLead(id: number, data: UpdateLeadParams) {

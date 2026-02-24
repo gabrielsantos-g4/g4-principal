@@ -1,35 +1,28 @@
 
 import { Reorder } from "framer-motion";
-import { GripVertical, Pencil } from "lucide-react";
+import { GripVertical, Pencil, Trash2 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
 import { TagEditor } from "./crm-settings-modal"; // Assuming TagEditor is exported or I need to move it too.
 // Wait, TagEditor is currently internal to crm-settings-modal.tsx. I should probably move TagEditor to a separate file or keep StatusItem internal. 
 // Moving TagEditor to a separate file is cleaner.
 
-export function StatusItem({ status, index, settings, updateStatus, TagEditorComponent }: { status: any, index: number, settings: any, updateStatus: any, TagEditorComponent: any }) {
+export function StatusItem({ status, index, settings, updateStatus, TagEditorComponent, onDelete }: { status: any, index: number, settings: any, updateStatus: any, TagEditorComponent: any, onDelete?: (index: number) => void }) {
     const phase = status.phase || 'not_started';
     const temperature = status.temperature || 'Cold';
 
-    // Find the temperature config from settings
-    const DEFAULT_TEMPERATURES = [
+    // Fixed temperature options
+    const TEMPERATURES = [
         { label: 'Cold', bg: 'bg-blue-900', text: 'text-blue-100' },
         { label: 'Warm', bg: 'bg-orange-900', text: 'text-orange-100' },
         { label: 'Hot', bg: 'bg-red-900', text: 'text-red-100' }
     ];
 
-    const availableTemps = (settings.temperatures && settings.temperatures.length > 0)
-        ? settings.temperatures
-        : DEFAULT_TEMPERATURES;
-
-    const matchedTemp = availableTemps.find((t: any) => (typeof t === 'string' ? t : t.label) === temperature);
-
-    const tempConfig = matchedTemp
-        ? (typeof matchedTemp === 'string' ? { label: matchedTemp, bg: 'bg-slate-800', text: 'text-slate-100' } : matchedTemp)
-        : DEFAULT_TEMPERATURES.find(t => t.label === temperature) || { label: temperature || 'Cold', bg: 'bg-blue-900', text: 'text-blue-100' };
+    const tempConfig = TEMPERATURES.find(t => t.label === temperature) || TEMPERATURES[0];
 
     return (
         <Reorder.Item value={status} className="select-none">
-            <div className="flex items-center gap-2 p-1.5 bg-white/5 rounded border border-white/10 relative">
+            <div className="flex items-center gap-2 p-1.5 bg-white/5 rounded border border-white/10 relative group">
 
                 {/* Tag Group (Icon + Name) - Explicitly isolated */}
                 <div className="flex items-center gap-2 group/tag cursor-pointer flex-1 min-w-0">
@@ -66,25 +59,41 @@ export function StatusItem({ status, index, settings, updateStatus, TagEditorCom
                         >
                             <SelectValue>{tempConfig.label}</SelectValue>
                         </SelectTrigger>
-                        <SelectContent className="bg-[#1a1a1a] border-white/10 text-white min-w-[80px]">
-                            {availableTemps.map((t: any) => {
-                                const tLabel = typeof t === 'string' ? t : t.label;
-                                const tBg = typeof t === 'string' ? 'bg-slate-800' : t.bg;
-                                const tText = typeof t === 'string' ? 'text-slate-100' : t.text;
-
-                                return (
-                                    <SelectItem
-                                        key={tLabel}
-                                        value={tLabel}
-                                        className={`text-[9px] uppercase font-bold tracking-wider text-gray-400 focus:text-white focus:${tBg.replace('bg-', 'focus:bg-')}`}
-                                    >
-                                        {tLabel}
-                                    </SelectItem>
-                                );
-                            })}
+                        <SelectContent className="bg-[#1a1a1a] border-white/10 text-white min-w-[80px] z-[9999]">
+                            {TEMPERATURES.map((t) => (
+                                <SelectItem
+                                    key={t.label}
+                                    value={t.label}
+                                    className="text-[9px] uppercase font-bold tracking-wider cursor-pointer"
+                                >
+                                    <div className={`px-2 py-0.5 rounded ${t.bg} ${t.text}`}>
+                                        {t.label}
+                                    </div>
+                                </SelectItem>
+                            ))}
                         </SelectContent>
                     </Select>
                 </div>
+
+                {/* Delete Button */}
+                {onDelete && (
+                    <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-6 w-6 text-red-500 hover:text-red-400 hover:bg-red-500/10 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
+                        onMouseDown={(e) => {
+                            e.stopPropagation();
+                        }}
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            e.preventDefault();
+                            setTimeout(() => onDelete(index), 0);
+                        }}
+                        type="button"
+                    >
+                        <Trash2 className="h-3 w-3" />
+                    </Button>
+                )}
             </div>
         </Reorder.Item>
     );

@@ -5,6 +5,7 @@ import { RightSidebar } from "@/components/right-sidebar"
 import { OmnichannelInbox } from "@/components/support/omnichannel/omnichannel-inbox"
 import { Badge } from "@/components/ui/badge"
 import { User } from "lucide-react"
+import { useRouter } from "next/navigation"
 
 interface UserInboxDashboardProps {
     user: any // The loged in user
@@ -21,11 +22,17 @@ interface UserInboxDashboardProps {
 }
 
 export function UserInboxDashboard({ user, targetUser, companyId, agent, crmSettings, viewerProfile }: UserInboxDashboardProps) {
+    const router = useRouter()
     const isSelf = user.id === targetUser.id
     const hasAccess = viewerProfile?.role === 'admin' || viewerProfile?.has_messaging_access
 
     // MessageSquare icon for restricted state
     const { MessageSquare } = require("lucide-react")
+
+    const handleInboxChange = (userId: string) => {
+        // Navigate to the selected user's inbox
+        router.push(`/dashboard/user-${userId}`)
+    }
 
     return (
         <div className="flex-1 min-h-0 bg-black text-white font-sans flex flex-col overflow-hidden">
@@ -52,6 +59,7 @@ export function UserInboxDashboard({ user, targetUser, companyId, agent, crmSett
                     targetUser={targetUser}
                     crmSettings={crmSettings}
                     viewerProfile={viewerProfile}
+                    onInboxChange={handleInboxChange}
                 />
             </MobileDashboardLayout>
         </div>

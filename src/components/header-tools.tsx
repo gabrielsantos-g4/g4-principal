@@ -81,7 +81,7 @@ export function HeaderTools({ userProfile }: HeaderToolsProps) {
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => handleNavigation('team')} className="gap-2 cursor-pointer focus:bg-white/5">
                             <Users2 size={14} className="text-gray-400" />
-                            <span>Teams</span>
+                            <span>Team</span>
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => handleNavigation('history')} className="gap-2 cursor-pointer focus:bg-white/5">
                             <History size={14} className="text-gray-400" />

@@ -1,6 +1,6 @@
 {
   "name": "temp-app",
-  "version": "0.1.26",
+  "version": "0.1.29",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -30,7 +30,7 @@
     "@radix-ui/react-tabs": "^1.1.13",
     "@radix-ui/react-tooltip": "^1.2.8",
     "@supabase/ssr": "^0.8.0",
-    "@supabase/supabase-js": "^2.87.2",
+    "@supabase/supabase-js": "^2.97.0",
     "@types/papaparse": "^5.5.2",
     "ai": "^6.0.94",
     "class-variance-authority": "^0.7.1",

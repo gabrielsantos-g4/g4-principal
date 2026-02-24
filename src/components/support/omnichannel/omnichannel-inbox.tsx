@@ -15,6 +15,9 @@ import { useBrowserNotification } from "@/hooks/use-browser-notification";
 import { getMessagingUsers, MessagingUser } from "@/actions/users/get-messaging-users";
 import { getInstanceAvatarByAgent } from "@/actions/inbox/get-instance-avatar";
 import { LostLeadModal } from "@/components/crm/lost-lead-modal";
+import { RealtimeDiagnostics } from "./realtime-diagnostics";
+import { getSupabaseRealtimeClient } from "@/lib/supabase-realtime";
+import { TestRealtimeSimple } from "./test-realtime-simple";
 
 // --- Types & Mock Data ---
 
@@ -98,19 +101,27 @@ export function OmnichannelInbox({
     const hasUnread = conversations.some(c => c.unreadCount > 0);
     useBrowserNotification(hasUnread);
 
-    // Stable Supabase client ref to avoid creating multiple instances
-    const supabaseRef = useRef<ReturnType<typeof createBrowserClient> | null>(null);
-    if (!supabaseRef.current) {
-        supabaseRef.current = createBrowserClient(
-            process.env.NEXT_PUBLIC_SUPABASE_URL!,
-            process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-        );
-    }
+    // Use singleton Supabase client for Realtime
+    const supabase = getSupabaseRealtimeClient();
+    
+    // Refs to track channels and prevent duplicates
+    const channelsRef = useRef<{ leads: any; messages: any }>({ leads: null, messages: null });
+    const isSubscribingRef = useRef(false);
+    
+    // Realtime Refresh Logic with Polling Fallback
+    const [refreshTrigger, setRefreshTrigger] = useState(0);
+    const [usePolling, setUsePolling] = useState(false);
+    const isInitialLoad = useRef(true);
+    const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
+    // Realtime subscription with automatic fallback to polling
     useEffect(() => {
-        if (!crmSettings?.empresa_id) return;
+        if (!crmSettings?.empresa_id || isSubscribingRef.current) return;
 
-        const supabase = supabaseRef.current!;
+        const empresaId = crmSettings.empresa_id;
+        
+        // Prevent duplicate subscriptions
+        isSubscribingRef.current = true;
 
         // Get current user
         (async () => {
@@ -118,13 +129,29 @@ export function OmnichannelInbox({
             if (user) setCurrentUserId(user.id);
         })();
 
-        const empresaId = crmSettings.empresa_id;
-        // Unique channel names to avoid collisions on Strict Mode re-mounts
-        const channelSuffix = `${empresaId}-${Date.now()}`;
+        // Use a stable channel ID with a unique suffix to prevent conflicts on remount
+        const mountId = Date.now();
+        const channelLeadsId = `omnichannel-leads-${empresaId}-${mountId}`;
+        const channelMsgsId = `omnichannel-messages-${empresaId}-${mountId}`;
+
+        console.log('[OmnichannelInbox] 🔄 Attempting Realtime connection for empresa:', empresaId);
+        console.log('[OmnichannelInbox] Channel IDs:', { channelLeadsId, channelMsgsId });
+
+        // Clean up any existing channels first
+        if (channelsRef.current.leads) {
+            supabase.removeChannel(channelsRef.current.leads);
+            channelsRef.current.leads = null;
+        }
+        if (channelsRef.current.messages) {
+            supabase.removeChannel(channelsRef.current.messages);
+            channelsRef.current.messages = null;
+        }
+
+        let realtimeFailed = false;
 
         // Realtime: Lead/CRM updates
-        const channelLeads = supabase
-            .channel(`omnichannel-leads-${channelSuffix}`)
+        channelsRef.current.leads = supabase
+            .channel(channelLeadsId)
             .on(
                 'postgres_changes',
                 {
@@ -133,15 +160,26 @@ export function OmnichannelInbox({
                     table: 'main_crm',
                     filter: `empresa_id=eq.${empresaId}`
                 },
-                () => {
+                (payload: any) => {
+                    console.log('[OmnichannelInbox] 🔥 Realtime: CRM update detected!', payload);
                     setRefreshTrigger(prev => prev + 1);
                 }
             )
-            .subscribe();
+            .subscribe((status: string, err?: Error) => {
+                if (status === 'SUBSCRIBED') {
+                    console.log('[OmnichannelInbox] ✅ Realtime connected successfully');
+                    setUsePolling(false);
+                }
+                if (status === 'CHANNEL_ERROR') {
+                    console.warn('[OmnichannelInbox] ⚠️ Realtime failed, enabling polling fallback');
+                    realtimeFailed = true;
+                    setUsePolling(true);
+                }
+            });
 
-        // Realtime: New messages — directly reload messages
-        const channelMsgs = supabase
-            .channel(`omnichannel-messages-${channelSuffix}`)
+        // Realtime: New messages
+        channelsRef.current.messages = supabase
+            .channel(channelMsgsId)
             .on(
                 'postgres_changes',
                 {
@@ -150,26 +188,64 @@ export function OmnichannelInbox({
                     table: 'camp_mensagens',
                     filter: `empresa_id=eq.${empresaId}`
                 },
-                () => {
+                (payload: any) => {
+                    console.log('[OmnichannelInbox] 🔥 Realtime: New message detected!', payload);
                     silentReloadMessages();
                     setRefreshTrigger(prev => prev + 1);
                 }
             )
-            .subscribe();
+            .subscribe((status: string) => {
+                if (status === 'CHANNEL_ERROR') {
+                    realtimeFailed = true;
+                    setUsePolling(true);
+                }
+            });
 
         return () => {
-            supabase.removeChannel(channelLeads);
-            supabase.removeChannel(channelMsgs);
+            console.log('[OmnichannelInbox] Cleaning up realtime channels');
+            isSubscribingRef.current = false;
+            
+            if (channelsRef.current.leads) {
+                supabase.removeChannel(channelsRef.current.leads);
+                channelsRef.current.leads = null;
+            }
+            if (channelsRef.current.messages) {
+                supabase.removeChannel(channelsRef.current.messages);
+                channelsRef.current.messages = null;
+            }
         };
     }, [crmSettings?.empresa_id]);
 
-    // Realtime Refresh Logic
-    const [refreshTrigger, setRefreshTrigger] = useState(0);
-    const isInitialLoad = useRef(true);
+    // Polling fallback when Realtime fails
+    useEffect(() => {
+        if (!usePolling || !targetUserId) return;
+
+        console.log('[OmnichannelInbox] 🔄 Polling mode enabled (refreshing every 5 seconds)');
+
+        pollingIntervalRef.current = setInterval(() => {
+            console.log('[OmnichannelInbox] 📊 Polling: Refreshing data...');
+            setRefreshTrigger(prev => prev + 1);
+        }, 5000); // Poll every 5 seconds
+
+        return () => {
+            if (pollingIntervalRef.current) {
+                console.log('[OmnichannelInbox] 🛑 Stopping polling');
+                clearInterval(pollingIntervalRef.current);
+                pollingIntervalRef.current = null;
+            }
+        };
+    }, [usePolling, targetUserId]);
 
     useEffect(() => {
         let isMounted = true;
         async function fetchData() {
+            console.log("[OmnichannelInbox] fetchData called. targetUserId:", targetUserId, "empresaId:", crmSettings?.empresa_id);
+            if (!targetUserId || !crmSettings?.empresa_id) {
+                console.log("[OmnichannelInbox] fetchData early return - missing IDs");
+                if (isInitialLoad.current) setIsLoading(false);
+                return;
+            }
+
             // Only show loading spinner on initial load, not on realtime refreshes
             const showLoading = isInitialLoad.current;
             if (showLoading) setIsLoading(true);
@@ -183,12 +259,15 @@ export function OmnichannelInbox({
                 if (isMounted) {
                     setConversations(convData as Conversation[]);
                     setMessagingUsers(usersData);
+                    console.log("[OmnichannelInbox] Messaging users loaded:", usersData.length, usersData.map(u => u.name));
 
                     // Fetch instance avatar if targetUserId is an agent
                     const agent = AGENTS.find(a => a.id === targetUserId);
                     if (agent) {
                         getInstanceAvatarByAgent(agent.name).then(avatar => {
                             if (isMounted && avatar) setInstanceAvatar(avatar);
+                        }).catch(err => {
+                            console.error("[OmnichannelInbox] Instance avatar fetch failed:", err);
                         });
                     } else {
                         setInstanceAvatar(undefined);
@@ -200,7 +279,7 @@ export function OmnichannelInbox({
                 }
             } catch (error) {
                 console.error("Failed to fetch data", error);
-                if (showLoading) toast.error("Failed to load inbox");
+                if (showLoading && isMounted) toast.error("Failed to load inbox");
             } finally {
                 if (isMounted) {
                     setIsLoading(false);
@@ -210,7 +289,7 @@ export function OmnichannelInbox({
         }
         fetchData();
         return () => { isMounted = false; };
-    }, [targetUserId, refreshTrigger]);
+    }, [targetUserId, refreshTrigger, crmSettings?.empresa_id]);
 
     const selectedConversation = conversations.find(c => c.id === selectedConversationId);
 
@@ -440,11 +519,33 @@ export function OmnichannelInbox({
     const [searchQuery, setSearchQuery] = useState("");
     const [filterStatus, setFilterStatus] = useState<'all' | 'unread' | 'read'>('all');
     const [statusFilter, setStatusFilter] = useState<string | null>(null);
+    const [showDiagnostics, setShowDiagnostics] = useState(false);
 
-
+    // Show diagnostics on mount if there's an error
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            // Check if we have connection issues
+            if (crmSettings?.empresa_id && conversations.length === 0 && !isLoading) {
+                console.log('[OmnichannelInbox] Potential connection issue detected');
+            }
+        }, 5000);
+        return () => clearTimeout(timer);
+    }, [crmSettings?.empresa_id, conversations.length, isLoading]);
 
     return (
-        <div className="flex h-full w-full bg-[#111] overflow-hidden">
+        <div className="flex h-full w-full bg-[#111] overflow-hidden relative">
+            {showDiagnostics && crmSettings?.empresa_id && (
+                <div className="absolute inset-0 z-50">
+                    <RealtimeDiagnostics empresaId={crmSettings.empresa_id} />
+                    <button
+                        onClick={() => setShowDiagnostics(false)}
+                        className="absolute top-4 right-4 bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-lg"
+                    >
+                        Close
+                    </button>
+                </div>
+            )}
+
             <ConversationList
                 conversations={conversations}
                 isLoading={isLoading}
@@ -467,7 +568,20 @@ export function OmnichannelInbox({
                 targetUser={targetUser}
                 targetUserId={targetUserId}
                 // @ts-ignore
-                accessibleInboxes={accessibleInboxes}
+                accessibleInboxes={(() => {
+                    // If user is admin and no accessibleInboxes provided, use messagingUsers
+                    const inboxes = viewerProfile?.role === 'admin' && accessibleInboxes.length === 0
+                        ? messagingUsers.map(u => ({ id: u.id, name: u.name, avatar: u.avatar_url, type: 'user' }))
+                        : accessibleInboxes;
+                    console.log("[OmnichannelInbox] AccessibleInboxes:", {
+                        isAdmin: viewerProfile?.role === 'admin',
+                        accessibleInboxesLength: accessibleInboxes.length,
+                        messagingUsersLength: messagingUsers.length,
+                        finalInboxes: inboxes.length,
+                        inboxNames: inboxes.map(i => i.name)
+                    });
+                    return inboxes;
+                })()}
                 // @ts-ignore
                 onInboxChange={(val) => {
                     onInboxChange?.(val);

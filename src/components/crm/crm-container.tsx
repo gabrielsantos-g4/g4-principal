@@ -9,6 +9,7 @@ import { format } from "date-fns";
 
 export interface CrmFilterState {
     tab: 'active' | 'earned' | 'lost';
+    searchGlobal: string; // Global search across name, company, phone
     searchName: string;
     searchCompany: string;
     searchPhone: string;
@@ -76,6 +77,7 @@ function parseDateStr(str: string): Date {
 export function CrmContainer({ initialLeads, stats: initialStats, settings, viewerProfile }: CrmContainerProps) {
     const [filters, setFilters] = useState<CrmFilterState>({
         tab: 'active',
+        searchGlobal: '',
         searchName: '',
         searchCompany: '',
         searchPhone: '',
@@ -122,7 +124,16 @@ export function CrmContainer({ initialLeads, stats: initialStats, settings, view
                 if (lead.status !== 'Lost') return false;
             }
 
-            // Text Search
+            // Text Search - Global search (OR logic)
+            if (filters.searchGlobal) {
+                const searchLower = filters.searchGlobal.toLowerCase();
+                const matchesName = lead.name.toLowerCase().includes(searchLower);
+                const matchesCompany = lead.company?.toLowerCase().includes(searchLower);
+                const matchesPhone = lead.phone?.toLowerCase().includes(searchLower);
+                if (!matchesName && !matchesCompany && !matchesPhone) return false;
+            }
+            
+            // Individual searches (AND logic - kept for backward compatibility)
             if (filters.searchName && !lead.name.toLowerCase().includes(filters.searchName.toLowerCase())) return false;
             if (filters.searchCompany && !lead.company?.toLowerCase().includes(filters.searchCompany.toLowerCase())) return false;
             if (filters.searchPhone && !lead.phone?.toLowerCase().includes(filters.searchPhone.toLowerCase())) return false;
@@ -153,7 +164,12 @@ export function CrmContainer({ initialLeads, stats: initialStats, settings, view
             if (filters.source && lead.source !== filters.source) return false;
 
             // Status Filter
-            if (filters.status && lead.status !== filters.status) return false;
+            if (filters.status) {
+                // Normalize both values for comparison (trim whitespace)
+                const leadStatus = (lead.status || '').trim();
+                const filterStatus = filters.status.trim();
+                if (leadStatus !== filterStatus) return false;
+            }
 
             // Responsible Filter
             if (filters.responsible && lead.responsible !== filters.responsible) return false;

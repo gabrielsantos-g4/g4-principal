@@ -8,6 +8,7 @@ import { unstable_noStore as noStore } from 'next/cache';
 export async function getConversations(targetUserId?: string) {
     noStore();
     const empresaId = await getEmpresaId();
+    console.log("[getConversations] empresaId:", empresaId, "targetUserId:", targetUserId);
     if (!empresaId) return [];
 
     const supabaseAdmin = await createAdminClient();
@@ -46,6 +47,8 @@ export async function getConversations(targetUserId?: string) {
             email,
             company,
             role,
+            linkedin,
+            website,
             status,
             next_step,
             amount,
@@ -82,6 +85,8 @@ export async function getConversations(targetUserId?: string) {
         console.error("Error fetching inbox conversations:", error);
         return [];
     }
+
+    console.log("[getConversations] Found conversations:", conversations?.length || 0);
 
     if (!conversations) return [];
 
@@ -164,6 +169,8 @@ export async function getConversations(targetUserId?: string) {
                 phone: lead.phone || "",
                 tags: []
             },
+            linkedin: lead.linkedin || "",
+            website: lead.website || "",
             lastMessage,
             lastMessageAt,
             unreadCount: lead.is_read_by_responsible ? 0 : 1,

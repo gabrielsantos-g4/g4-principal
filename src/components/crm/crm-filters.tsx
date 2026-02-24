@@ -8,8 +8,8 @@ import { NewOpportunityModal } from "./new-opportunity-modal";
 import { CrmSettingsModal } from "./crm-settings-modal";
 import { CrmReportsModal } from "./crm-reports-modal";
 import { GlobalInboxModal } from "./global-inbox-modal";
-import { CrmSearchModal } from "./crm-search-modal";
 import { PipelineHealthIndicator } from "./pipeline-health-indicator";
+import { PipelineHealthSummaryModal } from "./pipeline-health-summary-modal";
 import {
     Tooltip,
     TooltipContent,
@@ -96,6 +96,7 @@ interface CrmFiltersProps {
         };
     };
     viewerProfile?: {
+        name?: string;
         active_agents?: string[];
     };
 }
@@ -106,7 +107,7 @@ export function CrmFilters({ settings, filters, setFilters, leads, headerStats, 
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
     const [isReportsOpen, setIsReportsOpen] = useState(false);
     const [isGlobalInboxOpen, setIsGlobalInboxOpen] = useState(false);
-    const [isSearchOpen, setIsSearchOpen] = useState(false);
+    const [isPipelineHealthOpen, setIsPipelineHealthOpen] = useState(false);
 
     const updateFilter = <K extends keyof CrmFilterState>(key: K, value: CrmFilterState[K]) => {
         setFilters(prev => ({ ...prev, [key]: value }));
@@ -115,6 +116,7 @@ export function CrmFilters({ settings, filters, setFilters, leads, headerStats, 
     const clearFilters = () => {
         setFilters({
             tab: filters.tab, // Keep active tab
+            searchGlobal: '',
             searchName: '',
             searchCompany: '',
             searchPhone: '',
@@ -144,11 +146,6 @@ export function CrmFilters({ settings, filters, setFilters, leads, headerStats, 
         RESPONSIBLES.push({ label: 'Jess', bg: 'bg-purple-900', text: 'text-purple-100' });
     }
 
-    const foundSource = SOURCES.find((s: any) => (typeof s === 'string' ? s : s.value) === filters.source);
-    const sourceLabel = filters.source
-        ? (typeof foundSource === 'object' ? foundSource.label : foundSource || filters.source)
-        : "Select source...";
-
     return (
         <TooltipProvider>
             <div className="@container flex items-center justify-between gap-2 bg-[#111] p-2 rounded-lg border border-white/5 w-full">
@@ -166,27 +163,25 @@ export function CrmFilters({ settings, filters, setFilters, leads, headerStats, 
                     ))}
                 </div>
 
-                {/* Center: Search Button */}
-                <div className="flex-1 flex items-center gap-2 min-w-0 max-w-[200px] mx-4">
-                    <Tooltip>
-                        <TooltipTrigger asChild>
-                            <button
-                                onClick={() => setIsSearchOpen(true)}
-                                className={cn(
-                                    "flex items-center gap-2 px-3 py-1.5 rounded-md border transition-all h-8 w-full",
-                                    (filters.searchName || filters.searchCompany || filters.searchPhone)
-                                        ? "bg-[#1C73E8]/10 border-[#1C73E8] text-[#1C73E8] shadow-[0_0_0_1px_rgba(28,115,232,0.2)]"
-                                        : "bg-[#1A1A1A] border-white/10 text-gray-400 hover:border-white/20 hover:text-white"
-                                )}
-                            >
-                                <Search size={14} />
-                                <span className="text-xs font-medium truncate">
-                                    {filters.searchName || filters.searchCompany || filters.searchPhone ? 'Filtering...' : 'Search'}
-                                </span>
-                            </button>
-                        </TooltipTrigger>
-                        <TooltipContent side="bottom" sideOffset={-5} avoidCollisions={false}>Search by Name, Company, or Phone</TooltipContent>
-                    </Tooltip>
+                {/* Center: Search Input */}
+                <div className="flex-1 flex items-center gap-2 min-w-0 max-w-[300px] mx-4">
+                    <div className="relative w-full">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-500" />
+                        <input
+                            type="text"
+                            placeholder="Search by name, company, or phone..."
+                            value={filters.searchGlobal || ''}
+                            onChange={(e) => {
+                                updateFilter('searchGlobal', e.target.value);
+                            }}
+                            className={cn(
+                                "w-full h-8 pl-9 pr-3 rounded-md border text-xs transition-all",
+                                "bg-[#1A1A1A] border-white/10 text-white placeholder:text-gray-500",
+                                "focus:outline-none focus:border-[#1C73E8] focus:ring-1 focus:ring-[#1C73E8]/20",
+                                filters.searchGlobal && "border-[#1C73E8] bg-[#1C73E8]/5"
+                            )}
+                        />
+                    </div>
                 </div>
 
                 {/* Right: Stats, Date, Filters, Actions */}
@@ -387,7 +382,7 @@ export function CrmFilters({ settings, filters, setFilters, leads, headerStats, 
                                         <DropdownMenu>
                                             <DropdownMenuTrigger asChild>
                                                 <Button variant="outline" className="w-full justify-between h-8 text-xs border-white/10 bg-[#1A1A1A] hover:bg-white/5 hover:text-white text-gray-300">
-                                                    {filters.status ? (STATUSES.find((s: any) => s.value === filters.status)?.label || filters.status) : "Select status..."}
+                                                    {filters.status || "Select status..."}
                                                     <ChevronDown size={14} className="opacity-50" />
                                                 </Button>
                                             </DropdownMenuTrigger>
@@ -397,8 +392,8 @@ export function CrmFilters({ settings, filters, setFilters, leads, headerStats, 
                                                 </DropdownMenuItem>
                                                 {STATUSES.map((status: any) => (
                                                     <DropdownMenuItem
-                                                        key={status.value}
-                                                        onClick={() => updateFilter('status', status.value)}
+                                                        key={status.label}
+                                                        onClick={() => updateFilter('status', status.label)}
                                                         className={cn(
                                                             "text-xs cursor-pointer mb-1 last:mb-0",
                                                             status.bg,
@@ -448,7 +443,7 @@ export function CrmFilters({ settings, filters, setFilters, leads, headerStats, 
                                         <DropdownMenu>
                                             <DropdownMenuTrigger asChild>
                                                 <Button variant="outline" className="w-full justify-between h-8 text-xs border-white/10 bg-[#1A1A1A] hover:bg-white/5 hover:text-white text-gray-300">
-                                                    {sourceLabel}
+                                                    {filters.source || "Select source..."}
                                                     <ChevronDown size={14} className="opacity-50" />
                                                 </Button>
                                             </DropdownMenuTrigger>
@@ -456,18 +451,23 @@ export function CrmFilters({ settings, filters, setFilters, leads, headerStats, 
                                                 <DropdownMenuItem onClick={() => updateFilter('source', '')} className="text-xs hover:bg-white/10 hover:text-white cursor-pointer">
                                                     All Sources
                                                 </DropdownMenuItem>
-                                                {SOURCES.map((source: any) => (
-                                                    <DropdownMenuItem
-                                                        key={source.value}
-                                                        onClick={() => updateFilter('source', source.value)}
-                                                        className={cn(
-                                                            "text-xs cursor-pointer mb-1 last:mb-0",
-                                                            typeof source === 'object' ? `${source.bg} ${source.text}` : "hover:bg-white/10 hover:text-white"
-                                                        )}
-                                                    >
-                                                        {source.label}
-                                                    </DropdownMenuItem>
-                                                ))}
+                                                {SOURCES.map((source: any) => {
+                                                    const label = typeof source === 'string' ? source : source.label;
+                                                    const bg = typeof source === 'string' ? '' : source.bg;
+                                                    const text = typeof source === 'string' ? '' : source.text;
+                                                    return (
+                                                        <DropdownMenuItem
+                                                            key={label}
+                                                            onClick={() => updateFilter('source', label)}
+                                                            className={cn(
+                                                                "text-xs cursor-pointer mb-1 last:mb-0",
+                                                                bg ? `${bg} ${text}` : "hover:bg-white/10 hover:text-white"
+                                                            )}
+                                                        >
+                                                            {label}
+                                                        </DropdownMenuItem>
+                                                    );
+                                                })}
                                             </DropdownMenuContent>
                                         </DropdownMenu>
                                     </div>
@@ -550,7 +550,7 @@ export function CrmFilters({ settings, filters, setFilters, leads, headerStats, 
                             </PopoverContent>
                         </Popover>
 
-                        {(filters.searchName || filters.searchCompany || filters.searchPhone || filters.status || filters.source || filters.responsible || filters.product.length > 0 || filters.customField || filters.qualification || filters.contactFilter || filters.dateRange?.from || filters.dateRange?.to || filters.createdAtRange?.from || filters.createdAtRange?.to) && (
+                        {(filters.searchGlobal || filters.searchName || filters.searchCompany || filters.searchPhone || filters.status || filters.source || filters.responsible || filters.product.length > 0 || filters.customField || filters.qualification || filters.contactFilter || filters.dateRange?.from || filters.dateRange?.to || filters.createdAtRange?.from || filters.createdAtRange?.to) && (
                             <Tooltip>
                                 <TooltipTrigger asChild>
                                     <Button
@@ -568,7 +568,11 @@ export function CrmFilters({ settings, filters, setFilters, leads, headerStats, 
 
                         <div className="h-6 w-px bg-white/10 shrink-0" />
 
-                        <PipelineHealthIndicator leads={leads} settings={settings} />
+                        <PipelineHealthIndicator 
+                            leads={leads} 
+                            settings={settings} 
+                            onClick={() => setIsPipelineHealthOpen(true)}
+                        />
 
                         <div className="h-6 w-px bg-white/10 shrink-0" />
 
@@ -640,10 +644,18 @@ export function CrmFilters({ settings, filters, setFilters, leads, headerStats, 
                     onClose={() => setIsModalOpen(false)}
                     settings={settings}
                     leads={leads}
+                    currentUserName={viewerProfile?.name}
                 />
                 <CrmSettingsModal
                     isOpen={isSettingsOpen}
                     onClose={() => setIsSettingsOpen(false)}
+                    settings={settings}
+                    leads={leads}
+                />
+                <PipelineHealthSummaryModal
+                    isOpen={isPipelineHealthOpen}
+                    onClose={() => setIsPipelineHealthOpen(false)}
+                    leads={leads}
                     settings={settings}
                 />
                 <CrmReportsModal
@@ -651,21 +663,17 @@ export function CrmFilters({ settings, filters, setFilters, leads, headerStats, 
                     onClose={() => setIsReportsOpen(false)}
                     leads={leads}
                     settings={settings}
+                    filters={filters}
+                    onFiltersChange={(newFilters) => {
+                        Object.entries(newFilters).forEach(([key, value]) => {
+                            updateFilter(key as keyof CrmFilterState, value);
+                        });
+                    }}
                 />
                 <GlobalInboxModal
                     isOpen={isGlobalInboxOpen}
                     onClose={() => setIsGlobalInboxOpen(false)}
                     viewerProfile={viewerProfile}
-                />
-                <CrmSearchModal
-                    open={isSearchOpen}
-                    onOpenChange={setIsSearchOpen}
-                    searchName={filters.searchName}
-                    searchCompany={filters.searchCompany}
-                    searchPhone={filters.searchPhone || ''}
-                    onSearchNameChange={(value) => updateFilter('searchName', value)}
-                    onSearchCompanyChange={(value) => updateFilter('searchCompany', value)}
-                    onSearchPhoneChange={(value) => updateFilter('searchPhone', value)}
                 />
             </div>
         </TooltipProvider>

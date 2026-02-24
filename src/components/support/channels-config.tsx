@@ -14,6 +14,7 @@ import {
 } from "@/actions/whatsapp-actions";
 import { createBrowserClient } from "@supabase/ssr";
 import { toast } from "sonner";
+import { getSupabaseRealtimeClient } from "@/lib/supabase-realtime";
 import {
     Dialog,
     DialogContent,
@@ -91,15 +92,17 @@ export function ChannelsConfig({ companyId, showWebChat = true }: ChannelsConfig
     useEffect(() => {
         fetchInstances();
 
-        // Realtime Subscription
-        const supabase = createBrowserClient(
-            process.env.NEXT_PUBLIC_SUPABASE_URL!,
-            process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-        );
+        // Realtime Subscription with singleton client
+        const supabase = getSupabaseRealtimeClient();
 
         const uniqueChannelId = `whatsapp-updates-${companyId}-${Date.now()}`;
         const channel = supabase
-            .channel(uniqueChannelId)
+            .channel(uniqueChannelId, {
+                config: {
+                    broadcast: { self: false },
+                    presence: { key: '' }
+                }
+            })
             .on(
                 'postgres_changes',
                 {
@@ -113,7 +116,18 @@ export function ChannelsConfig({ companyId, showWebChat = true }: ChannelsConfig
                     fetchInstances(true);
                 }
             )
-            .subscribe();
+            .subscribe((status: string, err?: Error) => {
+                console.log('[ChannelsConfig] Realtime subscription status:', status);
+                console.log('[ChannelsConfig] Channel ID:', uniqueChannelId);
+                if (err) {
+                    console.error('[ChannelsConfig] Realtime subscription error:', err);
+                    console.error('[ChannelsConfig] Error type:', err?.message || err);
+                }
+                if (status === 'CHANNEL_ERROR') {
+                    console.error('[ChannelsConfig] ❌ Failed to subscribe');
+                    console.error('[ChannelsConfig] Channel ID that failed:', uniqueChannelId);
+                }
+            });
 
         return () => {
             supabase.removeChannel(channel);

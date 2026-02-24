@@ -6,6 +6,12 @@ import { revalidatePath } from "next/cache";
 export async function updateHistory(leadId: number, message: string) {
     const supabase = await createClient();
 
+    // Get current user
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+        return { success: false, error: 'User not authenticated' };
+    }
+
     // 1. Fetch current history_log
     const { data: current, error: fetchError } = await supabase
         .from('main_crm')
@@ -19,11 +25,12 @@ export async function updateHistory(leadId: number, message: string) {
 
     const currentHistory = Array.isArray(current?.history_log) ? current.history_log : [];
 
-    // 2. Append new message
+    // 2. Append new message with userId
     const newHistoryItem = {
         id: Date.now().toString(),
         message: message,
-        date: new Date().toISOString()
+        date: new Date().toISOString(),
+        userId: user.id
     };
 
     const updatedHistory = [...currentHistory, newHistoryItem];

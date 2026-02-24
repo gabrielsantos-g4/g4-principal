@@ -55,8 +55,9 @@ export function ConnectInstanceDialog({
     useEffect(() => {
         if (!open) return
 
+        const channelId = `instance-connect-${instance.id}-${Date.now()}`;
         const channel = supabase
-            .channel(`instance-connect-${instance.id}`)
+            .channel(channelId)
             .on('postgres_changes', {
                 event: 'UPDATE',
                 schema: 'public',
@@ -75,7 +76,18 @@ export function ConnectInstanceDialog({
                     onOpenChange(false)
                 }
             })
-            .subscribe()
+            .subscribe((status, err) => {
+                console.log('[ConnectInstanceDialog] Realtime subscription status:', status);
+                console.log('[ConnectInstanceDialog] Channel ID:', channelId);
+                if (err) {
+                    console.error('[ConnectInstanceDialog] Realtime subscription error:', err);
+                    console.error('[ConnectInstanceDialog] Error type:', err?.message || err);
+                }
+                if (status === 'CHANNEL_ERROR') {
+                    console.error('[ConnectInstanceDialog] ❌ Failed to subscribe');
+                    console.error('[ConnectInstanceDialog] Channel ID that failed:', channelId);
+                }
+            })
 
         return () => {
             supabase.removeChannel(channel)

@@ -7,7 +7,7 @@ import {
     DialogTitle,
     DialogDescription,
 } from "@/components/ui/dialog"
-import { BarChart3, PieChart, TrendingDown, Target, Award, X, Filter, Users, Tag, Globe, LineChart, Calendar as CalendarIcon, MessageSquare, DollarSign, CalendarClock, AlertTriangle } from "lucide-react"
+import { BarChart3, PieChart, TrendingDown, Target, Award, X, Filter, Users, Tag, Globe, LineChart, Calendar as CalendarIcon, MessageSquare, DollarSign, CalendarClock, AlertTriangle, ChevronDown } from "lucide-react"
 import { useMemo, useState } from "react"
 import {
     BarChart,
@@ -34,12 +34,22 @@ import {
     PopoverContent,
     PopoverTrigger,
 } from "@/components/ui/popover"
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select"
+import { CrmFilterState } from "./crm-container"
 
 interface CrmReportsModalProps {
     isOpen: boolean
     onClose: () => void
     leads: Record<string, any>[]
     settings: CrmSettings
+    filters: CrmFilterState
+    onFiltersChange: (filters: Partial<CrmFilterState>) => void
 }
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d', '#ef4444', '#3b82f6'];
@@ -61,6 +71,9 @@ const CustomYAxisTick = ({ x, y, payload, width, ...props }: { x?: number, y?: n
     }
     lines.push(currentLine);
 
+    // Filter out invalid props for DOM element
+    const { verticalAnchor, visibleTicksCount, tickFormatter, ...validProps } = props;
+
     return (
         <g transform={`translate(${x},${y})`}>
             {lines.map((line, index) => (
@@ -72,7 +85,6 @@ const CustomYAxisTick = ({ x, y, payload, width, ...props }: { x?: number, y?: n
                     textAnchor="end"
                     fill="#9ca3af"
                     fontSize={11}
-                    {...props}
                 >
                     {line}
                 </text>
@@ -111,7 +123,7 @@ function parseDateStr(str: string): Date {
     }
 }
 
-export function CrmReportsModal({ isOpen, onClose, leads, settings }: CrmReportsModalProps) {
+export function CrmReportsModal({ isOpen, onClose, leads, settings, filters, onFiltersChange }: CrmReportsModalProps) {
 
     // Helper to get consistent color for standard statuses
     const getStatusColor = (status: string) => {
@@ -123,24 +135,69 @@ export function CrmReportsModal({ isOpen, onClose, leads, settings }: CrmReports
         }
     }
 
-    const [date, setDate] = useState<DateRange | undefined>({
-        from: startOfMonth(new Date()),
-        to: new Date()
-    })
+    // Use filters from parent instead of local state
+    const date = filters.dateRange;
+    const createdDate = filters.createdAtRange;
 
     const stats = useMemo(() => {
-        // Filter leads by date range first
+        // Apply all filters to leads
         const filteredLeads = leads.filter(l => {
-            if (!date?.from) return true;
+            // Contact Date Range filter
+            if (date?.from) {
+                const leadDateStr = l.created_at || l.date;
+                if (!leadDateStr || leadDateStr === 'Pending') return false;
 
-            const leadDateStr = l.created_at || l.date;
-            if (!leadDateStr || leadDateStr === 'Pending') return false;
+                const leadDate = new Date(leadDateStr);
+                const from = startOfDay(date.from);
+                const to = date.to ? endOfDay(date.to) : endOfDay(date.from);
 
-            const leadDate = new Date(leadDateStr);
-            const from = startOfDay(date.from);
-            const to = date.to ? endOfDay(date.to) : endOfDay(date.from);
+                if (!isWithinInterval(leadDate, { start: from, end: to })) return false;
+            }
 
-            return isWithinInterval(leadDate, { start: from, end: to });
+            // Created Date Range filter
+            if (createdDate?.from) {
+                const createdAtStr = l.created_at;
+                if (!createdAtStr || createdAtStr === 'Pending') return false;
+
+                const createdAtDate = new Date(createdAtStr);
+                const from = startOfDay(createdDate.from);
+                const to = createdDate.to ? endOfDay(createdDate.to) : endOfDay(createdDate.from);
+
+                if (!isWithinInterval(createdAtDate, { start: from, end: to })) return false;
+            }
+
+            // Status filter
+            if (filters.status && l.status !== filters.status) return false;
+
+            // Product filter
+            if (filters.product && filters.product.length > 0) {
+                let leadProducts: string[] = [];
+                try {
+                    if (l.product && l.product.startsWith('[')) {
+                        leadProducts = JSON.parse(l.product);
+                    } else if (l.product) {
+                        leadProducts = [l.product];
+                    }
+                } catch {
+                    if (l.product) leadProducts = [l.product];
+                }
+                const hasProduct = filters.product.some(p => leadProducts.includes(p));
+                if (!hasProduct) return false;
+            }
+
+            // Source filter
+            if (filters.source) {
+                const leadSource = typeof l.source === 'string' ? l.source : l.source?.label;
+                if (leadSource !== filters.source) return false;
+            }
+
+            // Responsible filter
+            if (filters.responsible && l.responsible !== filters.responsible) return false;
+
+            // Custom Field filter
+            if (filters.customField && l.custom !== filters.customField) return false;
+
+            return true;
         });
 
         const total = filteredLeads.length;
@@ -455,7 +512,7 @@ export function CrmReportsModal({ isOpen, onClose, leads, settings }: CrmReports
             globalStats,
             avgLeadsPerDay
         };
-    }, [leads, settings, date]);
+    }, [leads, settings, date, createdDate, filters.status, filters.product, filters.source, filters.responsible, filters.customField]);
 
     const containerVariants = {
         hidden: { opacity: 0 },
@@ -476,93 +533,298 @@ export function CrmReportsModal({ isOpen, onClose, leads, settings }: CrmReports
                 showCloseButton={false}
                 className="bg-[#0f0f0f] border-white/10 text-white w-[98vw] max-w-[98vw] h-[95vh] max-h-[95vh] sm:max-w-[98vw] flex flex-col p-0 gap-0 overflow-hidden"
             >
-                <DialogHeader className="p-6 border-b border-white/5 bg-[#141414]">
+                <DialogHeader className="p-6 border-b border-white/5 bg-[#141414] space-y-3">
+                    {/* Title Row */}
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
                             <div className="w-10 h-10 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-500">
                                 <BarChart3 size={20} />
                             </div>
-                            <div>
-                                <DialogTitle className="text-xl font-bold">Performance Reports</DialogTitle>
-                                <DialogDescription className="text-gray-400">
-                                    Comprehensive analysis of your CRM data and performance metrics.
-                                </DialogDescription>
-                            </div>
+                            <DialogTitle className="text-xl font-bold">Performance Reports</DialogTitle>
                         </div>
-                        <div className="flex items-center gap-2">
-                            <Button
-                                variant="ghost"
-                                size="sm"
-                                className="text-gray-400 hover:text-white hover:bg-white/10"
-                                onClick={() => setDate({
-                                    from: startOfMonth(new Date()),
-                                    to: endOfMonth(new Date()),
-                                })}
-                            >
-                                Clear Filter
-                            </Button>
-                            <div className="flex items-center gap-2">
-                                {/* From Date */}
-                                <Popover>
-                                    <PopoverTrigger asChild>
-                                        <Button
-                                            variant={"outline"}
-                                            className={cn(
-                                                "w-[140px] justify-start text-left font-normal bg-[#0a0a0a] border-white/10 text-white hover:bg-white/5 hover:text-white",
-                                                !date?.from && "text-muted-foreground"
-                                            )}
-                                        >
-                                            <CalendarIcon className="mr-2 h-4 w-4" />
-                                            {date?.from ? format(date.from, "LLL dd, y") : <span>From</span>}
-                                        </Button>
-                                    </PopoverTrigger>
-                                    <PopoverContent className="w-auto p-0 bg-[#0f0f0f] border-white/10 text-white" align="end">
-                                        <Calendar
-                                            mode="single"
-                                            selected={date?.from}
-                                            onSelect={(newDate) => setDate(prev => {
-                                                if (!prev) return { from: newDate, to: undefined };
-                                                return { ...prev, from: newDate };
-                                            })}
-                                            initialFocus
-                                            className="bg-[#0f0f0f] text-white"
-                                        />
-                                    </PopoverContent>
-                                </Popover>
+                        <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-full transition-colors">
+                            <X size={20} className="text-gray-400" />
+                        </button>
+                    </div>
 
-                                {/* To Date */}
-                                <Popover>
-                                    <PopoverTrigger asChild>
-                                        <Button
-                                            variant={"outline"}
-                                            className={cn(
-                                                "w-[140px] justify-start text-left font-normal bg-[#0a0a0a] border-white/10 text-white hover:bg-white/5 hover:text-white",
-                                                !date?.to && "text-muted-foreground"
-                                            )}
-                                        >
-                                            <CalendarIcon className="mr-2 h-4 w-4" />
-                                            {date?.to ? format(date.to, "LLL dd, y") : <span>To</span>}
-                                        </Button>
-                                    </PopoverTrigger>
-                                    <PopoverContent className="w-auto p-0 bg-[#0f0f0f] border-white/10 text-white" align="end">
-                                        <Calendar
-                                            mode="single"
-                                            selected={date?.to}
-                                            onSelect={(newDate) => setDate(prev => {
-                                                if (!prev) return { from: undefined, to: newDate };
-                                                return { ...prev, to: newDate };
-                                            })}
-                                            disabled={(d) => date?.from ? d < date.from : false}
-                                            initialFocus
-                                            className="bg-[#0f0f0f] text-white"
-                                        />
-                                    </PopoverContent>
-                                </Popover>
-                            </div>
-                            <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-full transition-colors">
-                                <X size={20} className="text-gray-400" />
-                            </button>
+                    {/* All Filters in One Row - Horizontally Distributed */}
+                    <div className="flex flex-wrap items-center gap-2">
+                        {/* Contact Date */}
+                        <div className="flex items-center gap-1.5">
+                            <span className="text-[10px] text-gray-500 font-medium uppercase">Contact:</span>
+                            <Popover>
+                                <PopoverTrigger asChild>
+                                    <Button
+                                        variant={"outline"}
+                                        size="sm"
+                                        className={cn(
+                                            "h-7 w-[95px] justify-start text-left font-normal bg-[#0a0a0a] border-white/10 text-white hover:bg-white/5 hover:text-white text-[11px]",
+                                            !date?.from && "text-muted-foreground"
+                                        )}
+                                    >
+                                        <CalendarIcon className="mr-1 h-3 w-3" />
+                                        {date?.from ? format(date.from, "MMM dd") : <span>From</span>}
+                                    </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-auto p-0 bg-[#0f0f0f] border-white/10 text-white z-[99999]" align="start">
+                                    <Calendar
+                                        mode="single"
+                                        selected={date?.from}
+                                        onSelect={(newDate) => {
+                                            onFiltersChange({
+                                                dateRange: {
+                                                    from: newDate,
+                                                    to: date?.to
+                                                }
+                                            });
+                                        }}
+                                        initialFocus
+                                        className="bg-[#0f0f0f] text-white"
+                                    />
+                                </PopoverContent>
+                            </Popover>
+
+                            <Popover>
+                                <PopoverTrigger asChild>
+                                    <Button
+                                        variant={"outline"}
+                                        size="sm"
+                                        className={cn(
+                                            "h-7 w-[95px] justify-start text-left font-normal bg-[#0a0a0a] border-white/10 text-white hover:bg-white/5 hover:text-white text-[11px]",
+                                            !date?.to && "text-muted-foreground"
+                                        )}
+                                    >
+                                        <CalendarIcon className="mr-1 h-3 w-3" />
+                                        {date?.to ? format(date.to, "MMM dd") : <span>To</span>}
+                                    </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-auto p-0 bg-[#0f0f0f] border-white/10 text-white z-[99999]" align="start">
+                                    <Calendar
+                                        mode="single"
+                                        selected={date?.to}
+                                        onSelect={(newDate) => {
+                                            onFiltersChange({
+                                                dateRange: {
+                                                    from: date?.from,
+                                                    to: newDate
+                                                }
+                                            });
+                                        }}
+                                        disabled={(d) => date?.from ? d < date.from : false}
+                                        initialFocus
+                                        className="bg-[#0f0f0f] text-white"
+                                    />
+                                </PopoverContent>
+                            </Popover>
                         </div>
+
+                        <div className="h-5 w-px bg-white/10"></div>
+
+                        {/* Created Date */}
+                        <div className="flex items-center gap-1.5">
+                            <span className="text-[10px] text-gray-500 font-medium uppercase">Created:</span>
+                            <Popover>
+                                <PopoverTrigger asChild>
+                                    <Button
+                                        variant={"outline"}
+                                        size="sm"
+                                        className={cn(
+                                            "h-7 w-[95px] justify-start text-left font-normal bg-[#0a0a0a] border-white/10 text-white hover:bg-white/5 hover:text-white text-[11px]",
+                                            !createdDate?.from && "text-muted-foreground"
+                                        )}
+                                    >
+                                        <CalendarIcon className="mr-1 h-3 w-3" />
+                                        {createdDate?.from ? format(createdDate.from, "MMM dd") : <span>From</span>}
+                                    </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-auto p-0 bg-[#0f0f0f] border-white/10 text-white z-[99999]" align="start">
+                                    <Calendar
+                                        mode="single"
+                                        selected={createdDate?.from}
+                                        onSelect={(newDate) => {
+                                            onFiltersChange({
+                                                createdAtRange: {
+                                                    from: newDate,
+                                                    to: createdDate?.to
+                                                }
+                                            });
+                                        }}
+                                        initialFocus
+                                        className="bg-[#0f0f0f] text-white"
+                                    />
+                                </PopoverContent>
+                            </Popover>
+
+                            <Popover>
+                                <PopoverTrigger asChild>
+                                    <Button
+                                        variant={"outline"}
+                                        size="sm"
+                                        className={cn(
+                                            "h-7 w-[95px] justify-start text-left font-normal bg-[#0a0a0a] border-white/10 text-white hover:bg-white/5 hover:text-white text-[11px]",
+                                            !createdDate?.to && "text-muted-foreground"
+                                        )}
+                                    >
+                                        <CalendarIcon className="mr-1 h-3 w-3" />
+                                        {createdDate?.to ? format(createdDate.to, "MMM dd") : <span>To</span>}
+                                    </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-auto p-0 bg-[#0f0f0f] border-white/10 text-white z-[99999]" align="start">
+                                    <Calendar
+                                        mode="single"
+                                        selected={createdDate?.to}
+                                        onSelect={(newDate) => {
+                                            onFiltersChange({
+                                                createdAtRange: {
+                                                    from: createdDate?.from,
+                                                    to: newDate
+                                                }
+                                            });
+                                        }}
+                                        disabled={(d) => createdDate?.from ? d < createdDate.from : false}
+                                        initialFocus
+                                        className="bg-[#0f0f0f] text-white"
+                                    />
+                                </PopoverContent>
+                            </Popover>
+                        </div>
+
+                        <div className="h-5 w-px bg-white/10"></div>
+
+                        {/* Filter Dropdowns */}
+                        {/* Status Filter */}
+                        <Select
+                            value={filters.status || 'all'}
+                            onValueChange={(value) => onFiltersChange({ status: value === 'all' ? '' : value })}
+                        >
+                            <SelectTrigger className="h-7 w-[120px] bg-[#0a0a0a] border-white/10 text-white text-[11px]">
+                                <SelectValue placeholder="Status" />
+                            </SelectTrigger>
+                            <SelectContent className="bg-[#0f0f0f] border-white/10 text-white z-[99999]">
+                                <SelectItem value="all" className="text-xs">All Status</SelectItem>
+                                {settings.statuses?.map((status: TagItem) => (
+                                    <SelectItem key={status.label} value={status.label} className="text-xs">
+                                        <div className="flex items-center gap-2">
+                                            <span className={`w-2 h-2 rounded-full ${status.bg}`}></span>
+                                            <span>{status.label}</span>
+                                        </div>
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+
+                        {/* Products Filter */}
+                        <Select
+                            value={filters.product && filters.product.length > 0 ? filters.product[0] : 'all'}
+                            onValueChange={(value) => onFiltersChange({ product: value === 'all' ? [] : [value] })}
+                        >
+                            <SelectTrigger className="h-7 w-[120px] bg-[#0a0a0a] border-white/10 text-white text-[11px]">
+                                <SelectValue placeholder="Products" />
+                            </SelectTrigger>
+                            <SelectContent className="bg-[#0f0f0f] border-white/10 text-white z-[99999]">
+                                <SelectItem value="all" className="text-xs">All Products</SelectItem>
+                                {settings.products?.map((product: any) => (
+                                    <SelectItem key={product.name} value={product.name} className="text-xs">
+                                        {product.name}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+
+                        {/* Source Filter */}
+                        <Select
+                            value={filters.source || 'all'}
+                            onValueChange={(value) => onFiltersChange({ source: value === 'all' ? '' : value })}
+                        >
+                            <SelectTrigger className="h-7 w-[120px] bg-[#0a0a0a] border-white/10 text-white text-[11px]">
+                                <SelectValue placeholder="Source" />
+                            </SelectTrigger>
+                            <SelectContent className="bg-[#0f0f0f] border-white/10 text-white z-[99999]">
+                                <SelectItem value="all" className="text-xs">All Sources</SelectItem>
+                                {settings.sources?.map((source: string | TagItem) => {
+                                    const label = typeof source === 'string' ? source : source.label;
+                                    const bg = typeof source === 'string' ? 'bg-gray-500' : source.bg;
+                                    return (
+                                        <SelectItem key={label} value={label} className="text-xs">
+                                            <div className="flex items-center gap-2">
+                                                <span className={`w-2 h-2 rounded-full ${bg}`}></span>
+                                                <span>{label}</span>
+                                            </div>
+                                        </SelectItem>
+                                    );
+                                })}
+                            </SelectContent>
+                        </Select>
+
+                        {/* Responsible Filter */}
+                        <Select
+                            value={filters.responsible || 'all'}
+                            onValueChange={(value) => onFiltersChange({ responsible: value === 'all' ? '' : value })}
+                        >
+                            <SelectTrigger className="h-7 w-[120px] bg-[#0a0a0a] border-white/10 text-white text-[11px]">
+                                <SelectValue placeholder="Responsible" />
+                            </SelectTrigger>
+                            <SelectContent className="bg-[#0f0f0f] border-white/10 text-white z-[99999]">
+                                <SelectItem value="all" className="text-xs">All Responsible</SelectItem>
+                                {settings.responsibles?.map((resp: string | TagItem, index: number) => {
+                                    const label = typeof resp === 'string' ? resp : resp.label;
+                                    return (
+                                        <SelectItem key={`resp-${index}-${label}`} value={label} className="text-xs">
+                                            {label}
+                                        </SelectItem>
+                                    );
+                                })}
+                            </SelectContent>
+                        </Select>
+
+                        {/* Custom Field Filter */}
+                        {settings.custom_fields?.options && settings.custom_fields.options.length > 0 && (
+                            <Select
+                                value={filters.customField || 'all'}
+                                onValueChange={(value) => onFiltersChange({ customField: value === 'all' ? '' : value })}
+                            >
+                                <SelectTrigger className="h-7 w-[120px] bg-[#0a0a0a] border-white/10 text-white text-[11px]">
+                                    <SelectValue placeholder={settings.custom_fields.name || "Category"} />
+                                </SelectTrigger>
+                                <SelectContent className="bg-[#0f0f0f] border-white/10 text-white z-[99999]">
+                                    <SelectItem value="all" className="text-xs">All {settings.custom_fields.name || "Categories"}</SelectItem>
+                                    {settings.custom_fields.options.map((option: string | TagItem) => {
+                                        const label = typeof option === 'string' ? option : option.label;
+                                        const bg = typeof option === 'string' ? 'bg-gray-500' : option.bg;
+                                        return (
+                                            <SelectItem key={label} value={label} className="text-xs">
+                                                <div className="flex items-center gap-2">
+                                                    <span className={`w-2 h-2 rounded-full ${bg}`}></span>
+                                                    <span>{label}</span>
+                                                </div>
+                                            </SelectItem>
+                                        );
+                                    })}
+                                </SelectContent>
+                            </Select>
+                        )}
+
+                        <div className="h-5 w-px bg-white/10"></div>
+
+                        {/* Clear Filter Button */}
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 px-3 text-gray-400 hover:text-white hover:bg-white/10 text-[11px]"
+                            onClick={() => {
+                                onFiltersChange({
+                                    dateRange: undefined,
+                                    createdAtRange: undefined,
+                                    status: '',
+                                    source: '',
+                                    responsible: '',
+                                    product: [],
+                                    customField: ''
+                                });
+                            }}
+                        >
+                            Clear All
+                        </Button>
                     </div>
                 </DialogHeader>
 

@@ -10,6 +10,7 @@ interface HistoryItem {
     id: string;
     message: string;
     date: Date;
+    userId?: string;
 }
 
 interface LeadHistoryModalProps {
@@ -18,9 +19,10 @@ interface LeadHistoryModalProps {
     leadName?: string;
     history: HistoryItem[];
     onAddMessage: (message: string) => void;
+    messagingUsers?: { id: string; name: string }[];
 }
 
-export function LeadHistoryModal({ isOpen, onClose, leadName, history, onAddMessage }: LeadHistoryModalProps) {
+export function LeadHistoryModal({ isOpen, onClose, leadName, history, onAddMessage, messagingUsers = [] }: LeadHistoryModalProps) {
     const [newMessage, setNewMessage] = useState("");
 
     const handleSubmit = () => {
@@ -50,8 +52,15 @@ export function LeadHistoryModal({ isOpen, onClose, leadName, history, onAddMess
                         ) : (
                             history.slice().reverse().map((item) => (
                                 <div key={item.id} className="bg-white/5 p-3 rounded-md border border-white/5">
-                                    <div className="text-[10px] text-gray-500 mb-1 font-mono">
-                                        {format(item.date, "dd/MMM/yyyy HH:mm")}
+                                    <div className="flex items-center justify-between mb-1">
+                                        <div className="text-[10px] text-gray-400 font-medium">
+                                            {item.userId && messagingUsers.length > 0
+                                                ? messagingUsers.find(u => u.id === item.userId)?.name || 'Agent'
+                                                : 'Agent'}
+                                        </div>
+                                        <div className="text-[10px] text-gray-500 font-mono">
+                                            {format(item.date, "dd/MMM/yyyy HH:mm")}
+                                        </div>
                                     </div>
                                     <p className="text-sm text-gray-200 whitespace-pre-wrap leading-relaxed">{item.message}</p>
                                 </div>

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
 import { GraduationCap, Waypoints, BarChart3, Database, ListChecks, MessageSquare, AlertTriangle, Check, Users, Clock, ArrowUpRight, Activity } from "lucide-react"
 import { KnowledgeBaseUpload } from "./knowledge-base-upload"
@@ -42,6 +42,13 @@ export function SupportTabs({ trainings, companyId, agent, viewerProfile, crmSet
 
     const [timeFrame, setTimeFrame] = useState("30")
 
+    const targetUser = useMemo(() => agent ? ({
+        id: agent.id,
+        name: agent.name,
+        role: agent.role,
+        avatar_url: agent.avatar
+    }) : undefined, [agent?.id, agent?.name, agent?.role, agent?.avatar])
+
     return (
         <div className="w-full flex flex-col gap-8 h-full">
             {/* Tab Content */}
@@ -49,12 +56,7 @@ export function SupportTabs({ trainings, companyId, agent, viewerProfile, crmSet
                 {activeTab === "omnichannel" && (
                     <div className="flex flex-col gap-6 w-full h-full">
                         <OmnichannelInbox
-                            targetUser={agent ? {
-                                id: agent.id,
-                                name: agent.name,
-                                role: agent.role,
-                                avatar_url: agent.avatar
-                            } : undefined}
+                            targetUser={targetUser}
                             targetUserId={agent?.id}
                             viewerProfile={viewerProfile}
                             crmSettings={crmSettings}

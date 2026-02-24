@@ -8,7 +8,6 @@ import { formatPhoneNumberIntl } from 'react-phone-number-input';
 
 import { Trash2, Edit2, CheckCircle2, MessageCircle, ExternalLink, ChevronDown, Phone, Mail, Linkedin, Link2, RefreshCw, Globe, Copy, Facebook, Instagram, MessageSquare, Smartphone } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { LeadDetailsModal } from "./lead-details-modal";
 import { LeadHistoryModal } from "./lead-history-modal";
 import { LeadAmountModal } from "./lead-amount-modal";
 import { LostLeadModal } from "./lost-lead-modal";
@@ -170,7 +169,7 @@ function NextStepDatePicker({ dateStr, onSelect }: { dateStr: string, onSelect: 
                 <button
                     className={`text-[11px] font-semibold hover:bg-white/10 rounded px-1 -ml-1 w-fit transition-colors text-left ${parseDateStr(dateStr) < new Date(new Date().setHours(0, 0, 0, 0)) ? 'text-red-400' : 'text-gray-400'}`}
                 >
-                    {dateStr}
+                    {dateStr && dateStr !== 'Pending' ? format(parseDateStr(dateStr), "EEE, dd/MMM") : dateStr}
                     {getDaysRemaining(dateStr) !== null && (
                         <span className="opacity-75"> ({getDaysRemaining(dateStr)})</span>
                     )}
@@ -244,11 +243,13 @@ export function CrmTable({ initialLeads, filteredLeads: propFilteredLeads, setti
         "WhatsApp",
         "LinkedIn",
         "WebChat",
-        "Instagram",
-        "Facebook",
+        "DM/Instagram",
+        "Inbox/Facebook",
         "Email",
         "SMS",
-        "Phone"
+        "Phone",
+        "Slack",
+        "iMessage"
     ];
 
     const getChannelIcon = (channel: string) => {
@@ -256,11 +257,16 @@ export function CrmTable({ initialLeads, filteredLeads: propFilteredLeads, setti
             case "WhatsApp": return <MessageCircle size={14} className="text-[#25D366]" />;
             case "LinkedIn": return <Linkedin size={14} className="text-[#0A66C2]" />;
             case "WebChat": return <MessageSquare size={14} className="text-gray-400" />;
+            case "DM/Instagram": return <Instagram size={14} className="text-[#E4405F]" />;
+            case "Inbox/Facebook": return <Facebook size={14} className="text-[#1877F2]" />;
+            case "Email": return <Mail size={14} className="text-orange-500" />;
+            case "SMS": return <MessageSquare size={14} className="text-purple-500" />;
+            case "Phone": return <Phone size={14} className="text-blue-500" />;
+            case "Slack": return <MessageSquare size={14} className="text-[#4A154B]" />;
+            case "iMessage": return <Smartphone size={14} className="text-[#34C759]" />;
+            // Legacy support for old values
             case "Instagram": return <Instagram size={14} className="text-[#E4405F]" />;
             case "Facebook": return <Facebook size={14} className="text-[#1877F2]" />;
-            case "Email": return <Mail size={14} className="text-orange-500" />;
-            case "SMS": return <MessageSquare size={14} className="text-purple-500" />; // MessageSquare for SMS
-            case "Phone": return <Phone size={14} className="text-blue-500" />;
             default: return <MessageCircle size={14} className="text-gray-400" />;
         }
     };
@@ -675,21 +681,21 @@ export function CrmTable({ initialLeads, filteredLeads: propFilteredLeads, setti
                                         </Tooltip>
                                     </TooltipProvider>
                                 </th>
-                                {/* Conversation Channel */}
-                                <th className="px-2 py-1.5 text-left min-w-[100px]">
-                                    <TooltipProvider>
-                                        <Tooltip>
-                                            <TooltipTrigger asChild><span>Channel</span></TooltipTrigger>
-                                            <TooltipContent><p>Main communication channel</p></TooltipContent>
-                                        </Tooltip>
-                                    </TooltipProvider>
-                                </th>
                                 {/* Status */}
                                 <th className="px-3 py-1.5 text-left min-w-[130px]">
                                     <TooltipProvider>
                                         <Tooltip>
                                             <TooltipTrigger asChild><span>Status</span></TooltipTrigger>
                                             <TooltipContent><p>Current pipeline stage</p></TooltipContent>
+                                        </Tooltip>
+                                    </TooltipProvider>
+                                </th>
+                                {/* Conversation Channel */}
+                                <th className="px-2 py-1.5 text-left min-w-[100px]">
+                                    <TooltipProvider>
+                                        <Tooltip>
+                                            <TooltipTrigger asChild><span>Channel</span></TooltipTrigger>
+                                            <TooltipContent><p>Main communication channel</p></TooltipContent>
                                         </Tooltip>
                                     </TooltipProvider>
                                 </th>
@@ -724,11 +730,7 @@ export function CrmTable({ initialLeads, filteredLeads: propFilteredLeads, setti
                                 paginatedLeads.map((lead) => (
                                     <tr
                                         key={lead.id}
-                                        className="hover:bg-white/5 transition-colors group cursor-pointer"
-                                        onClick={() => {
-                                            setSelectedLead(lead);
-                                            setIsLeadDetailsOpen(true);
-                                        }}
+                                        className="hover:bg-white/5 transition-colors group"
                                     >
                                         <td className="px-3 py-1">
                                             <TooltipProvider>
@@ -1079,6 +1081,7 @@ export function CrmTable({ initialLeads, filteredLeads: propFilteredLeads, setti
                                                                 return 'text-gray-500 border-transparent hover:bg-white/5 hover:text-white';
                                                             }
                                                             switch (lead.qualification_status?.toLowerCase()) {
+                                                                case 'lead': return "bg-slate-500/10 text-slate-400 border-slate-500/20 font-bold tracking-wider";
                                                                 case 'mql': return "bg-blue-500/10 text-blue-400 border-blue-500/20 font-bold tracking-wider";
                                                                 case 'sql': return "bg-emerald-500/10 text-emerald-400 border-emerald-500/20 font-bold tracking-wider";
                                                                 case 'nq': return "bg-red-500/10 text-red-400 border-red-500/20 font-bold tracking-wider";
@@ -1095,6 +1098,7 @@ export function CrmTable({ initialLeads, filteredLeads: propFilteredLeads, setti
                                                 </DropdownMenuTrigger>
                                                 <DropdownMenuContent className="w-[150px] p-1 bg-[#1A1A1A] border-white/10 text-white" align="start">
                                                     {[
+                                                        { label: 'LEAD', value: 'lead', className: 'text-slate-400' },
                                                         { label: 'MQL', value: 'mql', className: 'text-blue-400' },
                                                         { label: 'SQL', value: 'sql', className: 'text-emerald-400' },
                                                         { label: 'NQ', value: 'nq', className: 'text-red-400' }
@@ -1116,16 +1120,6 @@ export function CrmTable({ initialLeads, filteredLeads: propFilteredLeads, setti
                                                             {option.label}
                                                         </DropdownMenuItem>
                                                     ))}
-                                                    <DropdownMenuSeparator className="bg-white/10 my-1" />
-                                                    <DropdownMenuItem
-                                                        className="w-full text-left px-2 py-1.5 text-[12px] hover:bg-white/10 rounded-sm transition-colors text-gray-500 hover:text-gray-300 cursor-pointer focus:bg-white/10"
-                                                        onClick={async () => {
-                                                            setLeads(prev => prev.map(l => l.id === lead.id ? { ...l, qualification_status: 'pending' } : l));
-                                                            await updateLeadQualification(lead.id, 'pending');
-                                                        }}
-                                                    >
-                                                        Clear / Pending
-                                                    </DropdownMenuItem>
                                                 </DropdownMenuContent>
                                             </DropdownMenu>
                                         </td>
@@ -1185,40 +1179,6 @@ export function CrmTable({ initialLeads, filteredLeads: propFilteredLeads, setti
                                                 </DropdownMenuContent>
                                             </DropdownMenu>
                                         </td>
-                                        {/* Conversation Channel */}
-                                        <td className="px-3 py-1">
-                                            <DropdownMenu>
-                                                <DropdownMenuTrigger asChild>
-                                                    <div className="flex items-center gap-2 px-2 py-1 rounded hover:bg-white/10 cursor-pointer transition-colors group/channel">
-                                                        {getChannelIcon(lead.conversation_channel || "WhatsApp")}
-                                                        <TooltipProvider>
-                                                            <Tooltip>
-                                                                <TooltipTrigger asChild>
-                                                                    <span className="text-[11px] text-white/70 group-hover/channel:text-white truncate">
-                                                                        {lead.conversation_channel || "WhatsApp"}
-                                                                    </span>
-                                                                </TooltipTrigger>
-                                                                <TooltipContent><p>{lead.conversation_channel || "WhatsApp"}</p></TooltipContent>
-                                                            </Tooltip>
-                                                        </TooltipProvider>
-                                                        <ChevronDown size={10} className="text-white/30 opacity-0 group-hover/channel:opacity-100 transition-opacity" />
-                                                    </div>
-                                                </DropdownMenuTrigger>
-                                                <DropdownMenuContent align="start" className="bg-[#1A1A1A] border-white/10 text-white">
-                                                    {CHANNELS.map((channel) => (
-                                                        <DropdownMenuItem
-                                                            key={channel}
-                                                            onClick={() => handleChannelChange(lead.id, channel)}
-                                                            className="flex items-center gap-2 hover:bg-white/10 focus:bg-white/10 cursor-pointer text-xs"
-                                                        >
-                                                            {getChannelIcon(channel)}
-                                                            <span>{channel}</span>
-                                                            {lead.conversation_channel === channel && <CheckCircle2 size={12} className="ml-auto text-green-500" />}
-                                                        </DropdownMenuItem>
-                                                    ))}
-                                                </DropdownMenuContent>
-                                            </DropdownMenu>
-                                        </td>
                                         <td className="px-3 py-1">
                                             <DropdownMenu>
                                                 <DropdownMenuTrigger asChild>
@@ -1273,6 +1233,40 @@ export function CrmTable({ initialLeads, filteredLeads: propFilteredLeads, setti
                                                         <Settings size={12} />
                                                         Manage...
                                                     </DropdownMenuItem>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
+                                        </td>
+                                        {/* Conversation Channel */}
+                                        <td className="px-3 py-1">
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                    <div className="flex items-center gap-2 px-2 py-1 rounded hover:bg-white/10 cursor-pointer transition-colors group/channel">
+                                                        {getChannelIcon(lead.conversation_channel || "WhatsApp")}
+                                                        <TooltipProvider>
+                                                            <Tooltip>
+                                                                <TooltipTrigger asChild>
+                                                                    <span className="text-[11px] text-white/70 group-hover/channel:text-white truncate">
+                                                                        {lead.conversation_channel || "WhatsApp"}
+                                                                    </span>
+                                                                </TooltipTrigger>
+                                                                <TooltipContent><p>{lead.conversation_channel || "WhatsApp"}</p></TooltipContent>
+                                                            </Tooltip>
+                                                        </TooltipProvider>
+                                                        <ChevronDown size={10} className="text-white/30 opacity-0 group-hover/channel:opacity-100 transition-opacity" />
+                                                    </div>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent align="start" className="bg-[#1A1A1A] border-white/10 text-white">
+                                                    {CHANNELS.map((channel) => (
+                                                        <DropdownMenuItem
+                                                            key={channel}
+                                                            onClick={() => handleChannelChange(lead.id, channel)}
+                                                            className="flex items-center gap-2 hover:bg-white/10 focus:bg-white/10 cursor-pointer text-xs"
+                                                        >
+                                                            {getChannelIcon(channel)}
+                                                            <span>{channel}</span>
+                                                            {lead.conversation_channel === channel && <CheckCircle2 size={12} className="ml-auto text-green-500" />}
+                                                        </DropdownMenuItem>
+                                                    ))}
                                                 </DropdownMenuContent>
                                             </DropdownMenu>
                                         </td>
@@ -1335,15 +1329,6 @@ export function CrmTable({ initialLeads, filteredLeads: propFilteredLeads, setti
 
                                         <td className="px-3 py-1 text-center">
                                             <div className="flex items-center justify-center gap-1">
-                                                <button
-                                                    className="text-gray-500 hover:text-white transition-colors p-1 rounded hover:bg-white/10 outline-none"
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        setEditLead(lead);
-                                                    }}
-                                                >
-                                                    <Edit2 size={16} />
-                                                </button>
                                                 <DropdownMenu>
                                                     <DropdownMenuTrigger asChild>
                                                         <button className="text-gray-500 hover:text-white transition-colors p-1 rounded hover:bg-white/10 outline-none">
@@ -1443,12 +1428,6 @@ export function CrmTable({ initialLeads, filteredLeads: propFilteredLeads, setti
                 </div >
             </div >
 
-            <LeadDetailsModal
-                isOpen={!!selectedLead}
-                onClose={() => setSelectedLead(null)}
-                lead={selectedLead ? { ...selectedLead, amount: selectedLead.amount.toString() } : null}
-            />
-
             <LeadHistoryModal
                 isOpen={!!historyLead}
                 onClose={() => setHistoryLead(null)}
@@ -1476,34 +1455,6 @@ export function CrmTable({ initialLeads, filteredLeads: propFilteredLeads, setti
                 isOpen={isSettingsOpen}
                 onClose={() => setIsSettingsOpen(false)}
                 settings={settings}
-            />
-            <LeadDetailsModal
-                isOpen={isLeadDetailsOpen}
-                onClose={() => setIsLeadDetailsOpen(false)}
-                lead={selectedLead}
-                onNewDeal={(lead) => {
-                    setIsLeadDetailsOpen(false);
-                    const newDealData: LeadType = {
-                        id: lead.id,
-                        name: lead.name,
-                        company: lead.company,
-                        phone: lead.phone,
-                        email: lead.email,
-                        linkedin: lead.linkedin,
-                        website: lead.website,
-                        role: lead.role,
-                        responsible: lead.responsible || "",
-                        product: "[]",
-                        amount: 0,
-                        status: "New",
-                        source: lead.source || "",
-                        custom: lead.custom || "",
-                        nextStep: { date: "Pending", progress: 0, total: 3 },
-                        history: [],
-                        date: new Date().toISOString()
-                    };
-                    setEditLead(newDealData); // Using setEditLead reusing NewOpportunityModal logic
-                }}
             />
 
             <NewOpportunityModal

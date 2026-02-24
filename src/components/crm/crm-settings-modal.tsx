@@ -62,6 +62,7 @@ interface CrmSettingsModalProps {
     isOpen: boolean;
     onClose: () => void;
     settings: CrmSettings;
+    leads?: any[];
 }
 
 import { StatusItem } from "./status-item";
@@ -153,7 +154,7 @@ export function TagEditor({
     );
 }
 
-export function CrmSettingsModal({ isOpen, onClose, settings }: CrmSettingsModalProps) {
+export function CrmSettingsModal({ isOpen, onClose, settings, leads = [] }: CrmSettingsModalProps) {
     const router = useRouter();
     const [loading, setLoading] = useState(false);
 
@@ -201,6 +202,7 @@ export function CrmSettingsModal({ isOpen, onClose, settings }: CrmSettingsModal
     const [revenueGoal, setRevenueGoal] = useState<number>(settings?.revenue_goal || 0);
     const [avgTicket, setAvgTicket] = useState<number>(settings?.avg_ticket || 0);
     const [closeRate, setCloseRate] = useState<number>(settings?.close_rate || 0);
+    const [showPipelineSummary, setShowPipelineSummary] = useState(false);
 
 
     // Custom Field State
@@ -216,21 +218,6 @@ export function CrmSettingsModal({ isOpen, onClose, settings }: CrmSettingsModal
     const [newLostReason, setNewLostReason] = useState("");
     const [newCustomOption, setNewCustomOption] = useState("");
 
-    // Edit/Delete State
-    const [itemToDelete, setItemToDelete] = useState<{ type: 'product', index: number } | null>(null);
-
-    // Product Deletion State
-    const [productDeleteInfo, setProductDeleteInfo] = useState<{ count: number, productName: string, index: number } | null>(null);
-    const [selectedReassignProduct, setSelectedReassignProduct] = useState<string>("");
-
-    // Transfer State
-    const [transferTarget, setTransferTarget] = useState<string>("");
-
-    // Get available options for transfer based on itemToDelete
-    const getTransferOptions = () => {
-        return [];
-    };
-
     // Sync state when settings prop updates
     useEffect(() => {
         if (!settings) return;
@@ -239,18 +226,12 @@ export function CrmSettingsModal({ isOpen, onClose, settings }: CrmSettingsModal
         setResponsibles(normalizeTags(settings.responsibles || []));
         setSources(normalizeTags(settings.sources || []));
         setLostReasons(normalizeTags(settings.lost_reasons || []));
-        // setTemperatures(normalizeTags(settings.temperatures || [])); // Removed
         setCustomFieldName(settings.custom_fields?.name || "Category");
         setCustomOptions(normalizeTags(settings.custom_fields?.options || []));
         setRevenueGoal(settings.revenue_goal || 0);
         setAvgTicket(settings.avg_ticket || 0);
         setCloseRate(settings.close_rate || 0);
     }, [settings]);
-
-    // Reset transfer target when delete modal opens
-    useEffect(() => {
-        setTransferTarget("");
-    }, [itemToDelete]);
 
     const saveSettings = async (
         overrideProducts?: any[],
@@ -307,63 +288,31 @@ export function CrmSettingsModal({ isOpen, onClose, settings }: CrmSettingsModal
         await saveSettings(updatedProducts);
     };
 
-    const confirmDeleteProduct = async (index: number) => {
+    const deleteProduct = async (index: number) => {
         try {
             const product = products[index];
             if (!product) return;
 
+            // Simple confirmation
+            if (!window.confirm(`Delete product "${product.name}"? This will remove it from all leads.`)) {
+                return;
+            }
+
             setLoading(true);
-            console.log(`[Client] Checking usage for product: ${product.name}`);
-            const result = await checkProductUsage(product.name);
-            console.log(`[Client] Usage check result:`, result);
 
-            // Handle case where result might be undefined if action fails completely
-            const count = result?.count || 0;
+            // Remove product from leads
+            await transferProduct(product.name);
 
-            if (count > 0) {
-                setProductDeleteInfo({ count, productName: product.name, index });
-                setItemToDelete(null);
-            } else {
-                setItemToDelete({ type: 'product', index });
-            }
-        } catch (error) {
-            console.error("Error checking product usage:", error);
-            toast.error("Failed to check product usage. Please try again.");
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const handleProductDeleteConfirm = async () => {
-        if (!productDeleteInfo) return;
-        setLoading(true);
-
-        try {
-            const { productName, index } = productDeleteInfo;
-
-            // 1. Handle Reassignment or Removal from Leads
-            if (selectedReassignProduct) {
-                await transferProduct(productName, selectedReassignProduct);
-                toast.success(`Leads reassigned to ${selectedReassignProduct}`);
-            } else {
-                // Just remove the product from leads
-                await transferProduct(productName);
-                toast.success(`Product removed from ${productDeleteInfo.count} leads`);
-            }
-
-            // 2. Delete Product from Settings
+            // Delete from settings
             const updatedProducts = [...products];
             updatedProducts.splice(index, 1);
             setProducts(updatedProducts);
-            await saveSettings(updatedProducts, undefined, undefined, undefined, undefined, undefined, true);
+            await saveSettings(updatedProducts, undefined, undefined, undefined, undefined, undefined, false);
 
             toast.success("Product deleted successfully!");
-            setProductDeleteInfo(null);
-            setSelectedReassignProduct("");
-
-        } catch (e) {
-            console.error(e);
-            toast.error("Failed to delete product.");
+        } catch (error) {
+            console.error("Error deleting product:", error);
+            toast.error("Failed to delete product");
         } finally {
             setLoading(false);
         }
@@ -380,7 +329,7 @@ export function CrmSettingsModal({ isOpen, onClose, settings }: CrmSettingsModal
         setEditingProductData({ name: '', price: '' });
     };
 
-    const saveEditedProduct = () => {
+    const saveEditedProduct = async () => {
         if (editingProductIndex === null) return;
         if (!editingProductData.name || !editingProductData.price) return;
 
@@ -391,40 +340,13 @@ export function CrmSettingsModal({ isOpen, onClose, settings }: CrmSettingsModal
         };
 
         setProducts(updatedProducts);
-        // Save immediately (not silent) to show feedback
-        saveSettings(updatedProducts, undefined, undefined, undefined, undefined, undefined, false);
+        await saveSettings(updatedProducts, undefined, undefined, undefined, undefined, undefined, false);
         setEditingProductIndex(null);
         setEditingProductData({ name: '', price: '' });
     };
 
-    // Generic Delete handler with Transfer Logic
-    const handleConfirmDelete = async () => {
-        if (!itemToDelete) return;
-        setLoading(true);
-
-        const { type, index } = itemToDelete;
-
-        try {
-            if (type === 'product') {
-                const updatedProducts = [...products];
-                updatedProducts.splice(index, 1);
-                setProducts(updatedProducts);
-                await saveSettings(updatedProducts, undefined, undefined, undefined, undefined, undefined, true);
-                toast.success("Product deleted successfully!");
-                setItemToDelete(null);
-            }
-        } catch (e) {
-            console.error(e);
-            toast.error("An error occurred during deletion.");
-        } finally {
-            setLoading(false);
-        }
-    };
-
     // Helper to get random color
     const getRandomColor = () => COLORS[Math.floor(Math.random() * COLORS.length)];
-
-    // ... (Product handlers unchanged) ...
 
     // --- Statuses ---
     const addStatus = async () => {
@@ -453,6 +375,22 @@ export function CrmSettingsModal({ isOpen, onClose, settings }: CrmSettingsModal
         await updateCrmStatuses(updatedStatuses);
     }
 
+    const deleteStatus = async (index: number) => {
+        if (!window.confirm("Are you sure you want to delete this status? All leads with this status will need to be updated.")) {
+            return;
+        }
+        try {
+            const updated = [...statuses];
+            updated.splice(index, 1);
+            setStatuses(updated);
+            await updateCrmStatuses(updated);
+            toast.success("Status deleted");
+        } catch (error) {
+            console.error("Error deleting status:", error);
+            toast.error("Failed to delete status");
+        }
+    }
+
     // --- Others ---
 
     const addSource = async () => {
@@ -471,6 +409,19 @@ export function CrmSettingsModal({ isOpen, onClose, settings }: CrmSettingsModal
         await saveSettings(undefined, undefined, undefined, updated, undefined, undefined, true);
     }
 
+    const deleteSource = async (index: number) => {
+        try {
+            const updated = [...sources];
+            updated.splice(index, 1);
+            setSources(updated);
+            await saveSettings(undefined, undefined, undefined, updated, undefined, undefined, false);
+            toast.success("Source deleted");
+        } catch (error) {
+            console.error("Error deleting source:", error);
+            toast.error("Failed to delete source");
+        }
+    }
+
     // --- Lost Reasons ---
     const addLostReason = async () => {
         if (!newLostReason || lostReasons.some(r => r.label === newLostReason)) return;
@@ -486,6 +437,19 @@ export function CrmSettingsModal({ isOpen, onClose, settings }: CrmSettingsModal
         updated[index] = { ...updated[index], label, bg, text };
         setLostReasons(updated);
         await saveSettings(undefined, undefined, undefined, undefined, undefined, updated, true);
+    }
+
+    const deleteLostReason = async (index: number) => {
+        try {
+            const updated = [...lostReasons];
+            updated.splice(index, 1);
+            setLostReasons(updated);
+            await saveSettings(undefined, undefined, undefined, undefined, undefined, updated, false);
+            toast.success("Lost reason deleted");
+        } catch (error) {
+            console.error("Error deleting lost reason:", error);
+            toast.error("Failed to delete lost reason");
+        }
     }
 
 
@@ -506,6 +470,19 @@ export function CrmSettingsModal({ isOpen, onClose, settings }: CrmSettingsModal
         await saveSettings(undefined, undefined, undefined, undefined, updated, undefined, true);
     }
 
+    const deleteCustomOption = async (index: number) => {
+        try {
+            const updated = [...customOptions];
+            updated.splice(index, 1);
+            setCustomOptions(updated);
+            await saveSettings(undefined, undefined, undefined, undefined, updated, undefined, false);
+            toast.success("Custom option deleted");
+        } catch (error) {
+            console.error("Error deleting custom option:", error);
+            toast.error("Failed to delete custom option");
+        }
+    }
+
     // Helper for Enter key
     const handleKeyDown = (e: React.KeyboardEvent, action: () => void) => {
         if (e.key === "Enter") {
@@ -517,54 +494,6 @@ export function CrmSettingsModal({ isOpen, onClose, settings }: CrmSettingsModal
     // --- Render ---
     return (
         <>
-            {/* Product Reassignment Modal */}
-            <Dialog open={!!productDeleteInfo} onOpenChange={(open) => !open && setProductDeleteInfo(null)}>
-                <DialogContent className="bg-[#1a1a1a] border-white/10 text-white sm:max-w-[425px]">
-                    <DialogHeader>
-                        <DialogTitle>Delete Product: {productDeleteInfo?.productName}</DialogTitle>
-                        <DialogDescription className="text-gray-400">
-                            This product is currently associated with <span className="text-white font-bold">{productDeleteInfo?.count} leads</span>.
-                        </DialogDescription>
-                    </DialogHeader>
-
-                    <div className="py-4 space-y-4">
-                        <p className="text-sm text-gray-300">What would you like to do with these leads?</p>
-                        <div className="space-y-2">
-                            <Label className="text-xs text-gray-400 uppercase">Reassign to (Optional)</Label>
-                            <Select value={selectedReassignProduct} onValueChange={setSelectedReassignProduct}>
-                                <SelectTrigger className="bg-black/50 border-white/20 text-white">
-                                    <SelectValue placeholder="Leave empty to just remove product" />
-                                </SelectTrigger>
-                                <SelectContent className="bg-[#1a1a1a] border-white/10 text-white">
-                                    <SelectItem value="remove_only_placeholder">Leave empty (Remove product from leads)</SelectItem>
-                                    {products
-                                        .filter((_, idx) => idx !== productDeleteInfo?.index)
-                                        .map((p, idx) => (
-                                            <SelectItem key={idx} value={p.name}>{p.name}</SelectItem>
-                                        ))
-                                    }
-                                </SelectContent>
-                            </Select>
-                            <p className="text-[10px] text-gray-500">
-                                If you leave this empty, the product "{productDeleteInfo?.productName}" will simply be removed from the leads' product list.
-                            </p>
-                        </div>
-                    </div>
-
-                    <DialogFooter>
-                        <Button variant="ghost" onClick={() => setProductDeleteInfo(null)} disabled={loading}>Cancel</Button>
-                        <Button
-                            variant="destructive"
-                            onClick={handleProductDeleteConfirm}
-                            disabled={loading}
-                            className="bg-red-600 hover:bg-red-700 text-white"
-                        >
-                            {loading ? "Processing..." : "Confirm Delete"}
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
-
             <Dialog open={isOpen} onOpenChange={onClose}>
                 <DialogContent className="w-[90vw] max-w-[90vw] sm:max-w-[90vw] h-[90vh] bg-[#0A0A0A] text-white p-0 border border-white/10 rounded-lg flex flex-col gap-0 overflow-hidden shadow-2xl">
                     <DialogHeader className="p-6 pb-2 border-b border-white/10 shrink-0">
@@ -669,6 +598,7 @@ export function CrmSettingsModal({ isOpen, onClose, settings }: CrmSettingsModal
                                                                         variant="ghost"
                                                                         className="h-6 w-6 text-blue-400 hover:text-blue-300 hover:bg-white/10"
                                                                         onClick={() => startEditingProduct(index)}
+                                                                        type="button"
                                                                     >
                                                                         <Pencil className="h-3.5 w-3.5" />
                                                                     </Button>
@@ -676,7 +606,9 @@ export function CrmSettingsModal({ isOpen, onClose, settings }: CrmSettingsModal
                                                                         size="icon"
                                                                         variant="ghost"
                                                                         className="h-6 w-6 text-red-500 hover:text-red-400 hover:bg-white/10"
-                                                                        onClick={() => confirmDeleteProduct(index)}
+                                                                        onClick={() => deleteProduct(index)}
+                                                                        disabled={loading}
+                                                                        type="button"
                                                                     >
                                                                         <Trash2 className="h-3.5 w-3.5" />
                                                                     </Button>
@@ -731,6 +663,7 @@ export function CrmSettingsModal({ isOpen, onClose, settings }: CrmSettingsModal
                                                         settings={settings}
                                                         updateStatus={updateStatus}
                                                         TagEditorComponent={TagEditor}
+                                                        onDelete={deleteStatus}
                                                     />
                                                 ))}
                                             </Reorder.Group>
@@ -767,9 +700,11 @@ export function CrmSettingsModal({ isOpen, onClose, settings }: CrmSettingsModal
                                                 {sources.map((source, index) => {
                                                     const tag = typeof source === 'string' ? { label: source, bg: 'bg-slate-800', text: 'text-slate-100' } : source;
                                                     return (
-                                                        <Reorder.Item key={tag.label} value={source}>
+                                                        <Reorder.Item key={tag.label} value={source} className="list-none">
                                                             <div className="flex items-center gap-2 p-1.5 bg-white/5 rounded border border-white/10 group">
-                                                                <GripVertical className="h-3.5 w-3.5 text-gray-600 cursor-grab active:cursor-grabbing flex-shrink-0" />
+                                                                <div className="cursor-grab active:cursor-grabbing flex-shrink-0">
+                                                                    <GripVertical className="h-3.5 w-3.5 text-gray-600" />
+                                                                </div>
                                                                 <TagEditor
                                                                     tag={tag}
                                                                     onSave={(l, b, t) => updateSource(index, l, b, t)}
@@ -778,6 +713,22 @@ export function CrmSettingsModal({ isOpen, onClose, settings }: CrmSettingsModal
                                                                         <span className="truncate">{tag.label}</span>
                                                                     </div>
                                                                 </TagEditor>
+                                                                <Button
+                                                                    size="icon"
+                                                                    variant="ghost"
+                                                                    className="h-6 w-6 text-red-500 hover:text-red-400 hover:bg-red-500/10 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
+                                                                    onMouseDown={(e) => {
+                                                                        e.stopPropagation();
+                                                                    }}
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        e.preventDefault();
+                                                                        setTimeout(() => deleteSource(index), 0);
+                                                                    }}
+                                                                    type="button"
+                                                                >
+                                                                    <Trash2 className="h-3 w-3" />
+                                                                </Button>
                                                             </div>
                                                         </Reorder.Item>
                                                     )
@@ -816,9 +767,11 @@ export function CrmSettingsModal({ isOpen, onClose, settings }: CrmSettingsModal
                                                 {lostReasons.map((reason, index) => {
                                                     const tag = typeof reason === 'string' ? { label: reason, bg: 'bg-red-900', text: 'text-red-100' } : reason;
                                                     return (
-                                                        <Reorder.Item key={tag.label} value={reason}>
+                                                        <Reorder.Item key={tag.label} value={reason} className="list-none">
                                                             <div className="flex items-center gap-2 p-1.5 bg-white/5 rounded border border-white/10 group">
-                                                                <GripVertical className="h-3.5 w-3.5 text-gray-600 cursor-grab active:cursor-grabbing flex-shrink-0" />
+                                                                <div className="cursor-grab active:cursor-grabbing flex-shrink-0">
+                                                                    <GripVertical className="h-3.5 w-3.5 text-gray-600" />
+                                                                </div>
                                                                 <TagEditor
                                                                     tag={tag}
                                                                     onSave={(l, b, t) => updateLostReason(index, l, b, t)}
@@ -827,6 +780,22 @@ export function CrmSettingsModal({ isOpen, onClose, settings }: CrmSettingsModal
                                                                         <span className="truncate">{tag.label}</span>
                                                                     </div>
                                                                 </TagEditor>
+                                                                <Button
+                                                                    size="icon"
+                                                                    variant="ghost"
+                                                                    className="h-6 w-6 text-red-500 hover:text-red-400 hover:bg-red-500/10 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
+                                                                    onMouseDown={(e) => {
+                                                                        e.stopPropagation();
+                                                                    }}
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        e.preventDefault();
+                                                                        setTimeout(() => deleteLostReason(index), 0);
+                                                                    }}
+                                                                    type="button"
+                                                                >
+                                                                    <Trash2 className="h-3 w-3" />
+                                                                </Button>
                                                             </div>
                                                         </Reorder.Item>
                                                     )
@@ -873,9 +842,11 @@ export function CrmSettingsModal({ isOpen, onClose, settings }: CrmSettingsModal
                                                 {customOptions.map((option, index) => {
                                                     const tag = typeof option === 'string' ? { label: option, bg: 'bg-slate-800', text: 'text-slate-100' } : option;
                                                     return (
-                                                        <Reorder.Item key={tag.label} value={option}>
+                                                        <Reorder.Item key={tag.label} value={option} className="list-none">
                                                             <div className="flex items-center gap-2 p-1.5 bg-white/5 rounded border border-white/10 group">
-                                                                <GripVertical className="h-3.5 w-3.5 text-gray-600 cursor-grab active:cursor-grabbing flex-shrink-0" />
+                                                                <div className="cursor-grab active:cursor-grabbing flex-shrink-0">
+                                                                    <GripVertical className="h-3.5 w-3.5 text-gray-600" />
+                                                                </div>
                                                                 <TagEditor
                                                                     tag={tag}
                                                                     onSave={(l, b, t) => updateCustomOption(index, l, b, t)}
@@ -884,6 +855,22 @@ export function CrmSettingsModal({ isOpen, onClose, settings }: CrmSettingsModal
                                                                         <span className="truncate">{tag.label}</span>
                                                                     </div>
                                                                 </TagEditor>
+                                                                <Button
+                                                                    size="icon"
+                                                                    variant="ghost"
+                                                                    className="h-6 w-6 text-red-500 hover:text-red-400 hover:bg-red-500/10 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
+                                                                    onMouseDown={(e) => {
+                                                                        e.stopPropagation();
+                                                                    }}
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        e.preventDefault();
+                                                                        setTimeout(() => deleteCustomOption(index), 0);
+                                                                    }}
+                                                                    type="button"
+                                                                >
+                                                                    <Trash2 className="h-3 w-3" />
+                                                                </Button>
                                                             </div>
                                                         </Reorder.Item>
                                                     )
@@ -896,41 +883,15 @@ export function CrmSettingsModal({ isOpen, onClose, settings }: CrmSettingsModal
                             </TabsContent>
 
                             <TabsContent value="pipeline-health" className="flex-1 overflow-y-auto mt-4 pr-2">
-                                <div className="space-y-8 max-w-2xl">
-                                    <div className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg">
-                                        <h3 className="text-lg font-semibold text-blue-100 mb-2">Pipeline Health Calculator</h3>
-                                        <p className="text-sm text-blue-200/80 mb-4">
-                                            Configure your revenue goals to automatically calculate if your pipeline is healthy.
-                                            The system compares your <strong>Needed Pipeline</strong> vs <strong>Actual Pipeline (Closing Phase)</strong>.
-                                        </p>
-                                    </div>
-
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                        <div className="space-y-4 p-4 bg-white/5 border border-white/10 rounded-lg">
-                                            <h4 className="font-semibold text-gray-200">Revenue Goals</h4>
-
+                                <div className="space-y-6 max-w-5xl">
+                                    {/* Flow Cards */}
+                                    <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+                                        {/* Card 1: Average Ticket */}
+                                        <div className="p-4 bg-gradient-to-br from-blue-500/10 to-blue-600/5 border border-blue-500/20 rounded-lg">
                                             <div className="space-y-2">
-                                                <Label className="text-xs text-gray-400">Monthly Revenue Goal</Label>
+                                                <Label className="text-xs text-blue-300 font-semibold">Average Ticket</Label>
                                                 <div className="relative">
-                                                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">$</span>
-                                                    <Input
-                                                        type="number"
-                                                        value={revenueGoal}
-                                                        onChange={(e) => {
-                                                            const val = Number(e.target.value);
-                                                            setRevenueGoal(val);
-                                                            debouncedSave(undefined, undefined, undefined, undefined, undefined, undefined, false, { revenue_goal: val });
-                                                        }}
-                                                        className="pl-7 bg-black/50 border-white/20 text-white"
-                                                    />
-                                                </div>
-                                                <p className="text-[10px] text-gray-500">Monthly revenue target to calculate pipeline health.</p>
-                                            </div>
-
-                                            <div className="space-y-2">
-                                                <Label className="text-xs text-gray-400 font-bold uppercase tracking-wider">Average Ticket</Label>
-                                                <div className="relative">
-                                                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-xs">$</span>
+                                                    <span className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 text-xs">$</span>
                                                     <Input
                                                         type="number"
                                                         value={avgTicket}
@@ -939,18 +900,51 @@ export function CrmSettingsModal({ isOpen, onClose, settings }: CrmSettingsModal
                                                             setAvgTicket(val);
                                                             debouncedSave(undefined, undefined, undefined, undefined, undefined, undefined, false, { avg_ticket: val });
                                                         }}
-                                                        className="pl-7 bg-black/50 border-white/20 text-white"
+                                                        className="pl-6 h-12 text-lg font-bold bg-black/50 border-blue-500/30 text-white"
                                                     />
                                                 </div>
-                                                <p className="text-[10px] text-gray-500">Average deal value.</p>
+                                                <p className="text-[9px] text-gray-400">You fill</p>
                                             </div>
                                         </div>
 
-                                        <div className="space-y-4 p-4 bg-white/5 border border-white/10 rounded-lg">
-                                            <h4 className="font-semibold text-gray-200">Conversion Metrics</h4>
-
+                                        {/* Card 2: Customers Needed */}
+                                        <div className="p-4 bg-gradient-to-br from-purple-500/10 to-purple-600/5 border border-purple-500/20 rounded-lg">
                                             <div className="space-y-2">
-                                                <Label className="text-xs text-gray-400 font-bold uppercase tracking-wider">Close Rate (%)</Label>
+                                                <Label className="text-xs text-purple-300 font-semibold">Customers Needed</Label>
+                                                <div className="relative">
+                                                    <Input
+                                                        type="number"
+                                                        value={revenueGoal > 0 && avgTicket > 0 ? Math.ceil(revenueGoal / avgTicket) : 0}
+                                                        onChange={(e) => {
+                                                            const customers = Number(e.target.value);
+                                                            const newRevenue = customers * avgTicket;
+                                                            setRevenueGoal(newRevenue);
+                                                            debouncedSave(undefined, undefined, undefined, undefined, undefined, undefined, false, { revenue_goal: newRevenue });
+                                                        }}
+                                                        className="h-12 text-lg font-bold bg-black/50 border-purple-500/30 text-white"
+                                                    />
+                                                </div>
+                                                <p className="text-[9px] text-gray-400">You fill</p>
+                                            </div>
+                                        </div>
+
+                                        {/* Card 3: Revenue Goal (Calculated) */}
+                                        <div className="p-4 bg-gradient-to-br from-emerald-500/10 to-emerald-600/5 border border-emerald-500/20 rounded-lg">
+                                            <div className="space-y-2">
+                                                <Label className="text-xs text-emerald-300 font-semibold">Revenue Goal</Label>
+                                                <div className="h-12 flex items-center justify-center bg-black/50 border border-emerald-500/30 rounded-md">
+                                                    <span className="text-lg font-bold text-emerald-400">
+                                                        ${revenueGoal.toLocaleString()}
+                                                    </span>
+                                                </div>
+                                                <p className="text-[9px] text-gray-400">System calculates</p>
+                                            </div>
+                                        </div>
+
+                                        {/* Card 4: Close Rate */}
+                                        <div className="p-4 bg-gradient-to-br from-orange-500/10 to-orange-600/5 border border-orange-500/20 rounded-lg">
+                                            <div className="space-y-2">
+                                                <Label className="text-xs text-orange-300 font-semibold">Close Rate</Label>
                                                 <div className="relative">
                                                     <Input
                                                         type="number"
@@ -960,35 +954,81 @@ export function CrmSettingsModal({ isOpen, onClose, settings }: CrmSettingsModal
                                                             setCloseRate(val);
                                                             debouncedSave(undefined, undefined, undefined, undefined, undefined, undefined, false, { close_rate: val });
                                                         }}
-                                                        className="pr-8 bg-black/50 border-white/20 text-white"
+                                                        className="pr-7 h-12 text-lg font-bold bg-black/50 border-orange-500/30 text-white"
                                                     />
-                                                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500">%</span>
+                                                    <span className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 text-xs">%</span>
                                                 </div>
-                                                <p className="text-[10px] text-gray-500">Historical closing percentage (e.g. 20 for 20%).</p>
-                                                <p className="text-[10px] text-gray-500">
-                                                    Percentage of "Closing" leads that typically become customers.
-                                                </p>
+                                                <p className="text-[9px] text-gray-400">You fill</p>
+                                            </div>
+                                        </div>
+
+                                        {/* Card 5: Needed Warm/Hot Leads (Calculated) */}
+                                        <div className="p-4 bg-gradient-to-br from-red-500/10 to-red-600/5 border border-red-500/20 rounded-lg">
+                                            <div className="space-y-2">
+                                                <Label className="text-xs text-red-300 font-semibold">Warm/Hot Leads</Label>
+                                                <div className="h-12 flex items-center justify-center bg-black/50 border border-red-500/30 rounded-md">
+                                                    <span className="text-2xl font-bold text-red-400">
+                                                        {avgTicket > 0 && closeRate > 0 ? Math.ceil((revenueGoal / avgTicket) / (closeRate / 100)) : 0}
+                                                    </span>
+                                                </div>
+                                                <p className="text-[9px] text-gray-400">System calculates</p>
                                             </div>
                                         </div>
                                     </div>
 
-                                    {/* Preview Calculation */}
-                                    <div className="p-4 bg-white/5 border border-white/10 rounded-lg space-y-3">
-                                        <h4 className="font-semibold text-gray-200">Projected Requirements</h4>
-                                        <div className="grid grid-cols-2 gap-4">
-                                            <div className="p-3 bg-black/30 rounded border border-white/10">
-                                                <span className="text-xs text-gray-400 block mb-1">Needed Customers</span>
-                                                <span className="text-xl font-bold text-white">
-                                                    {avgTicket > 0 ? Math.ceil(revenueGoal / avgTicket) : 0}
-                                                </span>
+                                    {/* Pipeline Health Summary */}
+                                    <div className="p-4 bg-gradient-to-r from-emerald-500/10 via-blue-500/10 to-purple-500/10 border border-white/20 rounded-lg">
+                                        <Button
+                                            onClick={() => setShowPipelineSummary(true)}
+                                            className="w-full h-auto py-4 bg-transparent hover:bg-white/5 border-0"
+                                            variant="ghost"
+                                        >
+                                            <div className="flex items-center justify-between w-full">
+                                                <div className="flex items-center gap-3">
+                                                    {(() => {
+                                                        const neededCustomers = avgTicket > 0 ? Math.ceil(revenueGoal / avgTicket) : 0;
+                                                        const neededWarmHot = avgTicket > 0 && closeRate > 0 ? Math.ceil(neededCustomers / (closeRate / 100)) : 0;
+                                                        
+                                                        // Count current Warm/Hot leads
+                                                        const statusMap = new Map<string, { temperature?: string }>();
+                                                        statuses.forEach(s => {
+                                                            statusMap.set(s.label, { temperature: s.temperature });
+                                                        });
+                                                        const currentWarmHot = leads.filter(l => {
+                                                            const statusInfo = statusMap.get(l.status);
+                                                            const temperature = statusInfo?.temperature;
+                                                            return temperature === 'Warm' || temperature === 'Hot';
+                                                        }).length;
+                                                        
+                                                        const isHealthy = currentWarmHot >= neededWarmHot;
+                                                        
+                                                        return (
+                                                            <>
+                                                                {isHealthy ? (
+                                                                    <div className="flex items-center gap-2 px-4 py-2 bg-emerald-500/20 border border-emerald-500/30 rounded-full">
+                                                                        <Check className="h-5 w-5 text-emerald-400" />
+                                                                        <span className="text-sm font-semibold text-emerald-300">Pipeline Healthy</span>
+                                                                    </div>
+                                                                ) : (
+                                                                    <div className="flex items-center gap-2 px-4 py-2 bg-red-500/20 border border-red-500/30 rounded-full">
+                                                                        <X className="h-5 w-5 text-red-400" />
+                                                                        <span className="text-sm font-semibold text-red-300">Action Required</span>
+                                                                    </div>
+                                                                )}
+                                                                <span className="text-xs text-gray-400">Click to see details</span>
+                                                            </>
+                                                        );
+                                                    })()}
+                                                </div>
                                             </div>
-                                            <div className="p-3 bg-black/30 rounded border border-white/10">
-                                                <span className="text-xs text-gray-400 block mb-1">Needed Advanced Pipeline (Deals)</span>
-                                                <span className="text-xl font-bold text-[#1C73E8]">
-                                                    {avgTicket > 0 && closeRate > 0 ? Math.ceil((revenueGoal / avgTicket) / (closeRate / 100)) : 0}
-                                                </span>
-                                            </div>
-                                        </div>
+                                        </Button>
+                                    </div>
+
+                                    {/* Helper Text */}
+                                    <div className="p-3 bg-white/5 border border-white/10 rounded-lg">
+                                        <p className="text-xs text-gray-400 text-center">
+                                            💡 Conversion rate is calculated based on leads with Warm and Hot status criteria.
+                                        </p>
                                     </div>
                                 </div>
                             </TabsContent>
@@ -1002,28 +1042,89 @@ export function CrmSettingsModal({ isOpen, onClose, settings }: CrmSettingsModal
                 </DialogContent>
             </Dialog >
 
-            <AlertDialog open={itemToDelete !== null} onOpenChange={(open) => !open && setItemToDelete(null)}>
-                <AlertDialogContent className="bg-[#1a1a1a] border border-white/10 text-white z-[200]">
-                    <AlertDialogHeader>
-                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                        <AlertDialogDescription className="text-gray-400">
-                            This action cannot be undone. This will permanently delete the tag.
-                        </AlertDialogDescription>
-                    </AlertDialogHeader>
-
-
-                    <AlertDialogFooter>
-                        <AlertDialogCancel className="border-white/10 bg-white/5 hover:bg-white/10 text-white hover:text-white">Cancel</AlertDialogCancel>
-                        <AlertDialogAction
-                            onClick={handleConfirmDelete}
-                            className="bg-red-600 hover:bg-red-700 text-white border-none"
-                            disabled={loading}
-                        >
-                            {loading ? "Deleting..." : "Delete"}
-                        </AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
+            {/* Pipeline Summary Modal */}
+            <Dialog open={showPipelineSummary} onOpenChange={setShowPipelineSummary}>
+                <DialogContent className="max-w-2xl bg-[#0a0a0a] border-white/10">
+                    <DialogHeader>
+                        <DialogTitle className="text-xl font-bold text-white">Pipeline Health Summary</DialogTitle>
+                    </DialogHeader>
+                    
+                    <div className="space-y-6 py-4">
+                        {(() => {
+                            const neededCustomers = avgTicket > 0 ? Math.ceil(revenueGoal / avgTicket) : 0;
+                            const neededWarmHot = avgTicket > 0 && closeRate > 0 ? Math.ceil(neededCustomers / (closeRate / 100)) : 0;
+                            
+                            // Count current Warm/Hot leads
+                            const statusMap = new Map<string, { temperature?: string }>();
+                            statuses.forEach(s => {
+                                statusMap.set(s.label, { temperature: s.temperature });
+                            });
+                            const currentWarmHot = leads.filter(l => {
+                                const statusInfo = statusMap.get(l.status);
+                                const temperature = statusInfo?.temperature;
+                                return temperature === 'Warm' || temperature === 'Hot';
+                            }).length;
+                            
+                            const shortfall = neededWarmHot - currentWarmHot;
+                            const isHealthy = currentWarmHot >= neededWarmHot;
+                            
+                            return (
+                                <div className="space-y-4">
+                                    <div className="p-6 bg-gradient-to-br from-blue-500/10 to-purple-500/10 border border-white/10 rounded-lg">
+                                        <p className="text-base leading-relaxed text-gray-200">
+                                            You want to close{" "}
+                                            <span className="font-bold text-emerald-400">{neededCustomers} customers</span>{" "}
+                                            this month at an average ticket of{" "}
+                                            <span className="font-bold text-blue-400">${avgTicket.toLocaleString()}</span>, 
+                                            reaching a revenue of{" "}
+                                            <span className="font-bold text-purple-400">${revenueGoal.toLocaleString()}</span>.
+                                        </p>
+                                    </div>
+                                    
+                                    <div className="p-6 bg-gradient-to-br from-orange-500/10 to-red-500/10 border border-white/10 rounded-lg">
+                                        <p className="text-base leading-relaxed text-gray-200">
+                                            With a close rate of{" "}
+                                            <span className="font-bold text-orange-400">{closeRate}%</span>, 
+                                            you need{" "}
+                                            <span className="font-bold text-red-400">{neededWarmHot} leads</span>{" "}
+                                            with Warm or Hot status in your pipeline.
+                                        </p>
+                                    </div>
+                                    
+                                    <div className={`p-6 border rounded-lg ${
+                                        isHealthy 
+                                            ? 'bg-gradient-to-br from-emerald-500/10 to-green-500/10 border-emerald-500/20' 
+                                            : 'bg-gradient-to-br from-red-500/10 to-rose-500/10 border-red-500/20'
+                                    }`}>
+                                        <p className="text-base leading-relaxed text-gray-200">
+                                            Currently, you have{" "}
+                                            <span className={`font-bold ${isHealthy ? 'text-emerald-400' : 'text-red-400'}`}>
+                                                {currentWarmHot} leads
+                                            </span>{" "}
+                                            with Warm/Hot status.{" "}
+                                            {isHealthy ? (
+                                                <span className="font-bold text-emerald-400">
+                                                    Your pipeline is healthy! 🎉
+                                                </span>
+                                            ) : (
+                                                <span className="font-bold text-red-400">
+                                                    You need {shortfall} more Warm/Hot leads to reach your goal.
+                                                </span>
+                                            )}
+                                        </p>
+                                    </div>
+                                </div>
+                            );
+                        })()}
+                    </div>
+                    
+                    <div className="flex justify-end">
+                        <Button onClick={() => setShowPipelineSummary(false)} variant="ghost" className="text-gray-400 hover:text-white">
+                            Close
+                        </Button>
+                    </div>
+                </DialogContent>
+            </Dialog>
 
         </>
     );

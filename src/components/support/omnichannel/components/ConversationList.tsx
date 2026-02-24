@@ -45,7 +45,7 @@ export interface Conversation {
     qualification_details?: any;
     source: string;
     temperature?: string;
-    history: { id: string; message: string; date: Date }[];
+    history: { id: string; message: string; date: Date; userId?: string }[];
     custom?: string;
     quem_atende?: string;
     responsibleId?: string | null;
@@ -179,7 +179,7 @@ export function ConversationList({
                         )}
                     </div>
                 ) : (
-                    accessibleInboxes.length > 1 && onInboxChange ? (
+                    accessibleInboxes.length > 0 && onInboxChange ? (
                         <div className="flex items-center gap-2">
                             <Select value={targetUserId} onValueChange={onInboxChange}>
                                 <SelectTrigger className="w-full h-14 bg-white/5 border-white/10 text-white p-2 flex items-center gap-3">
@@ -189,8 +189,8 @@ export function ConversationList({
                                             <AvatarFallback className="text-xs font-bold">{targetUser?.name?.[0] || '?'}</AvatarFallback>
                                         </Avatar>
                                         <div className="flex-1 min-w-0">
-                                            <p className="text-[10px] text-gray-500 font-medium uppercase tracking-wider leading-tight">Inbox of</p>
-                                            <h3 className="text-sm text-white font-bold truncate leading-tight">{targetUser?.name || 'Select Inbox'}</h3>
+                                            <p className="text-[10px] text-gray-500 font-medium uppercase tracking-wider leading-tight">Conversations of</p>
+                                            <h3 className="text-sm text-white font-bold truncate leading-tight">{targetUser?.name || 'Select User'}</h3>
                                         </div>
                                     </div>
                                 </SelectTrigger>
@@ -209,27 +209,17 @@ export function ConversationList({
                                     ))}
                                 </SelectContent>
                             </Select>
-                            <form action={signout}>
-                                <Button variant="ghost" size="icon" className="h-14 w-10 text-slate-500 hover:text-white hover:bg-white/8 border border-white/10 rounded-lg">
-                                    <LogOut size={16} />
-                                </Button>
-                            </form>
                         </div>
                     ) : targetUser ? (
                         <div className="flex items-center gap-3 px-2 py-1.5 bg-white/4 rounded-xl border border-white/8">
                             <Avatar className="h-9 w-9 border border-[#1C73E8]/40">
                                 <AvatarImage src={instanceAvatar || targetUser.avatar_url || targetUser.avatar} />
-                                <AvatarFallback className="text-xs font-bold">{targetUser.name[0]}</AvatarFallback>
+                                <AvatarFallback className="text-xs font-bold">{targetUser.name ? targetUser.name[0] : '?'}</AvatarFallback>
                             </Avatar>
                             <div className="flex-1 min-w-0">
                                 <p className="text-[10px] text-gray-500 font-medium uppercase tracking-wider leading-tight">Conversations of</p>
-                                <h3 className="text-sm text-white font-bold truncate leading-tight">{targetUser.name}</h3>
+                                <h3 className="text-sm text-white font-bold truncate leading-tight">{targetUser.name || 'Agent'}</h3>
                             </div>
-                            <form action={signout}>
-                                <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-500 hover:text-white hover:bg-white/8 rounded-lg">
-                                    <LogOut size={14} />
-                                </Button>
-                            </form>
                         </div>
                     ) : (
                         <div className="flex items-center justify-between px-1">

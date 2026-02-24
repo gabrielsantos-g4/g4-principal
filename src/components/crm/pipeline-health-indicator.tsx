@@ -9,9 +9,10 @@ import { cn } from "@/lib/utils";
 interface PipelineHealthIndicatorProps {
     leads: any[];
     settings: CrmSettings;
+    onClick?: () => void;
 }
 
-export function PipelineHealthIndicator({ leads, settings }: PipelineHealthIndicatorProps) {
+export function PipelineHealthIndicator({ leads, settings, onClick }: PipelineHealthIndicatorProps) {
     const health = useMemo(() => {
         const revenueGoal = settings.revenue_goal || 0;
         const avgTicket = settings.avg_ticket || 0;
@@ -22,22 +23,24 @@ export function PipelineHealthIndicator({ leads, settings }: PipelineHealthIndic
             return null;
         }
 
+        // Step 1: Calculate needed customers
         const neededCustomers = Math.ceil(revenueGoal / avgTicket);
-        // Avoid division by zero
+        
+        // Step 2: Calculate needed Warm/Hot leads based on conversion rate
+        // If close rate is 20%, we need 5x more leads (100/20 = 5)
         const neededPipelineDeals = Math.ceil(neededCustomers / (closeRate / 100));
 
-        // Map status label to phase and temperature for O(1) lookup
+        // Map status label to temperature for O(1) lookup
         const statusMap = new Map<string, { phase?: string, temperature?: string }>();
         settings.statuses.forEach(s => {
             statusMap.set(s.label, { phase: s.phase, temperature: s.temperature });
         });
 
+        // Count leads with Warm or Hot temperature
         const currentPipelineDeals = leads.filter(l => {
             const statusInfo = statusMap.get(l.status);
-            const isClosing = statusInfo?.phase === 'closing';
-            // neededPipelineDeals counts leads that are Closing OR Hot
-            const isHot = statusInfo?.temperature === 'Hot';
-            return isClosing || isHot;
+            const temperature = statusInfo?.temperature;
+            return temperature === 'Warm' || temperature === 'Hot';
         }).length;
 
         const isHealthy = currentPipelineDeals >= neededPipelineDeals;
@@ -47,11 +50,13 @@ export function PipelineHealthIndicator({ leads, settings }: PipelineHealthIndic
             : 100;
 
         return {
+            neededCustomers,
             neededPipelineDeals,
             currentPipelineDeals,
             isHealthy,
             shortfall,
-            percentage
+            percentage,
+            closeRate
         };
     }, [leads, settings]);
 
@@ -61,12 +66,14 @@ export function PipelineHealthIndicator({ leads, settings }: PipelineHealthIndic
         <TooltipProvider>
             <Tooltip>
                 <TooltipTrigger asChild>
-                    <div className={cn(
-                        "flex items-center gap-2 px-3 py-1.5 rounded-full border text-xs font-medium cursor-help transition-colors",
-                        health.isHealthy
-                            ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20"
-                            : "bg-red-500/10 border-red-500/20 text-red-400 hover:bg-red-500/20"
-                    )}>
+                    <div 
+                        onClick={onClick}
+                        className={cn(
+                            "flex items-center gap-2 px-3 py-1.5 rounded-full border text-xs font-medium cursor-pointer transition-colors",
+                            health.isHealthy
+                                ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20"
+                                : "bg-red-500/10 border-red-500/20 text-red-400 hover:bg-red-500/20"
+                        )}>
                         {health.isHealthy ? (
                             <CheckCircle2 size={14} />
                         ) : (
@@ -89,25 +96,28 @@ export function PipelineHealthIndicator({ leads, settings }: PipelineHealthIndic
 
                         <div className="space-y-3 text-sm leading-relaxed">
                             <p className="text-gray-300">
-                                You want to close <span className="text-white font-bold">{health.neededPipelineDeals} deals</span> this month.
+                                To reach your revenue goal, you need <span className="text-white font-bold">{health.neededCustomers} new customers</span> this month.
                             </p>
                             <p className="text-gray-300">
-                                From your total leads, <span className="text-white font-bold">{health.currentPipelineDeals}</span> are in the <span className="text-orange-400 font-semibold">Closing (Hot)</span> stage.
+                                With a <span className="text-blue-400 font-semibold">{settings.close_rate}% close rate</span>, you need <span className="text-white font-bold">{health.neededPipelineDeals} leads</span> in Closing stage (Warm/Hot).
                             </p>
                             <p className="text-gray-300">
-                                That represents <span className={cn("font-bold", health.isHealthy ? "text-emerald-400" : "text-red-400")}>{health.percentage}%</span> of your goal.
+                                Currently, you have <span className="text-white font-bold">{health.currentPipelineDeals} leads</span> marked as <span className="text-orange-400 font-semibold">Warm</span> or <span className="text-red-400 font-semibold">Hot</span>.
+                            </p>
+                            <p className="text-gray-300">
+                                That represents <span className={cn("font-bold", health.isHealthy ? "text-emerald-400" : "text-red-400")}>{health.percentage}%</span> of your needed pipeline.
                             </p>
 
                             {!health.isHealthy ? (
                                 <div className="mt-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
                                     <p className="text-red-300 text-xs">
-                                        You still need <span className="text-white font-bold">{health.shortfall} more</span> to hit your goal.
+                                        You need <span className="text-white font-bold">{health.shortfall} more Warm/Hot leads</span> to hit your goal.
                                     </p>
                                 </div>
                             ) : (
                                 <div className="mt-4 p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-lg">
                                     <p className="text-emerald-300 text-xs">
-                                        You are on track to hit your goal! Keep it up.
+                                        Your pipeline is healthy! You have enough Warm/Hot leads to hit your goal.
                                     </p>
                                 </div>
                             )}

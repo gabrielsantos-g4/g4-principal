@@ -25,8 +25,9 @@ export function ChatWindow({ conversation, initialMessages }: ChatWindowProps) {
 
     // Realtime subscription
     useEffect(() => {
+        const channelId = `chat-${conversation.id}-${Date.now()}`;
         const channel = supabase
-            .channel(`chat:${conversation.id}`)
+            .channel(channelId)
             .on('postgres_changes', {
                 event: 'INSERT',
                 schema: 'public',
@@ -40,7 +41,18 @@ export function ChatWindow({ conversation, initialMessages }: ChatWindowProps) {
                     return [...prev, newMessage]
                 })
             })
-            .subscribe()
+            .subscribe((status, err) => {
+                console.log('[ChatWindow] Realtime subscription status:', status);
+                console.log('[ChatWindow] Channel ID:', channelId);
+                if (err) {
+                    console.error('[ChatWindow] Realtime subscription error:', err);
+                    console.error('[ChatWindow] Error type:', err?.message || err);
+                }
+                if (status === 'CHANNEL_ERROR') {
+                    console.error('[ChatWindow] ❌ Failed to subscribe');
+                    console.error('[ChatWindow] Channel ID that failed:', channelId);
+                }
+            })
 
         return () => {
             supabase.removeChannel(channel)

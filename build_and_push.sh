@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # Configuration
-IMAGE_NAME="gabrielsantosg4/g4-principal"
-TAG="0.1.23"
+IMAGE_NAME="joaogabrielti/g4-principal"
+TAG="0.1.29"
 
 echo "Using image: $IMAGE_NAME:$TAG"
 
@@ -27,7 +27,9 @@ docker build \
   --build-arg R2_BUCKET_NAME=$R2_BUCKET_NAME \
   --build-arg R2_ACCESS_KEY_ID=$R2_ACCESS_KEY_ID \
   --build-arg R2_SECRET_ACCESS_KEY=$R2_SECRET_ACCESS_KEY \
-  -t $IMAGE_NAME:$TAG .
+  --build-arg OPENAI_API_KEY=$OPENAI_API_KEY \
+  -t $IMAGE_NAME:$TAG \
+  -t $IMAGE_NAME:latest .
 
 # Push to Docker Hub
 echo "Pushing image..."
