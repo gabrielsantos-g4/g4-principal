@@ -103,11 +103,11 @@ export function OmnichannelInbox({
 
     // Use singleton Supabase client for Realtime
     const supabase = getSupabaseRealtimeClient();
-    
+
     // Refs to track channels and prevent duplicates
     const channelsRef = useRef<{ leads: any; messages: any }>({ leads: null, messages: null });
     const isSubscribingRef = useRef(false);
-    
+
     // Realtime Refresh Logic with Polling Fallback
     const [refreshTrigger, setRefreshTrigger] = useState(0);
     const [usePolling, setUsePolling] = useState(false);
@@ -119,7 +119,7 @@ export function OmnichannelInbox({
         if (!crmSettings?.empresa_id || isSubscribingRef.current) return;
 
         const empresaId = crmSettings.empresa_id;
-        
+
         // Prevent duplicate subscriptions
         isSubscribingRef.current = true;
 
@@ -185,7 +185,7 @@ export function OmnichannelInbox({
                 {
                     event: 'INSERT',
                     schema: 'public',
-                    table: 'camp_mensagens',
+                    table: 'camp_mensagens_n',
                     filter: `empresa_id=eq.${empresaId}`
                 },
                 (payload: any) => {
@@ -204,7 +204,7 @@ export function OmnichannelInbox({
         return () => {
             console.log('[OmnichannelInbox] Cleaning up realtime channels');
             isSubscribingRef.current = false;
-            
+
             if (channelsRef.current.leads) {
                 supabase.removeChannel(channelsRef.current.leads);
                 channelsRef.current.leads = null;
@@ -216,15 +216,39 @@ export function OmnichannelInbox({
         };
     }, [crmSettings?.empresa_id]);
 
+    // Message Loading Logic
+    const [messages, setMessages] = useState<Message[]>([]);
+    const [isMessagesLoading, setIsMessagesLoading] = useState(false);
+
+    // Ref to track current selectedConversationId for Realtime callbacks
+    const selectedConversationIdRef = useRef<string | null>(null);
+    selectedConversationIdRef.current = selectedConversationId;
+
+    // Silent reload: fetches messages without showing loading indicator
+    const silentReloadMessages = useCallback(async () => {
+        const convId = selectedConversationIdRef.current;
+        console.log('[silentReload] Called for conversation:', convId);
+        if (!convId) return;
+        try {
+            const dbMessages = await getChatMessages(convId);
+            if (dbMessages && dbMessages.length > 0) {
+                setMessages(dbMessages as Message[]);
+            }
+        } catch (error) {
+            console.error('[silentReload] Failed:', error);
+        }
+    }, []);
+
     // Polling fallback when Realtime fails
     useEffect(() => {
-        if (!usePolling || !targetUserId) return;
+        if (!targetUserId || !usePolling) return;
 
         console.log('[OmnichannelInbox] 🔄 Polling mode enabled (refreshing every 5 seconds)');
 
         pollingIntervalRef.current = setInterval(() => {
             console.log('[OmnichannelInbox] 📊 Polling: Refreshing data...');
             setRefreshTrigger(prev => prev + 1);
+            silentReloadMessages(); // Ensure messages in the active chat are also refreshed during polling
         }, 5000); // Poll every 5 seconds
 
         return () => {
@@ -234,7 +258,7 @@ export function OmnichannelInbox({
                 pollingIntervalRef.current = null;
             }
         };
-    }, [usePolling, targetUserId]);
+    }, [targetUserId, usePolling, silentReloadMessages]);
 
     useEffect(() => {
         let isMounted = true;
@@ -291,31 +315,9 @@ export function OmnichannelInbox({
         return () => { isMounted = false; };
     }, [targetUserId, refreshTrigger, crmSettings?.empresa_id]);
 
+    // Initial load when conversation changes (with loading indicator)
     const selectedConversation = conversations.find(c => c.id === selectedConversationId);
 
-    // Message Loading Logic
-    const [messages, setMessages] = useState<Message[]>([]);
-    const [isMessagesLoading, setIsMessagesLoading] = useState(false);
-
-    // Ref to track current selectedConversationId for Realtime callbacks
-    const selectedConversationIdRef = useRef<string | null>(null);
-    selectedConversationIdRef.current = selectedConversationId;
-
-    // Silent reload: fetches messages without showing loading indicator
-    const silentReloadMessages = useCallback(async () => {
-        const convId = selectedConversationIdRef.current;
-        if (!convId) return;
-        try {
-            const dbMessages = await getChatMessages(convId);
-            if (dbMessages && dbMessages.length > 0) {
-                setMessages(dbMessages as Message[]);
-            }
-        } catch (error) {
-            console.error('[silentReload] Failed:', error);
-        }
-    }, []);
-
-    // Initial load when conversation changes (with loading indicator)
     useEffect(() => {
         if (!selectedConversationId) {
             setMessages([]);
@@ -464,6 +466,10 @@ export function OmnichannelInbox({
             const result = await sendMessage(selectedConversation.id, text);
             if (!result.success) {
                 toast.error("Failed to send message: " + result.message);
+            } else {
+                // Force a manual refresh to ensure UI is updated even if Realtime drops
+                setRefreshTrigger(prev => prev + 1);
+                silentReloadMessages();
             }
         } catch (error) {
             console.error("Send error:", error);

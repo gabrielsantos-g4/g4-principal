@@ -59,6 +59,35 @@ function formatMsgTime(timestamp: string): string {
     }
 }
 
+function formatWhatsAppText(text: string) {
+    if (!text) return null;
+
+    // Split by WhatsApp delimiters: *bold*, _italic_, ~strikethrough~, ```code```
+    const parts = text.split(/(\*[^*]+\*|_{1}[^_]+_{1}|~[^~]+~|```[`]*?[^`]+```)/g);
+
+    return parts.map((part, i) => {
+        if (part.startsWith('```') && part.endsWith('```') && part.length > 6) {
+            return <code key={i} className="bg-black/30 text-emerald-400 px-1.5 py-0.5 rounded font-mono text-[11px]">{part.slice(3, -3)}</code>;
+        }
+        if (part.startsWith('*') && part.endsWith('*') && part.length > 2) {
+            return <strong key={i} className="font-bold">{part.slice(1, -1)}</strong>;
+        }
+        if (part.startsWith('_') && part.endsWith('_') && part.length > 2) {
+            return <em key={i} className="italic">{part.slice(1, -1)}</em>;
+        }
+        if (part.startsWith('~') && part.endsWith('~') && part.length > 2) {
+            return <del key={i} className="line-through opacity-70">{part.slice(1, -1)}</del>;
+        }
+        // Handle line breaks properly
+        return part.split('\n').map((line, j, arr) => (
+            <span key={`${i}-${j}`}>
+                {line}
+                {j < arr.length - 1 && <br />}
+            </span>
+        ));
+    });
+}
+
 export function ChatArea({
     selectedConversation,
     messages,
@@ -321,7 +350,7 @@ export function ChatArea({
                                                 <span className="text-[10px] opacity-60 shrink-0">0:12</span>
                                             </div>
                                         ) : (
-                                            <div className="whitespace-pre-wrap leading-relaxed break-words">{msg.content}</div>
+                                            <div className="leading-relaxed break-words">{formatWhatsAppText(msg.content)}</div>
                                         )}
 
                                         {/* Timestamp + status */}

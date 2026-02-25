@@ -31,7 +31,7 @@ export function ChatWindow({ conversation, initialMessages }: ChatWindowProps) {
             .on('postgres_changes', {
                 event: 'INSERT',
                 schema: 'public',
-                table: 'camp_mensagens',
+                table: 'camp_mensagens_n',
                 filter: `conversa_id=eq.${conversation.id}`
             }, (payload) => {
                 const newMessage = payload.new as Message

@@ -11,10 +11,10 @@ export async function getChatMessages(conversationId: string) {
 
     const supabaseAdmin = await createAdminClient();
 
-    // Directly Fetch Messages from camp_mensagens using the provided conversationId
+    // Directly Fetch Messages from camp_mensagens_n using the provided conversationId
     // We assume conversationId is the valid UUID from camp_conversas
     const { data: messages, error: messagesError } = await supabaseAdmin
-        .from('camp_mensagens')
+        .from('camp_mensagens_n')
         .select('*')
         .eq('conversa_id', conversationId)
         .eq('empresa_id', empresaId)

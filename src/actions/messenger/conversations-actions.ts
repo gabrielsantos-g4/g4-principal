@@ -62,7 +62,7 @@ export async function getConversations() {
     // For each conversation, fetch the last message to display as snippet
     const formattedConversations: Conversation[] = await Promise.all(conversations.map(async (conv: any) => {
         const { data: lastMsg } = await supabase
-            .from('camp_mensagens')
+            .from('camp_mensagens_n')
             .select('body, created_at')
             .eq('conversa_id', conv.id)
             .order('created_at', { ascending: false })
@@ -103,7 +103,7 @@ export async function getMessages(conversationId: string) {
     }
 
     const { data, error } = await supabase
-        .from('camp_mensagens')
+        .from('camp_mensagens_n')
         .select('*')
         .eq('conversa_id', conversationId)
         .eq('empresa_id', profile.empresa_id)
@@ -132,7 +132,7 @@ export async function sendMessage(conversationId: string, body: string) {
 
     // 1. Insert message into DB
     const { data: message, error } = await supabase
-        .from('camp_mensagens')
+        .from('camp_mensagens_n')
         .insert({
             conversa_id: conversationId,
             empresa_id: profile.empresa_id,

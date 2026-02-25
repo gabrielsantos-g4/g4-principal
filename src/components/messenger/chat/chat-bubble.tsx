@@ -9,6 +9,35 @@ interface ChatBubbleProps {
     isMe: boolean
 }
 
+function formatWhatsAppText(text: string): string {
+    if (!text) return "";
+
+    // Escape HTML to prevent XSS before applying formatting
+    let formatted = text
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+
+    // Replace newlines with <br/> for HTML rendering
+    formatted = formatted.replace(/\n/g, '<br/>');
+
+    // Monospace ```text```
+    formatted = formatted.replace(/```([\s\S]*?)```/g, '<code class="bg-black/10 dark:bg-white/10 px-1 py-0.5 rounded font-mono text-[13px]">$1</code>');
+
+    // Bold *text* (must not be preceded by alphanumeric character, handles <br/>)
+    formatted = formatted.replace(/(^|[\s\W]|<br\/>)\*([^\*]+)\*(?=([\s\W]|<br\/>|$))/g, '$1<strong>$2</strong>');
+
+    // Italic _text_ (must not be preceded by alphanumeric character, handles <br/>)
+    formatted = formatted.replace(/(^|[\s\W]|<br\/>)\_([^_]+)\_(?=([\s\W]|<br\/>|$))/g, '$1<em>$2</em>');
+
+    // Strikethrough ~text~ (must not be preceded by alphanumeric character, handles <br/>)
+    formatted = formatted.replace(/(^|[\s\W]|<br\/>)\~([^~]+)\~(?=([\s\W]|<br\/>|$))/g, '$1<del>$2</del>');
+
+    return formatted;
+}
+
 export function ChatBubble({ message, isMe }: ChatBubbleProps) {
     return (
         <div className={cn("flex w-full mb-4", isMe ? "justify-end" : "justify-start")}>
@@ -46,9 +75,10 @@ export function ChatBubble({ message, isMe }: ChatBubbleProps) {
                 )}
 
                 {/* Text Content */}
-                <p className="whitespace-pre-wrap break-words text-sm leading-relaxed">
-                    {message.body}
-                </p>
+                <div
+                    className="whitespace-pre-wrap break-words text-sm leading-relaxed"
+                    dangerouslySetInnerHTML={{ __html: formatWhatsAppText(message.body) }}
+                />
 
                 {/* Metadata (Time + Status) */}
                 <div className={cn("flex items-center gap-1 mt-1 text-[10px]", isMe ? "justify-end text-[#8696a0]" : "justify-end text-[#8696a0]")}>

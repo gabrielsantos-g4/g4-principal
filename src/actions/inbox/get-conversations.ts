@@ -93,7 +93,7 @@ export async function getConversations(targetUserId?: string) {
     // Helper to fetch last message
     const fetchLastMessage = async (conversationId: string) => {
         const { data: lastMsg } = await supabaseAdmin
-            .from('camp_mensagens')
+            .from('camp_mensagens_n')
             .select('body, created_at, status, media_url')
             .eq('conversa_id', conversationId)
             .order('created_at', { ascending: false })
