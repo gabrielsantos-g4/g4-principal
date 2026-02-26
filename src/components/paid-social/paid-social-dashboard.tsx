@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useForm, useFieldArray, Controller } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -12,6 +12,8 @@ import { FileUpload } from "@/components/dashboard/file-upload"
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip, Line, LineChart, CartesianGrid, Legend, Area, AreaChart } from "recharts"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { DashboardClient } from '@/components/dashboard/dashboard-client'
+import { PaidSocialSettings } from './paid-social-settings'
+import { fetchLinkedInMetrics } from '@/actions/paid-social-mcp-actions'
 
 // --- Schemas ---
 
@@ -118,15 +120,72 @@ const INITIAL_REPORTS: Report[] = [
     },
 ]
 
+const MOCK_CAMPAIGNS = [
+    { id: 'cmp_1', name: 'Summer Sale 2024', status: 'active', budget: 5000, spend: 3200, impressions: 150000, clicks: 7500, conversions: 300, roas: 4.5 },
+    { id: 'cmp_2', name: 'New Product Launch', status: 'paused', budget: 3000, spend: 1500, impressions: 80000, clicks: 3000, conversions: 100, roas: 3.0 },
+    { id: 'cmp_3', name: 'Brand Awareness Q3', status: 'active', budget: 7000, spend: 5000, impressions: 250000, clicks: 9000, conversions: 150, roas: 2.5 },
+]
+
+const MOCK_AD_GROUPS = [
+    { id: 'ag_1', name: 'Retargeting Audience', campaign_id: 'cmp_1', status: 'active', budget: 2000, spend: 1800, impressions: 90000, clicks: 4500, conversions: 180, roas: 5.0 },
+    { id: 'ag_2', name: 'Lookalike Audience', campaign_id: 'cmp_1', status: 'active', budget: 3000, spend: 1400, impressions: 60000, clicks: 3000, conversions: 120, roas: 3.5 },
+    { id: 'ag_3', name: 'Interest Targeting - Tech Enthusiasts', campaign_id: 'cmp_2', status: 'paused', budget: 1500, spend: 500, impressions: 40000, clicks: 1500, conversions: 50, roas: 2.0 },
+]
+
+const MOCK_ADS = [
+    { id: 'ad_1', name: 'Summer Sale - Image Ad 1', ad_group_id: 'ag_1', status: 'active', creative: 'image1.jpg', copy: 'Get 50% off all summer items!', clicks: 2000, impressions: 50000, conversions: 100, roas: 6.0 },
+    { id: 'ad_2', name: 'Summer Sale - Video Ad', ad_group_id: 'ag_1', status: 'active', creative: 'video1.mp4', copy: 'Don\'t miss out on our summer deals!', clicks: 2500, impressions: 70000, conversions: 80, roas: 4.0 },
+    { id: 'ad_3', name: 'New Product Launch - Main Ad', ad_group_id: 'ag_3', status: 'paused', creative: 'product_main.jpg', copy: 'Introducing the future of tech!', clicks: 1000, impressions: 30000, conversions: 20, roas: 3.0 },
+]
+
+const performanceData = [
+    { date: 'Mon', spend: 1200, conversions: 42 },
+    { date: 'Tue', spend: 1450, conversions: 51 },
+    { date: 'Wed', spend: 1100, conversions: 38 },
+    { date: 'Thu', spend: 1680, conversions: 58 },
+    { date: 'Fri', spend: 1890, conversions: 66 },
+    { date: 'Sat', spend: 1420, conversions: 49 },
+    { date: 'Sun', spend: 1210, conversions: 41 },
+]
+
 // --- Component ---
 
-export function PaidSocialDashboard() {
+export function PaidSocialDashboard({ initialTab = "setup" }: { initialTab?: string }) {
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [isProcessing, setIsProcessing] = useState(false)
-    const [activeTab, setActiveTab] = useState("demand")
+    const [activeTab, setActiveTab] = useState(initialTab)
     const [activeReportTab, setActiveReportTab] = useState("my-reports")
     const [submittedAds, setSubmittedAds] = useState<SubmittedAd[]>([])
     const [selectedReport, setSelectedReport] = useState<Report | null>(null)
+    const [isLoadingMetrics, setIsLoadingMetrics] = useState(false)
+    const [realMetrics, setRealMetrics] = useState<any>(null)
+
+    // Sync activeTab with prop from parent (page.tsx URL state)
+    useEffect(() => {
+        if (initialTab) {
+            setActiveTab(initialTab)
+        }
+    }, [initialTab])
+
+    useEffect(() => {
+        if (activeTab === 'results') {
+            const loadData = async () => {
+                setIsLoadingMetrics(true)
+                const result = await fetchLinkedInMetrics()
+                if (result.success) {
+                    setRealMetrics(result.data)
+                } else {
+                    console.error("Failed to load real metrics:", result.error)
+                    // Keep mock data if real fails, but notify if there's a config issue
+                    if (result.error?.includes('configuration not found')) {
+                        toast.info("Conecte sua conta do LinkedIn na aba Settings para ver dados reais.")
+                    }
+                }
+                setIsLoadingMetrics(false)
+            }
+            loadData()
+        }
+    }, [activeTab])
     const [reports, setReports] = useState<Report[]>(INITIAL_REPORTS)
 
     const form = useForm<CampaignFormValues>({
@@ -239,25 +298,9 @@ export function PaidSocialDashboard() {
 
     return (
         <div className="w-full h-full bg-black text-white font-sans p-6 overflow-hidden flex flex-col">
-            <Tabs defaultValue="demand" value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col overflow-hidden">
-                <div className="flex justify-start mb-6">
-                    <TabsList className="bg-white/5 border border-white/10 p-1 h-auto">
-                        <TabsTrigger
-                            value="demand"
-                            className="px-6 py-2 data-[state=active]:bg-[#1C73E8] data-[state=active]:text-white data-[state=inactive]:text-gray-400 data-[state=inactive]:hover:text-white transition-all"
-                        >
-                            Setup
-                        </TabsTrigger>
-                        <TabsTrigger
-                            value="reports"
-                            className="px-6 py-2 data-[state=active]:bg-[#1C73E8] data-[state=active]:text-white data-[state=inactive]:text-gray-400 data-[state=inactive]:hover:text-white transition-all"
-                        >
-                            Reports
-                        </TabsTrigger>
-                    </TabsList>
-                </div>
+            <Tabs defaultValue="setup" value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col overflow-hidden">
 
-                <TabsContent value="demand" className="flex-1 overflow-y-auto pr-2 custom-scrollbar pb-20">
+                <TabsContent value="setup" className="flex-1 overflow-y-auto pr-2 custom-scrollbar pb-20">
                     <form onSubmit={handleSubmit(onSubmit)} className="w-full max-w-[1600px] space-y-8">
 
                         {/* 1. Basic Info */}
@@ -440,8 +483,170 @@ export function PaidSocialDashboard() {
                     </form>
                 </TabsContent>
 
-                <TabsContent value="reports" className="flex-1 flex flex-col min-h-0 overflow-y-auto custom-scrollbar pb-20">
+                <TabsContent value="results" className="flex-1 flex flex-col min-h-0 overflow-y-auto custom-scrollbar pb-20">
+                    {isLoadingMetrics ? (
+                        <div className="flex flex-col items-center justify-center p-20 gap-4">
+                            <div className="w-12 h-12 border-4 border-[#1C73E8] border-t-transparent rounded-full animate-spin"></div>
+                            <p className="text-gray-400 animate-pulse">Fetching real-time LinkedIn data...</p>
+                        </div>
+                    ) : (
+                        <div className="space-y-8 max-w-[1600px]">
+                            {/* Summary Cards */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                                <Card className="bg-white/5 border-white/10 text-white backdrop-blur-sm">
+                                    <CardHeader className="pb-2">
+                                        <CardDescription className="text-gray-400">Total Spend</CardDescription>
+                                        <CardTitle className="text-2xl font-bold">
+                                            ${(realMetrics?.metrics?.spend ?? 0).toLocaleString()}
+                                        </CardTitle>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <div className="text-xs text-green-400 flex items-center gap-1">
+                                            <TrendingUp size={12} />
+                                            +12.5% vs last month
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                                <Card className="bg-white/5 border-white/10 text-white backdrop-blur-sm">
+                                    <CardHeader className="pb-2">
+                                        <CardDescription className="text-gray-400">Impressions</CardDescription>
+                                        <CardTitle className="text-2xl font-bold">
+                                            {(realMetrics?.metrics?.impressions ?? 0).toLocaleString()}
+                                        </CardTitle>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <div className="text-xs text-gray-500 flex items-center gap-1">
+                                            Avg. CPM: ${realMetrics?.metrics?.impressions > 0 ? (realMetrics.metrics.spend / (realMetrics.metrics.impressions / 1000)).toFixed(2) : "0.00"}
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                                <Card className="bg-white/5 border-white/10 text-white backdrop-blur-sm">
+                                    <CardHeader className="pb-2">
+                                        <CardDescription className="text-gray-400">CTR</CardDescription>
+                                        <CardTitle className="text-2xl font-bold">
+                                            {realMetrics?.metrics?.impressions ? ((realMetrics.metrics.clicks / realMetrics.metrics.impressions) * 100).toFixed(2) : "0.00"}%
+                                        </CardTitle>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <div className="text-xs text-green-400 flex items-center gap-1">
+                                            <TrendingUp size={12} />
+                                            Live status
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                                <Card className="bg-white/5 border-white/10 text-white backdrop-blur-sm">
+                                    <CardHeader className="pb-2">
+                                        <CardDescription className="text-gray-400">Conversions</CardDescription>
+                                        <CardTitle className="text-2xl font-bold">
+                                            {realMetrics?.metrics?.conversions ?? 0}
+                                        </CardTitle>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <div className="text-xs text-blue-400 flex items-center gap-1">
+                                            CPA: ${realMetrics?.metrics?.conversions ? (realMetrics.metrics.spend / realMetrics.metrics.conversions).toFixed(2) : "0.00"}
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            </div>
+
+                            {/* Performance Chart */}
+                            <Card className="bg-white/5 border-white/10 text-white overflow-hidden">
+                                <CardHeader>
+                                    <CardTitle className="text-lg">Performance Over Time</CardTitle>
+                                </CardHeader>
+                                <CardContent className="h-[400px] w-full pt-4">
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <AreaChart data={realMetrics?.performance || performanceData}>
+                                            <defs>
+                                                <linearGradient id="colorSpend" x1="0" y1="0" x2="0" y2="1">
+                                                    <stop offset="5%" stopColor="#1C73E8" stopOpacity={0.3} />
+                                                    <stop offset="95%" stopColor="#1C73E8" stopOpacity={0} />
+                                                </linearGradient>
+                                            </defs>
+                                            <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" vertical={false} />
+                                            <XAxis
+                                                dataKey="date"
+                                                stroke="#94a3b8"
+                                                fontSize={12}
+                                                tickLine={false}
+                                                axisLine={false}
+                                            />
+                                            <YAxis
+                                                stroke="#94a3b8"
+                                                fontSize={12}
+                                                tickLine={false}
+                                                axisLine={false}
+                                                tickFormatter={(value) => `$${value}`}
+                                            />
+                                            <Tooltip
+                                                contentStyle={{ backgroundColor: '#111', border: '1px solid #333', borderRadius: '8px' }}
+                                                itemStyle={{ color: '#fff' }}
+                                            />
+                                            <Area
+                                                type="monotone"
+                                                dataKey="spend"
+                                                stroke="#1C73E8"
+                                                strokeWidth={2}
+                                                fillOpacity={1}
+                                                fill="url(#colorSpend)"
+                                            />
+                                        </AreaChart>
+                                    </ResponsiveContainer>
+                                </CardContent>
+                            </Card>
+
+                            {/* Detailed Campaigns List */}
+                            <div className="space-y-4 pt-4">
+                                <h3 className="text-lg font-semibold flex items-center gap-2">
+                                    <Layout size={18} className="text-blue-400" />
+                                    Campaign Breakdown
+                                </h3>
+                                <div className="grid grid-cols-1 gap-3">
+                                    {realMetrics?.performance?.length > 1 ? (
+                                        realMetrics.performance.slice(1).map((item: any, idx: number) => (
+                                            <div key={idx} className="flex items-center justify-between p-4 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 transition-all">
+                                                <div className="flex items-center gap-4">
+                                                    <div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center text-blue-400 font-bold">
+                                                        {(item.name || item.date).substring(0, 1)}
+                                                    </div>
+                                                    <div>
+                                                        <p className="font-medium">{item.name || item.date}</p>
+                                                        <p className="text-xs text-gray-500">Status: Active</p>
+                                                    </div>
+                                                </div>
+                                                <div className="flex gap-12 text-right">
+                                                    <div>
+                                                        <p className="text-xs text-gray-400 uppercase">Spend</p>
+                                                        <p className="font-semibold">${item.spend.toLocaleString()}</p>
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-xs text-gray-400 uppercase">ROAS</p>
+                                                        <p className="font-semibold text-green-400">{item.roas.toFixed(2)}x</p>
+                                                    </div>
+                                                    <div className="w-20">
+                                                        <p className="text-xs text-gray-400 uppercase">Conv.</p>
+                                                        <p className="font-semibold">{item.conversions}</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))
+                                    ) : (
+                                        <div className="p-8 text-center text-gray-500 border border-dashed border-white/10 rounded-xl">
+                                            No active campaigns found for this period.
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </TabsContent>
+
+                <TabsContent value="import" className="flex-1 flex flex-col min-h-0 overflow-y-auto custom-scrollbar pb-20">
                     <DashboardClient />
+                </TabsContent>
+
+                <TabsContent value="settings" className="flex-1 overflow-y-auto pr-2 custom-scrollbar pb-20">
+                    <PaidSocialSettings />
                 </TabsContent>
             </Tabs>
         </div>

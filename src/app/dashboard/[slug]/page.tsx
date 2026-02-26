@@ -557,7 +557,9 @@ export default async function AgentPage({ params, searchParams }: AgentPageProps
     if (slug === 'paid-social') {
         const paidSocialTabs = [
             { value: 'setup', label: 'Setup' },
-            { value: 'results', label: 'Results' }
+            { value: 'results', label: 'Results' },
+            { value: 'import', label: 'Import data' },
+            { value: 'settings', label: 'Settings' }
         ]
         return (
             <div className="flex-1 min-h-0 bg-black text-white font-sans flex flex-col overflow-hidden">
@@ -580,7 +582,7 @@ export default async function AgentPage({ params, searchParams }: AgentPageProps
                         />
                     }
                 >
-                    {tab === 'results' ? <InProgressResults /> : <PaidSocialDashboard />}
+                    <PaidSocialDashboard initialTab={tab || 'setup'} />
                 </MobileDashboardLayout>
             </div>
         )
