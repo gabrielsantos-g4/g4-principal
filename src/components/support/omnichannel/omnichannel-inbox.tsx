@@ -105,7 +105,7 @@ export function OmnichannelInbox({
     const supabase = getSupabaseRealtimeClient();
 
     // Refs to track channels and prevent duplicates
-    const channelsRef = useRef<{ leads: any; messages: any }>({ leads: null, messages: null });
+    const channelsRef = useRef<{ leads: any; messages: any; conversas: any }>({ leads: null, messages: null, conversas: null });
     const isSubscribingRef = useRef(false);
 
     // Realtime Refresh Logic with Polling Fallback
@@ -145,6 +145,10 @@ export function OmnichannelInbox({
         if (channelsRef.current.messages) {
             supabase.removeChannel(channelsRef.current.messages);
             channelsRef.current.messages = null;
+        }
+        if (channelsRef.current.conversas) {
+            supabase.removeChannel(channelsRef.current.conversas);
+            channelsRef.current.conversas = null;
         }
 
         let realtimeFailed = false;
@@ -201,6 +205,31 @@ export function OmnichannelInbox({
                 }
             });
 
+        // Realtime: Coversas updates
+        const channelConversasId = `omnichannel-conversas-${empresaId}-${mountId}`;
+        channelsRef.current.conversas = supabase
+            .channel(channelConversasId)
+            .on(
+                'postgres_changes',
+                {
+                    event: '*',
+                    schema: 'public',
+                    table: 'camp_conversas',
+                    filter: `empresa_id=eq.${empresaId}`
+                },
+                (payload: any) => {
+                    console.log('[OmnichannelInbox] 🔥 Realtime: Conversa update detected!', payload);
+                    setRefreshTrigger(prev => prev + 1);
+                }
+            )
+            .subscribe((status: string) => {
+                if (status === 'CHANNEL_ERROR') {
+                    console.warn('[OmnichannelInbox] ⚠️ Realtime failed for conversas');
+                    realtimeFailed = true;
+                    setUsePolling(true);
+                }
+            });
+
         return () => {
             console.log('[OmnichannelInbox] Cleaning up realtime channels');
             isSubscribingRef.current = false;
@@ -212,6 +241,10 @@ export function OmnichannelInbox({
             if (channelsRef.current.messages) {
                 supabase.removeChannel(channelsRef.current.messages);
                 channelsRef.current.messages = null;
+            }
+            if (channelsRef.current.conversas) {
+                supabase.removeChannel(channelsRef.current.conversas);
+                channelsRef.current.conversas = null;
             }
         };
     }, [crmSettings?.empresa_id]);
@@ -239,26 +272,24 @@ export function OmnichannelInbox({
         }
     }, []);
 
-    // Polling fallback when Realtime fails
+    // Polling fallback when Realtime fails (Forced to always run due to Supabase Replication Slot bug)
     useEffect(() => {
-        if (!targetUserId || !usePolling) return;
+        if (!targetUserId) return;
 
-        console.log('[OmnichannelInbox] 🔄 Polling mode enabled (refreshing every 5 seconds)');
+        console.log('[OmnichannelInbox] 🔄 Polling mode ALWAYS ENFORCED (refreshing every 8 seconds)');
 
         pollingIntervalRef.current = setInterval(() => {
-            console.log('[OmnichannelInbox] 📊 Polling: Refreshing data...');
             setRefreshTrigger(prev => prev + 1);
             silentReloadMessages(); // Ensure messages in the active chat are also refreshed during polling
-        }, 5000); // Poll every 5 seconds
+        }, 8000); // Poll every 8 seconds
 
         return () => {
             if (pollingIntervalRef.current) {
-                console.log('[OmnichannelInbox] 🛑 Stopping polling');
                 clearInterval(pollingIntervalRef.current);
                 pollingIntervalRef.current = null;
             }
         };
-    }, [targetUserId, usePolling, silentReloadMessages]);
+    }, [targetUserId, silentReloadMessages]);
 
     useEffect(() => {
         let isMounted = true;

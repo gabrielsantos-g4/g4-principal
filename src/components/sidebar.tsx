@@ -86,11 +86,31 @@ export async function Sidebar() {
         ? (humanMembers || [])
         : (humanMembers || []).filter(m => m.id === profile?.id)
 
+    // Fetch dynamic WA instance for "Jess" (customer support agent) override
+    const { data: waInstance } = await supabaseAdmin
+        .from('instance_wa_chaterly')
+        .select('agent_name, avatar')
+        .eq('empresa', profile?.empresa_id)
+        .order('created_at', { ascending: true })
+        .limit(1)
+        .maybeSingle()
+
+    const dynamicAgents = AGENTS.map(agent => {
+        if (agent.id === 'customer-jess') {
+            return {
+                ...agent,
+                name: waInstance?.agent_name && waInstance.agent_name.trim() !== '' ? waInstance.agent_name : agent.name,
+                avatar: waInstance?.avatar && waInstance.avatar.trim() !== '' ? waInstance.avatar : agent.avatar
+            }
+        }
+        return agent
+    })
+
     return (
         <SidebarWrapper>
             {/* Navigation (Client Component) */}
             <SidebarNav
-                agents={AGENTS}
+                agents={dynamicAgents}
                 activeAgents={activeAgents}
                 teamOrder={teamOrder}
                 humanMembers={visibleHumanMembers}

@@ -55,6 +55,15 @@ export async function createWhatsAppInstance(name: string, companyId: string) {
         return { error: 'Já existe uma instância com este nome.' }
     }
 
+    // Fetch the company's current agent name to set it as default
+    const { data: companyData } = await supabase
+        .from('main_empresas')
+        .select('wpp_name')
+        .eq('id', companyId)
+        .single()
+
+    const currentAgentName = companyData?.wpp_name || '';
+
     // Create instance in DB
     const { data, error } = await supabase
         .from('instance_wa_chaterly')
@@ -63,6 +72,7 @@ export async function createWhatsAppInstance(name: string, companyId: string) {
             empresa: companyId,
             nome: instanceName, // Store string ID here
             status: 'STOPPED',
+            agent_name: currentAgentName
         })
         .select()
         .single()

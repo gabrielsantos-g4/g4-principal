@@ -23,14 +23,27 @@ export async function getCompanySettings(companyId: string) {
 
 export async function updateAgentName(companyId: string, name: string) {
     const supabase = await createClient();
-    const { error } = await supabase
+
+    // Update main company settings
+    const { error: error1 } = await supabase
         .from("main_empresas")
         .update({ wpp_name: name })
         .eq("id", companyId);
 
-    if (error) {
-        console.error("Error updating agent name:", error);
-        throw new Error("Failed to update agent name");
+    if (error1) {
+        console.error("Error updating agent name in main_empresas:", error1);
+        throw new Error("Failed to update agent name in main_empresas");
+    }
+
+    // Update agent name for all WhatsApp instances of the company
+    const { error: error2 } = await supabase
+        .from("instance_wa_chaterly")
+        .update({ agent_name: name })
+        .eq("empresa", companyId);
+
+    if (error2) {
+        console.error("Error updating agent name in instance_wa_chaterly:", error2);
+        throw new Error("Failed to update agent name in WhatsApp instances");
     }
 
     return true;
