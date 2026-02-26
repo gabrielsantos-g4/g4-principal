@@ -16,11 +16,11 @@ export interface CrmFilterState {
     dateRange: { from: Date | undefined; to: Date | undefined } | undefined;
     createdAtRange: { from: Date | undefined; to: Date | undefined } | undefined;
     product: string[];
-    status: string;
-    source: string;
-    responsible: string;
-    customField: string;
-    contactFilter: 'overdue' | 'today' | 'tomorrow' | null;
+    status: string[];
+    source: string[];
+    responsible: string[];
+    customField: string[];
+    contactFilter: 'overdue' | 'today' | 'tomorrow' | 'pending' | null;
     qualification: string;
 }
 
@@ -84,10 +84,10 @@ export function CrmContainer({ initialLeads, stats: initialStats, settings, view
         dateRange: undefined,
         createdAtRange: undefined,
         product: [],
-        status: '',
-        source: '',
-        responsible: '',
-        customField: '',
+        status: [],
+        source: [],
+        responsible: [],
+        customField: [],
         contactFilter: null,
         qualification: ''
     });
@@ -132,7 +132,7 @@ export function CrmContainer({ initialLeads, stats: initialStats, settings, view
                 const matchesPhone = lead.phone?.toLowerCase().includes(searchLower);
                 if (!matchesName && !matchesCompany && !matchesPhone) return false;
             }
-            
+
             // Individual searches (AND logic - kept for backward compatibility)
             if (filters.searchName && !lead.name.toLowerCase().includes(filters.searchName.toLowerCase())) return false;
             if (filters.searchCompany && !lead.company?.toLowerCase().includes(filters.searchCompany.toLowerCase())) return false;
@@ -158,21 +158,20 @@ export function CrmContainer({ initialLeads, stats: initialStats, settings, view
             }
 
             // Custom Field Filter
-            if (filters.customField && lead.custom !== filters.customField) return false;
+            if (filters.customField?.length > 0 && !filters.customField.includes(lead.custom)) return false;
 
             // Source Filter
-            if (filters.source && lead.source !== filters.source) return false;
+            if (filters.source?.length > 0 && !filters.source.includes(lead.source)) return false;
 
             // Status Filter
-            if (filters.status) {
+            if (filters.status?.length > 0) {
                 // Normalize both values for comparison (trim whitespace)
                 const leadStatus = (lead.status || '').trim();
-                const filterStatus = filters.status.trim();
-                if (leadStatus !== filterStatus) return false;
+                if (!filters.status.some((st: string) => st.trim() === leadStatus)) return false;
             }
 
             // Responsible Filter
-            if (filters.responsible && lead.responsible !== filters.responsible) return false;
+            if (filters.responsible?.length > 0 && !filters.responsible.includes(lead.responsible)) return false;
 
             // Date Range Filter
             if (filters.dateRange?.from || filters.dateRange?.to) {
@@ -215,10 +214,29 @@ export function CrmContainer({ initialLeads, stats: initialStats, settings, view
                 }
             }
 
-            // Contact Filter (Overdue/Today/Tomorrow)
-            if (filters.contactFilter) {
+            // Contact Filter checking was removed from here so headerStats can see all applicable leads
+
+            return true;
+        });
+    }, [transformedLeads, filters]);
+
+    // 3. Final Filter (Base + Qualification + Contact Date) - Used for Table
+    const finalFilteredLeads = useMemo(() => {
+        let leads = baseFilteredLeads;
+
+        // Apply Qualification
+        if (filters.qualification) {
+            if (filters.qualification === 'untagged') {
+                leads = leads.filter(lead => !lead.qualification_status || !['mql', 'sql', 'nq'].includes(lead.qualification_status));
+            } else {
+                leads = leads.filter(lead => lead.qualification_status === filters.qualification);
+            }
+        }
+
+        // Apply Contact Filter
+        if (filters.contactFilter) {
+            leads = leads.filter(lead => {
                 const nextStepDate = parseDateStr(lead.nextStep?.date);
-                // Ensure valid date
                 if (nextStepDate.getTime() >= 8640000000000000) return false;
 
                 const now = new Date();
@@ -227,23 +245,20 @@ export function CrmContainer({ initialLeads, stats: initialStats, settings, view
                 const dayAfterTomorrowStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 2);
 
                 if (filters.contactFilter === 'overdue') {
-                    if (nextStepDate >= todayStart) return false;
+                    return nextStepDate < todayStart;
                 } else if (filters.contactFilter === 'today') {
-                    if (nextStepDate < todayStart || nextStepDate >= tomorrowStart) return false;
+                    return nextStepDate >= todayStart && nextStepDate < tomorrowStart;
                 } else if (filters.contactFilter === 'tomorrow') {
-                    if (nextStepDate < tomorrowStart || nextStepDate >= dayAfterTomorrowStart) return false;
+                    return nextStepDate >= tomorrowStart && nextStepDate < dayAfterTomorrowStart;
+                } else if (filters.contactFilter === 'pending') {
+                    return lead.nextStep?.date === "Pending" || !lead.nextStep?.date;
                 }
-            }
+                return true;
+            });
+        }
 
-            return true;
-        });
-    }, [transformedLeads, filters]);
-
-    // 3. Final Filter (Base + Qualification) - Used for Table
-    const finalFilteredLeads = useMemo(() => {
-        if (!filters.qualification) return baseFilteredLeads;
-        return baseFilteredLeads.filter(lead => lead.qualification_status === filters.qualification);
-    }, [baseFilteredLeads, filters.qualification]);
+        return leads;
+    }, [baseFilteredLeads, filters.qualification, filters.contactFilter]);
 
     // 4. Calculate Header Stats (Based on Base Filters)
     const headerStats = useMemo(() => {
@@ -251,9 +266,11 @@ export function CrmContainer({ initialLeads, stats: initialStats, settings, view
         let overdue = 0;
         let today = 0;
         let tomorrow = 0;
+        let pending = 0;
         let mql = 0;
         let sql = 0;
         let not_qualified = 0;
+        let untagged = 0;
 
         const now = new Date();
         const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -273,19 +290,22 @@ export function CrmContainer({ initialLeads, stats: initialStats, settings, view
                 } else if (nextStepDate >= tomorrowStart && nextStepDate < dayAfterTomorrowStart) {
                     tomorrow++;
                 }
+            } else {
+                pending++;
             }
 
             // Qualification Stats
             if (lead.qualification_status === 'mql') mql++;
             else if (lead.qualification_status === 'sql') sql++;
             else if (lead.qualification_status === 'nq') not_qualified++;
+            else untagged++;
         });
 
         return {
             totalLeads: baseFilteredLeads.length,
             pipelineValue,
-            qualification: { mql, sql, not_qualified },
-            contacts: { overdue, today, tomorrow }
+            qualification: { mql, sql, not_qualified, untagged },
+            contacts: { overdue, today, tomorrow, pending }
         };
     }, [baseFilteredLeads]);
 

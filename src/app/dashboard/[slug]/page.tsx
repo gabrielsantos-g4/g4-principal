@@ -68,6 +68,7 @@ export default async function AgentPage({ params, searchParams }: AgentPageProps
     const { chatId, competitorId, tab } = await searchParams
     const agent = AGENTS.find(a => a.slug === slug)
     // Debug: Force Rebuild 12345
+
     const isOrchestrator = !slug || slug === 'orchestrator'
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()

@@ -7,7 +7,7 @@ import {
     DialogTitle,
     DialogDescription,
 } from "@/components/ui/dialog"
-import { BarChart3, PieChart, TrendingDown, Target, Award, X, Filter, Users, Tag, Globe, LineChart, Calendar as CalendarIcon, MessageSquare, DollarSign, CalendarClock, AlertTriangle, ChevronDown } from "lucide-react"
+import { BarChart3, PieChart, TrendingDown, Target, Award, X, Filter, Users, Tag, Globe, LineChart, Calendar as CalendarIcon, MessageSquare, DollarSign, CalendarClock, AlertTriangle, ChevronDown, Check } from "lucide-react"
 import { useMemo, useState } from "react"
 import {
     BarChart,
@@ -41,6 +41,12 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select"
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { CrmFilterState } from "./crm-container"
 
 interface CrmReportsModalProps {
@@ -693,115 +699,219 @@ export function CrmReportsModal({ isOpen, onClose, leads, settings, filters, onF
 
                         {/* Filter Dropdowns */}
                         {/* Status Filter */}
-                        <Select
-                            value={filters.status || 'all'}
-                            onValueChange={(value) => onFiltersChange({ status: value === 'all' ? '' : value })}
-                        >
-                            <SelectTrigger className="h-7 w-[120px] bg-[#0a0a0a] border-white/10 text-white text-[11px]">
-                                <SelectValue placeholder="Status" />
-                            </SelectTrigger>
-                            <SelectContent className="bg-[#0f0f0f] border-white/10 text-white z-[99999]">
-                                <SelectItem value="all" className="text-xs">All Status</SelectItem>
-                                {settings.statuses?.map((status: TagItem) => (
-                                    <SelectItem key={status.label} value={status.label} className="text-xs">
-                                        <div className="flex items-center gap-2">
-                                            <span className={`w-2 h-2 rounded-full ${status.bg}`}></span>
-                                            <span>{status.label}</span>
-                                        </div>
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="outline" className="h-7 w-[120px] justify-between bg-[#0a0a0a] border-white/10 text-white text-[11px] hover:bg-white/5 hover:text-white">
+                                    <span className="truncate">
+                                        {filters.status?.length > 0 ? filters.status.join(', ') : "Status"}
+                                    </span>
+                                    <ChevronDown size={14} className="opacity-50 flex-shrink-0 ml-1" />
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent className="w-[200px] bg-[#0f0f0f] border-white/10 text-white z-[99999] max-h-[300px] overflow-y-auto">
+                                <DropdownMenuItem onClick={() => onFiltersChange({ status: [] })} className="text-xs hover:bg-white/10 hover:text-white cursor-pointer">
+                                    All Statuses
+                                </DropdownMenuItem>
+                                {settings.statuses?.map((status: TagItem) => {
+                                    const isSelected = filters.status?.includes(status.label);
+                                    return (
+                                        <DropdownMenuItem
+                                            key={status.label}
+                                            onSelect={(e) => {
+                                                e.preventDefault();
+                                                const newStatus = isSelected
+                                                    ? filters.status.filter((s: string) => s !== status.label)
+                                                    : [...(filters.status || []), status.label];
+                                                onFiltersChange({ status: newStatus });
+                                            }}
+                                            className={cn(
+                                                "text-xs cursor-pointer mb-1 last:mb-0 flex items-center justify-between",
+                                                "hover:bg-white/10 hover:text-white transition-opacity",
+                                                isSelected && "bg-white/10 text-white"
+                                            )}
+                                        >
+                                            <div className="flex items-center gap-2">
+                                                <span className={cn("w-2 h-2 rounded-full", status.bg)}></span>
+                                                <span>{status.label}</span>
+                                            </div>
+                                            {isSelected && <Check size={14} />}
+                                        </DropdownMenuItem>
+                                    );
+                                })}
+                            </DropdownMenuContent>
+                        </DropdownMenu>
 
                         {/* Products Filter */}
-                        <Select
-                            value={filters.product && filters.product.length > 0 ? filters.product[0] : 'all'}
-                            onValueChange={(value) => onFiltersChange({ product: value === 'all' ? [] : [value] })}
-                        >
-                            <SelectTrigger className="h-7 w-[120px] bg-[#0a0a0a] border-white/10 text-white text-[11px]">
-                                <SelectValue placeholder="Products" />
-                            </SelectTrigger>
-                            <SelectContent className="bg-[#0f0f0f] border-white/10 text-white z-[99999]">
-                                <SelectItem value="all" className="text-xs">All Products</SelectItem>
-                                {settings.products?.map((product: any) => (
-                                    <SelectItem key={product.name} value={product.name} className="text-xs">
-                                        {product.name}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="outline" className="h-7 w-[120px] justify-between bg-[#0a0a0a] border-white/10 text-white text-[11px] hover:bg-white/5 hover:text-white">
+                                    <span className="truncate">
+                                        {filters.product?.length > 0 ? filters.product.join(', ') : "Products"}
+                                    </span>
+                                    <ChevronDown size={14} className="opacity-50 flex-shrink-0 ml-1" />
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent className="w-[200px] bg-[#0f0f0f] border-white/10 text-white z-[99999] max-h-[300px] overflow-y-auto">
+                                <DropdownMenuItem onClick={() => onFiltersChange({ product: [] })} className="text-xs hover:bg-white/10 hover:text-white cursor-pointer">
+                                    All Products
+                                </DropdownMenuItem>
+                                {settings.products?.map((product: any) => {
+                                    const isSelected = filters.product?.includes(product.name);
+                                    return (
+                                        <DropdownMenuItem
+                                            key={product.name}
+                                            onSelect={(e) => {
+                                                e.preventDefault();
+                                                const newProduct = isSelected
+                                                    ? filters.product.filter((p: string) => p !== product.name)
+                                                    : [...(filters.product || []), product.name];
+                                                onFiltersChange({ product: newProduct });
+                                            }}
+                                            className={cn(
+                                                "text-xs cursor-pointer mb-1 last:mb-0 flex items-center justify-between",
+                                                "hover:bg-white/10 hover:text-white transition-opacity",
+                                                isSelected && "bg-white/10 text-white"
+                                            )}
+                                        >
+                                            <span>{product.name}</span>
+                                            {isSelected && <Check size={14} />}
+                                        </DropdownMenuItem>
+                                    );
+                                })}
+                            </DropdownMenuContent>
+                        </DropdownMenu>
 
                         {/* Source Filter */}
-                        <Select
-                            value={filters.source || 'all'}
-                            onValueChange={(value) => onFiltersChange({ source: value === 'all' ? '' : value })}
-                        >
-                            <SelectTrigger className="h-7 w-[120px] bg-[#0a0a0a] border-white/10 text-white text-[11px]">
-                                <SelectValue placeholder="Source" />
-                            </SelectTrigger>
-                            <SelectContent className="bg-[#0f0f0f] border-white/10 text-white z-[99999]">
-                                <SelectItem value="all" className="text-xs">All Sources</SelectItem>
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="outline" className="h-7 w-[120px] justify-between bg-[#0a0a0a] border-white/10 text-white text-[11px] hover:bg-white/5 hover:text-white">
+                                    <span className="truncate">
+                                        {filters.source?.length > 0 ? filters.source.join(', ') : "Source"}
+                                    </span>
+                                    <ChevronDown size={14} className="opacity-50 flex-shrink-0 ml-1" />
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent className="w-[200px] bg-[#0f0f0f] border-white/10 text-white z-[99999] max-h-[300px] overflow-y-auto custom-scrollbar">
+                                <DropdownMenuItem onClick={() => onFiltersChange({ source: [] })} className="text-xs hover:bg-white/10 hover:text-white cursor-pointer">
+                                    All Sources
+                                </DropdownMenuItem>
                                 {settings.sources?.map((source: string | TagItem) => {
                                     const label = typeof source === 'string' ? source : source.label;
                                     const bg = typeof source === 'string' ? 'bg-gray-500' : source.bg;
+                                    const isSelected = filters.source?.includes(label);
                                     return (
-                                        <SelectItem key={label} value={label} className="text-xs">
+                                        <DropdownMenuItem
+                                            key={label}
+                                            onSelect={(e) => {
+                                                e.preventDefault();
+                                                const newSource = isSelected
+                                                    ? filters.source.filter((s: string) => s !== label)
+                                                    : [...(filters.source || []), label];
+                                                onFiltersChange({ source: newSource });
+                                            }}
+                                            className={cn(
+                                                "text-xs cursor-pointer mb-1 last:mb-0 flex items-center justify-between",
+                                                "hover:bg-white/10 hover:text-white transition-opacity",
+                                                isSelected && "bg-white/10 text-white"
+                                            )}
+                                        >
                                             <div className="flex items-center gap-2">
-                                                <span className={`w-2 h-2 rounded-full ${bg}`}></span>
+                                                <span className={cn("w-2 h-2 rounded-full", bg)}></span>
                                                 <span>{label}</span>
                                             </div>
-                                        </SelectItem>
+                                            {isSelected && <Check size={14} />}
+                                        </DropdownMenuItem>
                                     );
                                 })}
-                            </SelectContent>
-                        </Select>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
 
                         {/* Responsible Filter */}
-                        <Select
-                            value={filters.responsible || 'all'}
-                            onValueChange={(value) => onFiltersChange({ responsible: value === 'all' ? '' : value })}
-                        >
-                            <SelectTrigger className="h-7 w-[120px] bg-[#0a0a0a] border-white/10 text-white text-[11px]">
-                                <SelectValue placeholder="Responsible" />
-                            </SelectTrigger>
-                            <SelectContent className="bg-[#0f0f0f] border-white/10 text-white z-[99999]">
-                                <SelectItem value="all" className="text-xs">All Responsible</SelectItem>
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="outline" className="h-7 w-[120px] justify-between bg-[#0a0a0a] border-white/10 text-white text-[11px] hover:bg-white/5 hover:text-white">
+                                    <span className="truncate">
+                                        {filters.responsible?.length > 0 ? filters.responsible.join(', ') : "Responsible"}
+                                    </span>
+                                    <ChevronDown size={14} className="opacity-50 flex-shrink-0 ml-1" />
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent className="w-[200px] bg-[#0f0f0f] border-white/10 text-white z-[99999] max-h-[300px] overflow-y-auto custom-scrollbar">
+                                <DropdownMenuItem onClick={() => onFiltersChange({ responsible: [] })} className="text-xs hover:bg-white/10 hover:text-white cursor-pointer">
+                                    All Responsible
+                                </DropdownMenuItem>
                                 {settings.responsibles?.map((resp: string | TagItem, index: number) => {
                                     const label = typeof resp === 'string' ? resp : resp.label;
+                                    const isSelected = filters.responsible?.includes(label);
                                     return (
-                                        <SelectItem key={`resp-${index}-${label}`} value={label} className="text-xs">
-                                            {label}
-                                        </SelectItem>
+                                        <DropdownMenuItem
+                                            key={`resp-${index}-${label}`}
+                                            onSelect={(e) => {
+                                                e.preventDefault();
+                                                const newResp = isSelected
+                                                    ? filters.responsible.filter((r: string) => r !== label)
+                                                    : [...(filters.responsible || []), label];
+                                                onFiltersChange({ responsible: newResp });
+                                            }}
+                                            className={cn(
+                                                "text-xs cursor-pointer mb-1 last:mb-0 flex items-center justify-between",
+                                                "hover:bg-white/10 hover:text-white transition-opacity",
+                                                isSelected && "bg-white/10 text-white"
+                                            )}
+                                        >
+                                            <span>{label}</span>
+                                            {isSelected && <Check size={14} />}
+                                        </DropdownMenuItem>
                                     );
                                 })}
-                            </SelectContent>
-                        </Select>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
 
                         {/* Custom Field Filter */}
                         {settings.custom_fields?.options && settings.custom_fields.options.length > 0 && (
-                            <Select
-                                value={filters.customField || 'all'}
-                                onValueChange={(value) => onFiltersChange({ customField: value === 'all' ? '' : value })}
-                            >
-                                <SelectTrigger className="h-7 w-[120px] bg-[#0a0a0a] border-white/10 text-white text-[11px]">
-                                    <SelectValue placeholder={settings.custom_fields.name || "Category"} />
-                                </SelectTrigger>
-                                <SelectContent className="bg-[#0f0f0f] border-white/10 text-white z-[99999]">
-                                    <SelectItem value="all" className="text-xs">All {settings.custom_fields.name || "Categories"}</SelectItem>
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="outline" className="h-7 w-[120px] justify-between bg-[#0a0a0a] border-white/10 text-white text-[11px] hover:bg-white/5 hover:text-white">
+                                        <span className="truncate">
+                                            {filters.customField?.length > 0 ? filters.customField.join(', ') : settings.custom_fields.name || "Category"}
+                                        </span>
+                                        <ChevronDown size={14} className="opacity-50 flex-shrink-0 ml-1" />
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent className="w-[200px] bg-[#0f0f0f] border-white/10 text-white z-[99999] max-h-[300px] overflow-y-auto custom-scrollbar">
+                                    <DropdownMenuItem onClick={() => onFiltersChange({ customField: [] })} className="text-xs hover:bg-white/10 hover:text-white cursor-pointer">
+                                        All {settings.custom_fields.name || "Categories"}
+                                    </DropdownMenuItem>
                                     {settings.custom_fields.options.map((option: string | TagItem) => {
                                         const label = typeof option === 'string' ? option : option.label;
                                         const bg = typeof option === 'string' ? 'bg-gray-500' : option.bg;
+                                        const isSelected = filters.customField?.includes(label);
                                         return (
-                                            <SelectItem key={label} value={label} className="text-xs">
+                                            <DropdownMenuItem
+                                                key={label}
+                                                onSelect={(e) => {
+                                                    e.preventDefault();
+                                                    const newOpt = isSelected
+                                                        ? filters.customField.filter((o: string) => o !== label)
+                                                        : [...(filters.customField || []), label];
+                                                    onFiltersChange({ customField: newOpt });
+                                                }}
+                                                className={cn(
+                                                    "text-xs cursor-pointer mb-1 last:mb-0 flex items-center justify-between",
+                                                    "hover:bg-white/10 hover:text-white transition-opacity",
+                                                    isSelected && "bg-white/10 text-white"
+                                                )}
+                                            >
                                                 <div className="flex items-center gap-2">
-                                                    <span className={`w-2 h-2 rounded-full ${bg}`}></span>
+                                                    <span className={cn("w-2 h-2 rounded-full", bg)}></span>
                                                     <span>{label}</span>
                                                 </div>
-                                            </SelectItem>
+                                                {isSelected && <Check size={14} />}
+                                            </DropdownMenuItem>
                                         );
                                     })}
-                                </SelectContent>
-                            </Select>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
                         )}
 
                         <div className="h-5 w-px bg-white/10"></div>
@@ -815,11 +925,11 @@ export function CrmReportsModal({ isOpen, onClose, leads, settings, filters, onF
                                 onFiltersChange({
                                     dateRange: undefined,
                                     createdAtRange: undefined,
-                                    status: '',
-                                    source: '',
-                                    responsible: '',
+                                    status: [],
+                                    source: [],
+                                    responsible: [],
                                     product: [],
-                                    customField: ''
+                                    customField: []
                                 });
                             }}
                         >

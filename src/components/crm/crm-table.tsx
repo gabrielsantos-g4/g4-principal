@@ -95,6 +95,19 @@ interface CrmTableProps {
 function parseDateStr(str: string): Date {
     if (!str || str === "Pending") return new Date(8640000000000000); // Max safe integer for "Pending" (future)
 
+    // FIX: Handle YYYY-MM-DD explicitly as local date to prevent UTC timezone shift
+    if (str.includes('-')) {
+        const parts = str.split('-');
+        if (parts.length === 3) {
+            const year = parseInt(parts[0], 10);
+            const month = parseInt(parts[1], 10) - 1;
+            const day = parseInt(parts[2], 10);
+            if (!isNaN(year) && !isNaN(month) && !isNaN(day)) {
+                return new Date(year, month, day);
+            }
+        }
+    }
+
     // Try ISO format first
     const isoDate = new Date(str);
     if (!isNaN(isoDate.getTime()) && str.includes('-')) {

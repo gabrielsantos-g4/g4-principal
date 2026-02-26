@@ -31,64 +31,54 @@ export function PipelineHealthSummaryModal({ isOpen, onClose, leads, settings }:
         return temperature === 'Warm' || temperature === 'Hot';
     }).length;
 
-    const shortfall = neededWarmHot - currentWarmHot;
     const isHealthy = currentWarmHot >= neededWarmHot;
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent className="max-w-2xl bg-[#0a0a0a] border-white/10">
-                <DialogHeader>
-                    <DialogTitle className="text-xl font-bold text-white">Pipeline Health Summary</DialogTitle>
+            <DialogContent className="max-w-md bg-[#0a0a0a] border-white/10 p-0 overflow-hidden shadow-2xl">
+                <DialogHeader className="p-6 border-b border-white/5 bg-white/5">
+                    <DialogTitle className="text-xl font-bold text-white flex items-center gap-2">
+                        Pipeline Strategy
+                    </DialogTitle>
                 </DialogHeader>
 
-                <div className="space-y-6 py-4">
-                    <div className="p-6 bg-gradient-to-br from-blue-500/10 to-purple-500/10 border border-white/10 rounded-lg">
-                        <p className="text-base leading-relaxed text-gray-200">
-                            You want to close{" "}
-                            <span className="font-bold text-emerald-400">{neededCustomers} customers</span>{" "}
-                            this month at an average ticket of{" "}
-                            <span className="font-bold text-blue-400">${avgTicket.toLocaleString()}</span>,
-                            reaching a revenue of{" "}
-                            <span className="font-bold text-purple-400">${revenueGoal.toLocaleString()}</span>.
+                <div className="p-6 space-y-6">
+                    <div className="space-y-4 text-[15px] leading-relaxed">
+                        <p className="text-gray-300">
+                            You want to close <span className="text-white font-bold">{neededCustomers} customers</span>.
+                            At an average ticket of <span className="text-blue-400 font-bold">${avgTicket.toLocaleString()}</span>,
+                            you will reach <span className="text-emerald-400 font-bold">${revenueGoal.toLocaleString()}</span> in revenue.
                         </p>
-                    </div>
 
-                    <div className="p-6 bg-gradient-to-br from-orange-500/10 to-red-500/10 border border-white/10 rounded-lg">
-                        <p className="text-base leading-relaxed text-gray-200">
-                            With a close rate of{" "}
-                            <span className="font-bold text-orange-400">{closeRate}%</span>,
-                            you need{" "}
-                            <span className="font-bold text-red-400">{neededWarmHot} leads</span>{" "}
-                            with Warm or Hot status in your pipeline.
+                        <p className="text-gray-300">
+                            We have <span className="text-white font-bold">{leads.length} leads</span> in the list.
+                            Of these, <span className="text-white font-bold">{currentWarmHot}</span> are in <span className="text-orange-400 font-semibold">Warm</span> or <span className="text-red-400 font-semibold">Hot</span> phase.
                         </p>
-                    </div>
 
-                    <div className={`p-6 border rounded-lg ${isHealthy
-                        ? 'bg-gradient-to-br from-emerald-500/10 to-green-500/10 border-emerald-500/20'
-                        : 'bg-gradient-to-br from-red-500/10 to-rose-500/10 border-red-500/20'
-                        }`}>
-                        <p className="text-base leading-relaxed text-gray-200">
-                            Currently, you have{" "}
-                            <span className={`font-bold ${isHealthy ? 'text-emerald-400' : 'text-red-400'}`}>
-                                {currentWarmHot} leads
-                            </span>{" "}
-                            with Warm/Hot status.{" "}
-                            {isHealthy ? (
-                                <span className="font-bold text-emerald-400">
-                                    Your pipeline is healthy! 🎉
-                                </span>
-                            ) : (
-                                <span className="font-bold text-red-400">
-                                    You need {shortfall} more Warm/Hot leads to reach your goal.
-                                </span>
-                            )}
-                        </p>
+                        <div className="pt-2 border-t border-white/5">
+                            <p className="text-gray-300">
+                                Your conversion rate is <span className="text-blue-400 font-bold">{closeRate}%</span>, so:
+                            </p>
+
+                            <div className={`mt-4 p-4 rounded-xl border ${isHealthy
+                                    ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400"
+                                    : "bg-red-500/10 border-red-500/20 text-red-400"
+                                }`}>
+                                <p className="font-medium">
+                                    {isHealthy ? (
+                                        <>Your pipeline is healthy because you have enough warm/hot leads ({currentWarmHot}) to convert.</>
+                                    ) : (
+                                        <>Your pipeline is challenging; you need {neededWarmHot} leads in warm/hot phase ({currentWarmHot}) for a healthy pipeline.</>
+                                    )}
+                                </p>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
-                <div className="flex justify-end">
-                    <Button onClick={onClose} variant="ghost" className="text-gray-400 hover:text-white">
-                        Close
+                <div className="p-4 bg-white/5 border-t border-white/5 flex justify-end">
+                    <Button onClick={onClose} variant="outline" className="h-9 px-6 bg-transparent border-white/10 text-white hover:bg-white/5">
+                        Got it
                     </Button>
                 </div>
             </DialogContent>
