@@ -1,6 +1,6 @@
 'use client'
 
-import { LogOut, User, CreditCard, Ban, ArrowUpRight, LayoutDashboard, BadgeDollarSign, MoreHorizontal, Plus } from 'lucide-react'
+import { LogOut, User, CreditCard, Ban, ArrowUpRight, LayoutDashboard, BadgeDollarSign, MoreHorizontal, Plus, MessageCircle } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Agent } from '@/lib/agents'
@@ -116,8 +116,8 @@ export function SidebarNav({ agents, activeAgents, teamOrder, humanMembers, hasM
                 <div className="relative group">
                     {hasMessagingAccess ? (
                         <Link
-                            href="/dashboard/orchestrator?tab=chats"
-                            className={`w-full flex items-center gap-3 py-3 rounded-lg transition-all duration-200 text-left outline-none ${pathname === '/dashboard/orchestrator'
+                            href={`/dashboard/user-${user.id}`}
+                            className={`w-full flex items-center gap-3 py-3 rounded-lg transition-all duration-200 text-left outline-none relative ${pathname === '/dashboard/orchestrator'
                                 ? 'bg-white/10 text-white shadow-[0_0_15px_rgba(28,115,232,0.1)] border border-white/5'
                                 : 'text-slate-300 hover:text-white hover:bg-white/5 border border-transparent'
                                 } ${sidebarCollapsed ? 'justify-center px-0' : 'px-4'}`}
@@ -142,16 +142,21 @@ export function SidebarNav({ agents, activeAgents, teamOrder, humanMembers, hasM
                                         <span className={`text-sm font-bold truncate transition-colors leading-tight ${pathname === '/dashboard/orchestrator' ? 'text-white' : 'text-slate-300 group-hover:text-white'
                                             }`}>{user.name}</span>
                                         {user.id === loggedUser.id && (
-                                            <div className="w-1.5 h-1.5 rounded-full bg-blue-500 shadow-[0_0_5px_rgba(28,115,232,0.8)]" />
+                                            <div className="w-1.5 h-1.5 rounded-full bg-blue-500 shadow-[0_0_5px_rgba(28,115,232,0.8)] shrink-0" />
                                         )}
                                     </div>
                                     <span className="text-xs text-slate-400 truncate leading-tight">{user.role || 'Orchestrator'}</span>
                                 </div>
                             )}
+                            {hasMessagingAccess && !sidebarCollapsed && (
+                                <div className="absolute top-3 right-3 text-[#1C73E8]">
+                                    <MessageCircle size={14} />
+                                </div>
+                            )}
                         </Link>
                     ) : (
                         // Non-clickable orchestrator card for members without messaging access
-                        <div className={`w-full flex items-center gap-3 py-3 rounded-lg border border-transparent ${sidebarCollapsed ? 'justify-center px-0' : 'px-4'}`}>
+                        <div className={`w-full flex items-center gap-3 py-3 rounded-lg border border-transparent relative ${sidebarCollapsed ? 'justify-center px-0' : 'px-4'}`}>
                             <div className={`w-10 h-10 rounded-full overflow-hidden border border-white/10 shrink-0 relative ${user.id === loggedUser.id ? 'ring-2 ring-[#1C73E8] ring-offset-2 ring-offset-[#0C0C0C]' : ''}`}>
                                 <img
                                     src={user.avatar}
@@ -161,8 +166,18 @@ export function SidebarNav({ agents, activeAgents, teamOrder, humanMembers, hasM
                             </div>
                             {!sidebarCollapsed && (
                                 <div className="flex flex-col overflow-hidden">
-                                    <span className="text-sm font-bold truncate leading-tight text-slate-300">{user.name}</span>
+                                    <div className="flex items-center gap-1.5">
+                                        <span className="text-sm font-bold truncate leading-tight text-slate-300">{user.name}</span>
+                                        {user.id === loggedUser.id && (
+                                            <div className="w-1.5 h-1.5 rounded-full bg-blue-500 shadow-[0_0_5px_rgba(28,115,232,0.8)] shrink-0" />
+                                        )}
+                                    </div>
                                     <span className="text-xs text-slate-400 truncate leading-tight">{user.role || 'Orchestrator'}</span>
+                                </div>
+                            )}
+                            {hasMessagingAccess && !sidebarCollapsed && (
+                                <div className="absolute top-3 right-3 text-[#1C73E8]">
+                                    <MessageCircle size={14} />
                                 </div>
                             )}
                         </div>
@@ -249,7 +264,7 @@ function HumanLink({ member, pathname, isCollapsed, id, isLoggedUser }: { member
     return (
         <Link
             href={href}
-            className={`flex items-center gap-3 px-4 py-2 rounded-lg transition-all duration-200 group ${isActive
+            className={`flex items-center gap-3 px-4 py-2 rounded-lg transition-all duration-200 group relative ${isActive
                 ? 'bg-white/10 text-white shadow-[0_0_15px_rgba(28,115,232,0.1)] border border-white/5'
                 : 'text-slate-300 hover:text-white hover:bg-slate-800 opacity-80 hover:opacity-100'
                 }`}
@@ -269,13 +284,18 @@ function HumanLink({ member, pathname, isCollapsed, id, isLoggedUser }: { member
                         {member.name}
                     </span>
                     {isLoggedUser && (
-                        <div className="w-1.5 h-1.5 rounded-full bg-blue-500 shadow-[0_0_5px_rgba(28,115,232,0.8)]" />
+                        <div className="w-1.5 h-1.5 rounded-full bg-blue-500 shadow-[0_0_5px_rgba(28,115,232,0.8)] shrink-0" />
                     )}
                 </div>
                 <span className={`truncate text-xs transition-colors ${isActive ? 'text-[#1C73E8]' : 'text-slate-500 group-hover:text-slate-400'}`}>
                     {(member.job_title || 'Member').replace('Fractional ', '')}
                 </span>
             </div>
+            {member.has_messaging_access === true && (
+                <div className="absolute top-2 right-2 text-[#1C73E8]">
+                    <MessageCircle size={12} />
+                </div>
+            )}
         </Link>
     )
 }
@@ -320,7 +340,7 @@ function AgentLink({ agent, pathname, isCollapsed }: { agent: Agent, pathname: s
     return (
         <Link
             href={href}
-            className={`flex items-center gap-3 px-4 py-2 rounded-lg transition-all duration-200 group ${isActive
+            className={`flex items-center gap-3 px-4 py-2 rounded-lg transition-all duration-200 group relative ${isActive
                 ? 'bg-white/10 text-white shadow-[0_0_15px_rgba(28,115,232,0.1)] border border-white/5'
                 : 'text-slate-300 hover:text-white hover:bg-slate-800'
                 }`}
@@ -345,6 +365,11 @@ function AgentLink({ agent, pathname, isCollapsed }: { agent: Agent, pathname: s
                     {agent.role}
                 </span>
             </div>
+            {agent.id === 'customer-jess' && !isCollapsed && (
+                <div className="absolute top-2 right-2 text-[#1C73E8]">
+                    <MessageCircle size={12} />
+                </div>
+            )}
         </Link>
     )
 }

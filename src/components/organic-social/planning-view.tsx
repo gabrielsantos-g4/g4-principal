@@ -182,7 +182,7 @@ export function PlanningView() {
                 const children = await getChildIdeas(mother.id)
                 childrenMap[mother.id] = children || []
                 // If not already set, expand by default
-                newExpandedState[mother.id] = expandedCards[mother.id] !== undefined ? expandedCards[mother.id] : true
+                newExpandedState[mother.id] = expandedCards[mother.id] !== undefined ? expandedCards[mother.id] : false
             }
             setChildIdeas(childrenMap)
             setExpandedCards(prev => ({ ...prev, ...newExpandedState }))

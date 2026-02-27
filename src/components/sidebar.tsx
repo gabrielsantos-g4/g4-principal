@@ -44,10 +44,17 @@ export async function Sidebar() {
     const companyData = Array.isArray(companies) ? companies[0] : companies
     const teamOrder = companyData?.team_order || []
 
+    // Fetch wpp_name from main_empresas for the Jess agent name
+    const { data: empresaData } = await supabaseAdmin
+        .from('main_empresas')
+        .select('wpp_name')
+        .eq('id', profile?.empresa_id)
+        .single()
+
     // 3. Fetch all human members of the company (to show in sidebar if reordered)
     const { data: humanMembers } = await supabaseAdmin
         .from('main_profiles')
-        .select('id, name, role, job_title, avatar_url, has_messaging_access, email')
+        .select('id, name, role, job_title, avatar_url, has_messaging_access, email, active_agents')
         .eq('empresa_id', profile?.empresa_id)
 
     // 4. Identify the Principal Orchestrator (Admin/Owner)
@@ -65,7 +72,7 @@ export async function Sidebar() {
 
     const companyName = companyData?.name || 'My Company'
     const userName = orchestrator?.name || 'User'
-    const userRole = orchestrator?.job_title || ((orchestrator?.role === 'admin' || orchestrator?.role === 'owner') ? 'Orchestrador, Principal' : 'Member')
+    const userRole = orchestrator?.job_title || ((orchestrator?.role === 'admin' || orchestrator?.role === 'owner') ? 'Orchestrator, Principal' : 'Member')
     const userAvatar = orchestrator?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(userName)}&background=random`
 
     // RBAC: Each user sees only their own assigned agents.
@@ -97,9 +104,14 @@ export async function Sidebar() {
 
     const dynamicAgents = AGENTS.map(agent => {
         if (agent.id === 'customer-jess') {
+            const jessName = (empresaData?.wpp_name && empresaData.wpp_name.trim() !== '')
+                ? empresaData.wpp_name
+                : (waInstance?.agent_name && waInstance.agent_name.trim() !== '')
+                    ? waInstance.agent_name
+                    : agent.name
             return {
                 ...agent,
-                name: waInstance?.agent_name && waInstance.agent_name.trim() !== '' ? waInstance.agent_name : agent.name,
+                name: jessName,
                 avatar: waInstance?.avatar && waInstance.avatar.trim() !== '' ? waInstance.avatar : agent.avatar
             }
         }

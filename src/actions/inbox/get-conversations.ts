@@ -13,6 +13,13 @@ export async function getConversations(targetUserId?: string) {
 
     const supabaseAdmin = await createAdminClient();
 
+    const { data: empresa } = await supabaseAdmin
+        .from('main_empresas')
+        .select('wpp_name')
+        .eq('id', empresaId)
+        .single();
+    const wppName = empresa?.wpp_name || 'Bot';
+
     let responsibleUserId: string | undefined;
     let isAgent = false;
 
@@ -94,7 +101,7 @@ export async function getConversations(targetUserId?: string) {
     const fetchLastMessage = async (conversationId: string) => {
         const { data: lastMsg } = await supabaseAdmin
             .from('camp_mensagens_n')
-            .select('body, created_at, status, media_url')
+            .select('body, created_at, status, media_url, direction')
             .eq('conversa_id', conversationId)
             .order('created_at', { ascending: false })
             .limit(1)
@@ -120,6 +127,12 @@ export async function getConversations(targetUserId?: string) {
 
         if (lastMsg) {
             lastMessage = lastMsg.body || (lastMsg.media_url ? '[Media]' : 'Message');
+
+            // Fix for "null" sender names in outbound messages for the sidebar preview
+            if ((lastMsg.direction === 'outbound' || lastMsg.direction === 'OUT') && lastMessage.startsWith('null\n')) {
+                lastMessage = lastMessage.replace(/^null\n/, `${wppName}: `);
+            }
+
             lastMessageAt = lastMsg.created_at || conv.updated_at || "";
             messages.push({
                 id: `msg-${conv.id}-last`,

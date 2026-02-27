@@ -99,6 +99,33 @@ export async function createOpportunity(params: CreateOpportunityParams) {
             });
         }
 
+        let finalSource = source;
+        if (!finalSource && settings?.sources?.length > 0) {
+            finalSource = typeof settings.sources[0] === 'string'
+                ? settings.sources[0]
+                : settings.sources[0].label;
+        } else if (!finalSource) {
+            finalSource = '';
+        }
+
+        let finalCustomField = customField;
+        if (!finalCustomField && settings?.custom_fields?.options?.length > 0) {
+            finalCustomField = typeof settings.custom_fields.options[0] === 'string'
+                ? settings.custom_fields.options[0]
+                : settings.custom_fields.options[0].label;
+        } else if (!finalCustomField) {
+            finalCustomField = '';
+        }
+
+        let finalStatus = status;
+        if (!finalStatus && settings?.statuses?.length > 0) {
+            finalStatus = typeof settings.statuses[0] === 'string'
+                ? settings.statuses[0]
+                : settings.statuses[0].label;
+        } else if (!finalStatus) {
+            finalStatus = 'New';
+        }
+
         const { error } = await supabase
             .from('main_crm')
             .insert({
@@ -110,15 +137,15 @@ export async function createOpportunity(params: CreateOpportunityParams) {
                 website,
                 role,
                 product: product,
-                custom_field: customField,
+                custom_field: finalCustomField,
                 amount: amount,
                 empresa_id: empresaId,
-                status: status || 'New',
-                source: source || '',
+                status: finalStatus,
+                source: finalSource,
                 responsible: responsible || '',
                 next_step: { progress: progress, total: 5, date: nextDate || 'Pending' },
                 history_log: history_log,
-                qualification_status: qualification_status || ''
+                qualification_status: qualification_status || 'LEAD'
             });
 
         if (error) {

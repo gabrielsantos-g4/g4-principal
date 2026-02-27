@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # Configuration
-IMAGE_NAME="joaogabrielti/g4-principal"
-TAG="0.1.29"
+IMAGE_NAME="gabrielsantosg4/g4-principal"
+TAG="0.1.31"
 
 echo "Using image: $IMAGE_NAME:$TAG"
 

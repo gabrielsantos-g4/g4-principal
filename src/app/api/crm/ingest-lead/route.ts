@@ -20,9 +20,10 @@ export async function POST(req: Request) {
             message, // Initial message or history
             empresa_id,
             responsible = 'Jess', // Default to Jess
-            source = 'Waha',      // Default source
+            source,
             channel = 'whatsapp',
-            custom_field = 'Lead' // Default category/tag
+            custom_field,
+            status
         } = body;
 
         // Map channel to Title Case for DB Constraint
@@ -74,6 +75,40 @@ export async function POST(req: Request) {
             return NextResponse.json({ success: true, id: existingLead.id, message: 'Lead already exists' });
         }
 
+        // Fetch main_crm_settings for defaults
+        const { data: crmSettings } = await supabase
+            .from('main_crm_settings')
+            .select('*')
+            .eq('empresa_id', empresa_id)
+            .single();
+
+        let finalSource = source;
+        if (!finalSource && crmSettings?.sources?.length > 0) {
+            finalSource = typeof crmSettings.sources[0] === 'string'
+                ? crmSettings.sources[0]
+                : crmSettings.sources[0].label;
+        } else if (!finalSource) {
+            finalSource = 'Waha';
+        }
+
+        let finalCustomField = custom_field;
+        if (!finalCustomField && crmSettings?.custom_fields?.options?.length > 0) {
+            finalCustomField = typeof crmSettings.custom_fields.options[0] === 'string'
+                ? crmSettings.custom_fields.options[0]
+                : crmSettings.custom_fields.options[0].label;
+        } else if (!finalCustomField) {
+            finalCustomField = 'Lead';
+        }
+
+        let finalStatus = status;
+        if (!finalStatus && crmSettings?.statuses?.length > 0) {
+            finalStatus = typeof crmSettings.statuses[0] === 'string'
+                ? crmSettings.statuses[0]
+                : crmSettings.statuses[0].label;
+        } else if (!finalStatus) {
+            finalStatus = 'New';
+        }
+
         // 2. Insert Lead
         const { data: lead, error } = await supabase
             .from('main_crm')
@@ -85,9 +120,9 @@ export async function POST(req: Request) {
                 company,
                 role,
                 responsible,
-                source,
-                custom_field, // "Lead" tag
-                status: 'New',
+                source: finalSource,
+                custom_field: finalCustomField,
+                status: finalStatus,
                 conversation_channel: dbChannel,
                 history_log: message ? [{
                     date: new Date().toISOString(),

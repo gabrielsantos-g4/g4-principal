@@ -40,6 +40,8 @@ import { NotesScratchpad } from '@/components/common/notes-scratchpad'
 import { PaidSocialDashboard } from '@/components/paid-social/paid-social-dashboard'
 import { UserInboxDashboard } from '@/components/dashboard/user-inbox-dashboard'
 import { DashboardTabs } from '@/components/dashboard-tabs'
+import { LandingPageEditor } from '@/components/landing-page/landing-page-editor'
+import { getLandingPageContent } from '@/actions/landing-page-actions'
 
 function InProgressResults() {
     return (
@@ -63,9 +65,9 @@ interface AgentPageProps {
     }>
 }
 
-export default async function AgentPage({ params, searchParams }: AgentPageProps & { searchParams: Promise<{ chatId?: string, competitorId?: string, tab?: string }> }) {
+export default async function AgentPage({ params, searchParams }: AgentPageProps & { searchParams: Promise<{ chatId?: string, competitorId?: string, tab?: string, action?: string }> }) {
     const { slug } = await params
-    const { chatId, competitorId, tab } = await searchParams
+    const { chatId, competitorId, tab, action } = await searchParams
     const agent = AGENTS.find(a => a.slug === slug)
     // Debug: Force Rebuild 12345
 
@@ -163,12 +165,11 @@ export default async function AgentPage({ params, searchParams }: AgentPageProps
         )
     }
 
-    // --- Human Specialist Inbox ---
     if (slug.startsWith('user-')) {
         const targetUserId = slug.replace('user-', '')
         const { data: targetProfile } = await supabaseAdmin
             .from('main_profiles')
-            .select('id, name, role, avatar_url')
+            .select('id, name, role, avatar_url, has_messaging_access, active_agents, job_title')
             .eq('id', targetUserId)
             .single()
 
@@ -214,16 +215,17 @@ export default async function AgentPage({ params, searchParams }: AgentPageProps
             )
         }
 
-        // Fetch CRM Settings for the status dropdown
-        const crmSettings = await getCrmSettings(companyId)
+        if (!targetProfile) redirect('/dashboard')
 
-        if (targetProfile) {
+        // If action=inbox requested, go directly to inbox
+        if (action === 'inbox') {
+            const crmSettings = await getCrmSettings(companyId)
             return (
                 <div className="flex-1 min-h-0 bg-black text-white font-sans flex flex-col overflow-hidden">
                     <DashboardHeader />
                     <UserInboxDashboard
                         user={user}
-                        targetUser={targetProfile}
+                        targetUser={targetProfile!}
                         companyId={slug === 'g4-start' ? 'e5e8020e-6246-444a-9c4c-70df62706346' : '0'}
                         crmSettings={crmSettings}
                         viewerProfile={profile}
@@ -231,6 +233,72 @@ export default async function AgentPage({ params, searchParams }: AgentPageProps
                 </div>
             )
         }
+
+        // Default: show inline action selector
+        const isAdminMember = targetProfile!.role === 'admin' || targetProfile!.role === 'owner'
+        const memberActiveAgents: string[] | null = isAdminMember ? null : (targetProfile!.active_agents ?? [])
+        const accessibleAgents = memberActiveAgents === null
+            ? AGENTS
+            : AGENTS.filter((a: any) => (memberActiveAgents as string[]).includes(a.id))
+        const hasMessaging = isAdminMember || !!targetProfile!.has_messaging_access
+        const avatarUrl = targetProfile!.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(targetProfile!.name)}&background=random`
+
+        return (
+            <div className="flex-1 min-h-0 bg-black text-white font-sans flex flex-col overflow-hidden">
+                <DashboardHeader />
+                <div className="flex-1 overflow-y-auto px-8 py-8 custom-scrollbar">
+                    {/* Header row: avatar + name + label */}
+                    <div className="flex items-center gap-4 mb-8">
+                        <div className="w-12 h-12 rounded-full overflow-hidden border border-white/10 shrink-0">
+                            <img src={avatarUrl} alt={targetProfile!.name} className="w-full h-full object-cover" />
+                        </div>
+                        <div>
+                            <p className="text-base font-semibold text-white">{targetProfile!.name}</p>
+                            <p className="text-xs text-slate-500">{(targetProfile as any).job_title || targetProfile!.role || 'Member'}</p>
+                        </div>
+                        <p className="ml-auto text-xs text-slate-500 font-semibold uppercase tracking-widest">What do you want to do?</p>
+                    </div>
+
+                    {/* Action grid */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+                        {hasMessaging && (
+                            <a
+                                href={`/dashboard/${slug}?action=inbox`}
+                                className="flex items-center gap-3 px-4 py-4 rounded-xl bg-white/[0.03] border border-white/10 hover:bg-white/[0.07] hover:border-blue-500/30 transition-all group"
+                            >
+                                <div className="w-9 h-9 rounded-full bg-blue-500/10 border border-blue-500/30 flex items-center justify-center shrink-0 group-hover:border-blue-400/50 transition-all">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-blue-400"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+                                </div>
+                                <div className="overflow-hidden">
+                                    <p className="text-sm font-medium text-slate-200 group-hover:text-white transition-colors truncate">View conversations</p>
+                                    <p className="text-xs text-slate-500 truncate">Open message inbox</p>
+                                </div>
+                            </a>
+                        )}
+
+                        {(accessibleAgents as any[]).map((ag: any) => (
+                            <a
+                                key={ag.id}
+                                href={`/dashboard/${ag.slug}`}
+                                className="flex items-center gap-3 px-4 py-4 rounded-xl bg-white/[0.03] border border-white/10 hover:bg-white/[0.07] hover:border-white/25 transition-all group"
+                            >
+                                <div className="w-9 h-9 rounded-full overflow-hidden border border-white/10 shrink-0 group-hover:border-white/30 transition-all">
+                                    <img src={ag.avatar} alt={ag.name} className="w-full h-full object-cover" />
+                                </div>
+                                <div className="overflow-hidden">
+                                    <p className="text-sm font-medium text-slate-200 group-hover:text-white transition-colors truncate">{ag.name}</p>
+                                    <p className="text-xs text-slate-500 truncate">{ag.description}</p>
+                                </div>
+                            </a>
+                        ))}
+
+                        {!hasMessaging && accessibleAgents.length === 0 && (
+                            <p className="text-xs text-slate-500 col-span-full py-4">This user has no accessible areas.</p>
+                        )}
+                    </div>
+                </div>
+            </div>
+        )
     }
 
     if (!agent) {
@@ -362,7 +430,7 @@ export default async function AgentPage({ params, searchParams }: AgentPageProps
 
         return (
             <div className="flex-1 min-h-0 bg-black text-white font-sans flex flex-col overflow-hidden">
-                <DashboardHeader centerContent={<DashboardTabs tabs={organicSocialTabs} defaultValue="goal" />} />
+                <DashboardHeader centerContent={<DashboardTabs tabs={organicSocialTabs} defaultValue="planning" />} />
                 <MobileDashboardLayout
                     withCard={true}
                     rightSidebar={
@@ -383,7 +451,7 @@ export default async function AgentPage({ params, searchParams }: AgentPageProps
                     }
                 >
                     <OrganicSocialDashboard
-                        activeTab={tab || 'goal'}
+                        activeTab={tab || 'planning'}
                         companyId={companyId || ''}
                         userName={(user?.user_metadata?.full_name || user?.user_metadata?.name || 'there').split(' ')[0]}
                     />
@@ -392,14 +460,11 @@ export default async function AgentPage({ params, searchParams }: AgentPageProps
         )
     }
 
-    if (slug === 'organic-search') {
-        const seoTabs = [
-            { value: 'overview', label: 'Overview' },
-            { value: 'results', label: 'Results' }
-        ]
+    if (slug === 'landing-page') {
+        const savedContent = await getLandingPageContent(companyId)
         return (
             <div className="flex-1 min-h-0 bg-black text-white font-sans flex flex-col overflow-hidden">
-                <DashboardHeader centerContent={<DashboardTabs tabs={seoTabs} defaultValue="overview" />} />
+                <DashboardHeader />
                 <MobileDashboardLayout
                     withCard={true}
                     rightSidebar={
@@ -419,7 +484,44 @@ export default async function AgentPage({ params, searchParams }: AgentPageProps
                         />
                     }
                 >
-                    {tab === 'results' ? <InProgressResults /> : <SeoDashboard />}
+                    <LandingPageEditor empresaId={companyId} initialContent={savedContent} />
+                </MobileDashboardLayout>
+            </div>
+        )
+    }
+
+    if (slug === 'organic-search' || slug === 'paid-search' || slug === 'utm-tracking') {
+        return (
+            <div className="flex-1 min-h-0 bg-black text-white font-sans flex flex-col overflow-hidden">
+                <DashboardHeader />
+                <MobileDashboardLayout
+                    withCard={true}
+                    rightSidebar={
+                        <RightSidebar
+                            key={slug + (chatId || '')}
+                            userId={user?.id}
+                            companyId={companyId}
+                            userName={(user?.user_metadata?.full_name || user?.user_metadata?.name || 'there').split(' ')[0]}
+                            agent={{
+                                name: agent.name,
+                                avatarUrl: agent.avatar,
+                                role: agent.role,
+                                externalUrl: agent.externalUrl,
+                                slug: agent.slug,
+                                description: agent.description
+                            }}
+                        />
+                    }
+                >
+                    <div className="h-full w-full flex flex-col items-center justify-center gap-3 text-center px-8">
+                        <div className="w-14 h-14 rounded-full overflow-hidden border border-white/10 mb-1">
+                            <img src={agent.avatar} alt={agent.name} className="w-full h-full object-cover grayscale opacity-60" />
+                        </div>
+                        <div>
+                            <p className="text-sm font-semibold text-slate-300">{agent.name}</p>
+                            <p className="text-xs text-slate-500 mt-1 max-w-xs">This agent is currently under construction.</p>
+                        </div>
+                    </div>
                 </MobileDashboardLayout>
             </div>
         )
@@ -465,6 +567,18 @@ export default async function AgentPage({ params, searchParams }: AgentPageProps
     if (isSupport) {
         const trainings = await getTrainings()
 
+        // Fetch wpp_name to use as the displayed name for the Jess agent
+        const { data: empresaWpp } = await supabaseAdmin
+            .from('main_empresas')
+            .select('wpp_name')
+            .eq('id', companyId)
+            .single()
+
+        // Override agent name with wpp_name if available
+        const supportAgent = empresaWpp?.wpp_name && empresaWpp.wpp_name.trim() !== ''
+            ? { ...agent, name: empresaWpp.wpp_name }
+            : agent
+
         const supportTabs = [
             { value: 'omnichannel', label: 'Chats' },
             { value: 'training', label: 'Training' },
@@ -485,18 +599,18 @@ export default async function AgentPage({ params, searchParams }: AgentPageProps
                             companyId={companyId}
                             userName={(user?.user_metadata?.full_name || user?.user_metadata?.name || 'there').split(' ')[0]}
                             agent={{
-                                name: agent.name,
-                                avatarUrl: agent.avatar,
-                                role: agent.role,
-                                externalUrl: agent.externalUrl,
-                                slug: agent.slug,
-                                description: agent.description
+                                name: supportAgent.name,
+                                avatarUrl: supportAgent.avatar,
+                                role: supportAgent.role,
+                                externalUrl: supportAgent.externalUrl,
+                                slug: supportAgent.slug,
+                                description: supportAgent.description
                             }}
                         />
                     }
                 >
                     <SupportDashboard
-                        agent={agent}
+                        agent={supportAgent}
                         trainings={trainings}
                         companyId={companyId}
                         viewerProfile={profile}

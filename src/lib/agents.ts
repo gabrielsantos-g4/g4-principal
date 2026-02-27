@@ -16,7 +16,7 @@ export const AGENTS: Agent[] = [
     {
         id: 'professional-gabriel',
         name: 'Gabriel Santos',
-        role: 'Fractional Growth Marketing',
+        role: 'Strategy, Growth',
         slug: 'professional-services',
         category: 'orchestration',
         // Using a placeholder or potentially the user's avatar dynamically in the UI, but here we need a string.
@@ -138,18 +138,7 @@ export const AGENTS: Agent[] = [
         description: 'I create visuals and edit videos for ads.',
         keywords: ['design', 'video', 'criativos', 'edicao']
     },
-    {
-        id: 'copy-noah',
-        name: 'Noah',
-        role: 'Copy, Messaging',
-        slug: 'copy-messaging',
-        category: 'execution',
-        avatar: 'https://i.pinimg.com/736x/fc/9d/56/fc9d561d46549ccf9f252f5a23137765.jpg',
-        printUrl: 'https://i.pinimg.com/736x/c5/0e/3f/c50e3f57ed136ec97fdfaadb01f21f2c.jpg',
-        externalUrl: 'https://copy.startg4.com',
-        description: 'I write persuasive copy for all platforms.',
-        keywords: ['copywriting', 'texto', 'mensagens', 'persuasao']
-    },
+
     {
         id: 'landing-jacob',
         name: 'Jacob',
@@ -210,22 +199,12 @@ export const AGENTS: Agent[] = [
         description: 'I nurture leads and handle support questions.',
         keywords: ['qualificacao', 'suporte', 'atendimento', 'nurturing']
     },
-    {
-        id: 'bi-agatha',
-        name: 'Agatha',
-        role: 'BI & Dashboard',
-        slug: 'bi-data-analysis',
-        category: 'execution',
-        avatar: 'https://i.pinimg.com/736x/cc/2e/4f/cc2e4f757b5e72abcd6a76ad9254b000.jpg',
-        externalUrl: 'https://bi.startg4.com',
-        description: 'I monitor metrics and provide growth insights.',
-        keywords: ['dados', 'metricas', 'analise', 'dashboard', 'relatorios']
-    },
+
     // The Gold Mine
     {
         id: 'crm-emily',
         name: 'Emily',
-        role: 'Pipeline, CRM',
+        role: 'CRM, Reports',
         slug: 'crm',
         category: 'the-gold-mine',
         avatar: 'https://i.pinimg.com/736x/1c/22/8b/1c228b39c34d484e87b2c93c8a215159.jpg',

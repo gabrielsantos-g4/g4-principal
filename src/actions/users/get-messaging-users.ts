@@ -8,6 +8,7 @@ export interface MessagingUser {
     name: string;
     avatar_url: string | null;
     email: string;
+    has_messaging_access?: boolean;
 }
 
 export async function getMessagingUsers(): Promise<MessagingUser[]> {
@@ -18,7 +19,7 @@ export async function getMessagingUsers(): Promise<MessagingUser[]> {
 
     const { data, error } = await supabase
         .from('main_profiles')
-        .select('id, name, avatar_url, email')
+        .select('id, name, avatar_url, email, has_messaging_access')
         .eq('empresa_id', empresaId)
         .eq('has_messaging_access', true)
         .order('name');

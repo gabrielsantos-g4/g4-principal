@@ -1,6 +1,6 @@
 
 import { useState } from "react";
-import { Search, ListFilter, Check, ChevronDown, MessageSquare, LogOut } from "lucide-react";
+import { Search, ListFilter, Check, ChevronDown, MessageSquare, LogOut, Trash } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -17,6 +17,9 @@ import { Separator } from "@/components/ui/separator";
 import { cn, formatWhatsAppDate } from "@/lib/utils";
 import { signout } from "@/app/login/actions";
 import { markAsRead } from "@/actions/crm/mark-as-read";
+import { deleteConversation } from "@/actions/inbox/delete-conversation";
+import { toast } from "sonner";
+import { AGENTS } from "@/lib/agents";
 
 export interface Conversation {
     id: string;
@@ -71,6 +74,7 @@ interface ConversationListProps {
     accessibleInboxes?: any[];
     onInboxChange?: (id: string) => void;
     instanceAvatar?: string;
+    viewerProfile?: any;
 }
 
 const CHANNEL_ICONS: Record<string, string> = {
@@ -113,17 +117,58 @@ export function ConversationList({
     targetUserId,
     accessibleInboxes = [],
     onInboxChange,
-    instanceAvatar
+    instanceAvatar,
+    viewerProfile
 }: ConversationListProps) {
 
     const availableStatuses = Array.from(new Set(conversations.map(c => c.status))).filter(Boolean).sort();
+
+    // Local state to instantly update visual "read" status without waiting for server refresh
+    const [manuallyReadIds, setManuallyReadIds] = useState<Set<string>>(new Set());
+    // Local state to track which conversation is currently being deleted or already deleted
+    const [deletingIds, setDeletingIds] = useState<Set<string>>(new Set());
+
+    const handleDelete = async (convId: string, e: React.MouseEvent) => {
+        e.stopPropagation();
+
+        if (!confirm("Are you sure you want to delete this conversation? This cannot be undone.")) {
+            return;
+        }
+
+        // Add to local deleting state for optimistic UI update
+        setDeletingIds(prev => {
+            const newSet = new Set(prev);
+            newSet.add(convId);
+            return newSet;
+        });
+
+        toast.promise(deleteConversation(convId), {
+            loading: 'Deleting conversation...',
+            success: (data) => {
+                if (!data.success) {
+                    throw new Error(data.message);
+                }
+                return 'Conversation deleted successfully';
+            },
+            error: (err) => {
+                // Revert optimistic delete on error
+                setDeletingIds(prev => {
+                    const newSet = new Set(prev);
+                    newSet.delete(convId);
+                    return newSet;
+                });
+                return `Failed to delete: ${err.message}`;
+            }
+        });
+    };
 
     const toggleUnread = async (convId: string, e: React.MouseEvent) => {
         e.stopPropagation();
         const conversation = conversations.find(c => c.id === convId);
         if (!conversation) return;
 
-        const isCurrentlyUnread = conversation.unreadCount > 0 || manuallyUnreadIds.has(convId);
+        const isCurrentlyUnread = (conversation.unreadCount > 0 && !manuallyReadIds.has(convId)) || manuallyUnreadIds.has(convId);
+
         setManuallyUnreadIds(prev => {
             const newSet = new Set(prev);
             if (!isCurrentlyUnread) {
@@ -133,6 +178,17 @@ export function ConversationList({
             }
             return newSet;
         });
+
+        setManuallyReadIds(prev => {
+            const newSet = new Set(prev);
+            if (isCurrentlyUnread) {
+                newSet.add(convId);
+            } else {
+                newSet.delete(convId);
+            }
+            return newSet;
+        });
+
         await markAsRead(convId, isCurrentlyUnread);
     };
 
@@ -146,7 +202,7 @@ export function ConversationList({
             );
         }
 
-        const isUnread = conv.unreadCount > 0 || manuallyUnreadIds.has(conv.id);
+        const isUnread = (conv.unreadCount > 0 && !manuallyReadIds.has(conv.id)) || manuallyUnreadIds.has(conv.id);
         let matchesReadStatus = true;
         if (filterStatus === 'unread') matchesReadStatus = isUnread;
         else if (filterStatus === 'read') matchesReadStatus = !isUnread;
@@ -154,10 +210,12 @@ export function ConversationList({
         let matchesStatusFilter = true;
         if (statusFilter) matchesStatusFilter = conv.status === statusFilter;
 
-        return matchesSearch && matchesReadStatus && matchesStatusFilter;
+        const isNotDeleted = !deletingIds.has(conv.id);
+
+        return matchesSearch && matchesReadStatus && matchesStatusFilter && isNotDeleted;
     });
 
-    const unreadTotal = conversations.filter(c => c.unreadCount > 0 || manuallyUnreadIds.has(c.id)).length;
+    const unreadTotal = conversations.filter(c => (c.unreadCount > 0 && !manuallyReadIds.has(c.id)) || manuallyUnreadIds.has(c.id)).length;
 
     return (
         <div className="w-[300px] border-r border-white/8 flex flex-col bg-[#111] h-full overflow-hidden shrink-0">
@@ -179,13 +237,14 @@ export function ConversationList({
                         )}
                     </div>
                 ) : (
-                    accessibleInboxes.length > 0 && onInboxChange ? (
+                    (viewerProfile?.role === 'admin' && accessibleInboxes.length > 0 && onInboxChange && !AGENTS.some(a => a.name === targetUser?.name)) ? (
                         <div className="flex items-center gap-2">
                             <Select value={targetUserId} onValueChange={onInboxChange}>
                                 <SelectTrigger className="w-full h-14 bg-white/5 border-white/10 text-white p-2 flex items-center gap-3">
                                     <div className="flex items-center gap-3 flex-1 min-w-0 text-left">
                                         <Avatar className="h-9 w-9 border border-[#1C73E8]/40">
-                                            <AvatarImage src={targetUser?.avatar || targetUser?.avatar_url} />
+                                            {/* Priority: instanceAvatar -> inbox.avatar -> targetUser.avatar */}
+                                            <AvatarImage src={instanceAvatar || accessibleInboxes.find(i => i.id === targetUserId)?.avatar || targetUser?.avatar || targetUser?.avatar_url} />
                                             <AvatarFallback className="text-xs font-bold">{targetUser?.name?.[0] || '?'}</AvatarFallback>
                                         </Avatar>
                                         <div className="flex-1 min-w-0">
@@ -199,7 +258,7 @@ export function ConversationList({
                                         <SelectItem key={inbox.id} value={inbox.id} className="cursor-pointer focus:bg-white/10 focus:text-white">
                                             <div className="flex items-center gap-2">
                                                 <Avatar className="h-6 w-6 border border-white/10">
-                                                    <AvatarImage src={inbox.avatar} />
+                                                    <AvatarImage src={(inbox.id === targetUserId && instanceAvatar) ? instanceAvatar : inbox.avatar} />
                                                     <AvatarFallback className="text-[9px]">{inbox.name[0]}</AvatarFallback>
                                                 </Avatar>
                                                 <span>{inbox.name}</span>
@@ -324,7 +383,7 @@ export function ConversationList({
                         </div>
                     ) : (
                         filteredConversations.map(conv => {
-                            const isUnread = conv.unreadCount > 0 || manuallyUnreadIds.has(conv.id);
+                            const isUnread = (conv.unreadCount > 0 && !manuallyReadIds.has(conv.id)) || manuallyUnreadIds.has(conv.id);
                             const isSelected = selectedConversationId === conv.id;
                             const channelIcon = CHANNEL_ICONS[conv.channel] || "💬";
                             const statusColor = STATUS_COLORS[conv.status] || "bg-gray-500";
@@ -334,6 +393,13 @@ export function ConversationList({
                                     key={conv.id}
                                     onClick={() => {
                                         onSelectConversation(conv.id);
+                                        // Once we click it, treat it as read visually immediately
+                                        setManuallyReadIds(prev => {
+                                            const newSet = new Set(prev);
+                                            newSet.add(conv.id);
+                                            return newSet;
+                                        });
+
                                         if (conv.unreadCount > 0 || manuallyUnreadIds.has(conv.id)) {
                                             if (manuallyUnreadIds.has(conv.id)) {
                                                 setManuallyUnreadIds(prev => {
@@ -372,6 +438,13 @@ export function ConversationList({
                                                 >
                                                     {isUnread ? "✓  Mark as read" : "●  Mark as unread"}
                                                 </DropdownMenuItem>
+                                                <DropdownMenuItem
+                                                    onClick={(e) => handleDelete(conv.id, e)}
+                                                    className="hover:bg-red-500/20 text-red-400 focus:text-red-300 focus:bg-red-500/20 cursor-pointer text-xs"
+                                                >
+                                                    <Trash size={12} className="mr-2" />
+                                                    Delete chat
+                                                </DropdownMenuItem>
                                             </DropdownMenuContent>
                                         </DropdownMenu>
                                     </div>
@@ -387,34 +460,34 @@ export function ConversationList({
                                         <span className="absolute -bottom-0.5 -right-0.5 text-[10px] leading-none">{channelIcon}</span>
                                     </div>
 
-                                    {/* Content */}
-                                    <div className="flex-1 min-w-0 overflow-hidden pr-6">
-                                        <div className="flex items-center justify-between gap-2 mb-0.5">
-                                            <h4 className={cn("text-sm truncate leading-tight", isUnread ? "text-white font-semibold" : "text-gray-300 font-medium")}>
+                                    {/* Content (Name, Message, Timestamp, Badge in Flex layout) */}
+                                    <div className="flex-1 min-w-0 flex items-start justify-between gap-3">
+                                        <div className="flex-1 min-w-0">
+                                            <h4 className={cn("text-sm truncate leading-tight mb-0.5", isUnread ? "text-white font-semibold" : "text-gray-300 font-medium")}>
                                                 {conv.contact.name}
                                             </h4>
-                                            <span className={cn("text-[11px] whitespace-nowrap shrink-0", isUnread ? "text-[#25D366] font-semibold" : "text-gray-600")}>
-                                                {conv.lastMessageAt
-                                                    ? new Date(conv.lastMessageAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-                                                    : ""}
-                                            </span>
-                                        </div>
-                                        <div className="overflow-hidden">
-                                            <p className={cn("text-[12px] truncate leading-tight", isUnread ? "text-gray-300" : "text-gray-600")}>
-                                                {conv.permission === 'assigned' && <span className="text-[#1C73E8] font-medium">You: </span>}
+                                            <p className={cn("text-[12px] line-clamp-1 leading-tight break-all", isUnread ? "text-gray-300" : "text-gray-600")}>
+                                                {conv.permission === 'assigned' && <span className="text-[#1C73E8] font-medium mr-1">You: </span>}
                                                 {conv.lastMessage}
                                             </p>
                                         </div>
-                                    </div>
 
-                                    {/* Unread count badge (WhatsApp style) */}
-                                    {isUnread && (
-                                        <div className="absolute right-3 bottom-3.5 min-w-[18px] h-[18px] bg-[#25D366] rounded-full flex items-center justify-center px-1 shadow-[0_0_8px_rgba(37,211,102,0.4)]">
-                                            <span className="text-[10px] font-bold text-white leading-none">
-                                                {conv.unreadCount > 0 ? conv.unreadCount : ""}
+                                        {/* Right actions/info column */}
+                                        <div className="shrink-0 flex flex-col items-end gap-1.5 pt-[2px]">
+                                            <span className={cn("text-[11px] whitespace-nowrap", isUnread ? "text-[#25D366] font-semibold" : "text-gray-600")}>
+                                                {conv.lastMessageAt
+                                                    ? new Date(conv.lastMessageAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })
+                                                    : ""}
                                             </span>
+                                            {isUnread && (
+                                                <div className="min-w-[20px] h-[20px] bg-[#25D366] rounded-full flex items-center justify-center px-1.5 shadow-[0_0_8px_rgba(37,211,102,0.4)]">
+                                                    <span className="text-[10px] font-bold text-white leading-none">
+                                                        {conv.unreadCount > 0 ? conv.unreadCount : ""}
+                                                    </span>
+                                                </div>
+                                            )}
                                         </div>
-                                    )}
+                                    </div>
                                 </div>
                             );
                         })

@@ -97,6 +97,40 @@ export function OmnichannelInbox({
     const [currentUserId, setCurrentUserId] = useState<string | null>(null);
     const [instanceAvatar, setInstanceAvatar] = useState<string | undefined>(undefined);
 
+    const [inboxesWithAvatars, setInboxesWithAvatars] = useState<any[]>(accessibleInboxes || []);
+
+    // Fetch avatars for all accessible inboxes that are agents
+    useEffect(() => {
+        let isMounted = true;
+        async function fetchInboxesAvatars() {
+            if (!accessibleInboxes || accessibleInboxes.length === 0) return;
+
+            const updatedInboxes = [...accessibleInboxes];
+            let hasChanges = false;
+
+            for (let i = 0; i < updatedInboxes.length; i++) {
+                const inbox = updatedInboxes[i];
+                if (inbox.type === 'agent') {
+                    try {
+                        const avatar = await getInstanceAvatarByAgent(inbox.name);
+                        if (avatar && avatar !== inbox.avatar) {
+                            updatedInboxes[i] = { ...inbox, avatar };
+                            hasChanges = true;
+                        }
+                    } catch (err) {
+                        console.error("Failed fetching avatar for", inbox.name, err);
+                    }
+                }
+            }
+
+            if (hasChanges && isMounted) {
+                setInboxesWithAvatars(updatedInboxes);
+            }
+        }
+        fetchInboxesAvatars();
+        return () => { isMounted = false; };
+    }, [accessibleInboxes]);
+
     // Browser Notification Logic
     const hasUnread = conversations.some(c => c.unreadCount > 0);
     useBrowserNotification(hasUnread);
@@ -604,20 +638,44 @@ export function OmnichannelInbox({
                 mode={mode}
                 targetUser={targetUser}
                 targetUserId={targetUserId}
+                viewerProfile={viewerProfile}
                 // @ts-ignore
                 accessibleInboxes={(() => {
-                    // If user is admin and no accessibleInboxes provided, use messagingUsers
-                    const inboxes = viewerProfile?.role === 'admin' && accessibleInboxes.length === 0
-                        ? messagingUsers.map(u => ({ id: u.id, name: u.name, avatar: u.avatar_url, type: 'user' }))
-                        : accessibleInboxes;
-                    console.log("[OmnichannelInbox] AccessibleInboxes:", {
-                        isAdmin: viewerProfile?.role === 'admin',
-                        accessibleInboxesLength: accessibleInboxes.length,
-                        messagingUsersLength: messagingUsers.length,
-                        finalInboxes: inboxes.length,
-                        inboxNames: inboxes.map(i => i.name)
-                    });
-                    return inboxes;
+                    // For admins, compute list of all humans with messaging access. 
+                    // AI Agents are handled through their native UI block on the left sidebar.
+                    if (viewerProfile?.role === 'admin') {
+                        const humans = messagingUsers.map(u => ({ id: u.id, name: u.name, avatar: u.avatar_url, type: 'human' }));
+                        const agents = AGENTS.filter(a => a.id === 'customer-jess').map(a => ({ id: a.id, name: a.name, avatar: a.avatar, type: 'agent' }));
+
+                        // If inboxesWithAvatars has updated WhatsApp pictures, we merge those in! 
+                        const combined = [...humans, ...agents].map(inbox => {
+                            // If we fetched the instanceAvatar for an agent, use it
+                            const updated = inboxesWithAvatars.find(i => i.id === inbox.id);
+                            if (updated && updated.avatar) {
+                                return { ...inbox, avatar: updated.avatar };
+                            }
+                            // Also mark the logged-in user with "(You)"
+                            if (inbox.id === viewerProfile.id && !inbox.name.includes('(You)')) {
+                                return { ...inbox, name: `${inbox.name} (You)` };
+                            }
+                            return inbox;
+                        });
+
+                        // Deduplicate by ID just in case
+                        const uniqueInboxes = [];
+                        const seen = new Set();
+                        for (const inbox of combined) {
+                            if (!seen.has(inbox.id)) {
+                                seen.add(inbox.id);
+                                uniqueInboxes.push(inbox);
+                            }
+                        }
+
+                        return uniqueInboxes;
+                    }
+
+                    // For non-admins, fallback to passed accessibleInboxes mapping
+                    return inboxesWithAvatars.length > 0 ? inboxesWithAvatars : accessibleInboxes;
                 })()}
                 // @ts-ignore
                 onInboxChange={(val) => {

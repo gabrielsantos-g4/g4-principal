@@ -99,13 +99,13 @@ export function LeadDetails({
         }
 
         const value = editValues[field];
-        
+
         // Optimistic update
-        onUpdateLead({ 
-            contact: { 
-                ...selectedConversation.contact, 
-                [field]: value 
-            } 
+        onUpdateLead({
+            contact: {
+                ...selectedConversation.contact,
+                [field]: value
+            }
         } as any);
 
         toast.promise(
@@ -202,7 +202,7 @@ export function LeadDetails({
 
         // Optimistic update
         onUpdateLead({ status: newStatus as any });
-        
+
         toast.promise(
             updateLead(id, { status: newStatus }),
             {
@@ -228,7 +228,7 @@ export function LeadDetails({
 
         // Optimistic update
         onUpdateLead({ qualification_status: newStatus as any });
-        
+
         toast.promise(
             updateLeadQualification(id, newStatus),
             {
@@ -254,7 +254,7 @@ export function LeadDetails({
 
         // Optimistic update
         onUpdateLead({ source: newSource });
-        
+
         toast.promise(
             updateLead(id, { source: newSource }),
             {
@@ -280,7 +280,7 @@ export function LeadDetails({
 
         // Optimistic update
         onUpdateLead({ custom: newValue });
-        
+
         toast.promise(
             updateLead(id, { custom_field: newValue }),
             {
@@ -330,7 +330,7 @@ export function LeadDetails({
                                     Name
                                 </label>
                                 {editingField !== 'name' && (
-                                    <button 
+                                    <button
                                         onClick={() => handleFieldEdit('name', selectedConversation.contact.name)}
                                         className="text-gray-600 hover:text-white transition-colors"
                                     >
@@ -370,7 +370,7 @@ export function LeadDetails({
                                     Company
                                 </label>
                                 {editingField !== 'company' && (
-                                    <button 
+                                    <button
                                         onClick={() => handleFieldEdit('company', selectedConversation.contact.company || '')}
                                         className="text-gray-600 hover:text-white transition-colors"
                                     >
@@ -407,7 +407,7 @@ export function LeadDetails({
                             <div className="flex items-center justify-between">
                                 <label className="text-[10px] text-gray-500 font-medium uppercase tracking-wider">Role</label>
                                 {editingField !== 'role' && (
-                                    <button 
+                                    <button
                                         onClick={() => handleFieldEdit('role', selectedConversation.contact.role || '')}
                                         className="text-gray-600 hover:text-white transition-colors"
                                     >
@@ -447,7 +447,7 @@ export function LeadDetails({
                                     Phone
                                 </label>
                                 {editingField !== 'phone' && (
-                                    <button 
+                                    <button
                                         onClick={() => handleFieldEdit('phone', selectedConversation.contact.phone || '')}
                                         className="text-gray-600 hover:text-white transition-colors"
                                     >
@@ -487,7 +487,7 @@ export function LeadDetails({
                                     Email
                                 </label>
                                 {editingField !== 'email' && (
-                                    <button 
+                                    <button
                                         onClick={() => handleFieldEdit('email', selectedConversation.contact.email || '')}
                                         className="text-gray-600 hover:text-white transition-colors"
                                     >
@@ -527,7 +527,7 @@ export function LeadDetails({
                                     LinkedIn
                                 </label>
                                 {editingField !== 'linkedin' && (
-                                    <button 
+                                    <button
                                         onClick={() => handleFieldEdit('linkedin', (selectedConversation as any).linkedin || '')}
                                         className="text-gray-600 hover:text-white transition-colors"
                                     >
@@ -568,7 +568,7 @@ export function LeadDetails({
                                     Website
                                 </label>
                                 {editingField !== 'website' && (
-                                    <button 
+                                    <button
                                         onClick={() => handleFieldEdit('website', (selectedConversation as any).website || '')}
                                         className="text-gray-600 hover:text-white transition-colors"
                                     >
@@ -674,7 +674,7 @@ export function LeadDetails({
                                             {historyExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
                                         </button>
                                     </div>
-                                    
+
                                     <div className={cn(
                                         "space-y-2 overflow-hidden transition-all",
                                         historyExpanded ? "max-h-[400px] overflow-y-auto" : "max-h-[80px]"
@@ -792,10 +792,10 @@ export function LeadDetails({
                                                         const label = typeof s === 'string' ? s : s.label;
                                                         return label === selectedConversation.source;
                                                     });
-                                                    const bgColor = currentSource 
+                                                    const bgColor = currentSource
                                                         ? (typeof currentSource === 'string' ? "bg-slate-500" : (currentSource.bg?.replace('/10', '') || "bg-slate-500"))
                                                         : "bg-slate-500";
-                                                    
+
                                                     return <div className={`w-2 h-2 rounded-full mr-2 ${bgColor}`} />;
                                                 })()}
                                                 {/* @ts-ignore */}
@@ -839,10 +839,10 @@ export function LeadDetails({
                                                         const label = typeof opt === 'string' ? opt : opt.label;
                                                         return label === selectedConversation.custom;
                                                     });
-                                                    const bgColor = currentOption 
+                                                    const bgColor = currentOption
                                                         ? (typeof currentOption === 'string' ? "bg-slate-500" : (currentOption.bg?.replace('/10', '') || "bg-slate-500"))
                                                         : "bg-slate-500";
-                                                    
+
                                                     return <div className={`w-2 h-2 rounded-full mr-2 ${bgColor}`} />;
                                                 })()}
                                                 {/* @ts-ignore */}
@@ -918,8 +918,9 @@ export function LeadDetails({
                                         <SelectValue placeholder="Select Responsible" />
                                     </SelectTrigger>
                                     <SelectContent className="bg-[#1a1a1a] border-white/10 text-white">
-                                        {messagingUsers
+                                        {[...messagingUsers, { id: 'customer-jess', name: 'Jess', avatar_url: null, email: '' }]
                                             .filter(user => user.id !== selectedConversation.responsibleId)
+                                            .filter(user => user.has_messaging_access === true || user.id === 'customer-jess')
                                             .map((user) => (
                                                 <SelectItem
                                                     key={user.id}

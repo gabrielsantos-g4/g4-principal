@@ -96,6 +96,8 @@ export function ChannelsConfig({ companyId, showWebChat = true }: ChannelsConfig
         const supabase = getSupabaseRealtimeClient();
 
         const uniqueChannelId = `whatsapp-updates-${companyId}-${Date.now()}`;
+        let pollingInterval: NodeJS.Timeout | null = null;
+
         const channel = supabase
             .channel(uniqueChannelId, {
                 config: {
@@ -116,21 +118,18 @@ export function ChannelsConfig({ companyId, showWebChat = true }: ChannelsConfig
                     fetchInstances(true);
                 }
             )
-            .subscribe((status: string, err?: Error) => {
-                console.log('[ChannelsConfig] Realtime subscription status:', status);
-                console.log('[ChannelsConfig] Channel ID:', uniqueChannelId);
-                if (err) {
-                    console.error('[ChannelsConfig] Realtime subscription error:', err);
-                    console.error('[ChannelsConfig] Error type:', err?.message || err);
-                }
+            .subscribe((status: string) => {
                 if (status === 'CHANNEL_ERROR') {
-                    console.error('[ChannelsConfig] ❌ Failed to subscribe');
-                    console.error('[ChannelsConfig] Channel ID that failed:', uniqueChannelId);
+                    // Realtime not available for this table — fall back to polling silently
+                    if (!pollingInterval) {
+                        pollingInterval = setInterval(() => fetchInstances(true), 15000);
+                    }
                 }
             });
 
         return () => {
             supabase.removeChannel(channel);
+            if (pollingInterval) clearInterval(pollingInterval);
         };
     }, [companyId]);
 
