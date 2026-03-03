@@ -68,6 +68,9 @@ export function ConversationList({ conversations, selectedId, onSelect }: Conver
                             )}
                         >
                             <Avatar className="h-12 w-12">
+                                {conv.contact_profile_url && (
+                                    <AvatarImage src={conv.contact_profile_url} alt={conv.contact_name} />
+                                )}
                                 <AvatarFallback className="bg-[#6a7175] text-[#d1d7db]">
                                     {conv.contact_name.substring(0, 1).toUpperCase()}
                                 </AvatarFallback>

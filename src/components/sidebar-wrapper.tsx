@@ -45,8 +45,9 @@ export function SidebarWrapper({ children }: { children: React.ReactNode }) {
                             className="flex items-center gap-2 overflow-hidden whitespace-nowrap hover:opacity-80 transition-opacity"
                         >
                             <span className="font-bold text-lg tracking-tight">g4</span>
-                            <span className="text-[9px] leading-tight text-gray-400 font-medium uppercase tracking-wider">
-                                MULTI-B2B AI AGENT PLATFORM
+                            <span className="text-[9px] leading-tight text-gray-400 font-medium uppercase tracking-wider flex flex-col">
+                                <span>Your marketing & sales</span>
+                                <span>team with AI agents</span>
                             </span>
                         </Link>
                     )}

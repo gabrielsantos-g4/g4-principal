@@ -68,7 +68,7 @@ interface AgentPageProps {
 export default async function AgentPage({ params, searchParams }: AgentPageProps & { searchParams: Promise<{ chatId?: string, competitorId?: string, tab?: string, action?: string }> }) {
     const { slug } = await params
     const { chatId, competitorId, tab, action } = await searchParams
-    const agent = AGENTS.find(a => a.slug === slug)
+    const agent = AGENTS.find(a => a.slug === slug) as any
     // Debug: Force Rebuild 12345
 
     const isOrchestrator = !slug || slug === 'orchestrator'
@@ -247,62 +247,54 @@ export default async function AgentPage({ params, searchParams }: AgentPageProps
             <div className="flex-1 min-h-0 bg-black text-white font-sans flex flex-col overflow-hidden">
                 <DashboardHeader />
                 <div className="flex-1 overflow-y-auto px-8 py-8 custom-scrollbar">
-                    {/* Header row: avatar + name + label */}
-                    <div className="flex items-center gap-4 mb-8">
-                        <div className="w-12 h-12 rounded-full overflow-hidden border border-white/10 shrink-0">
-                            <img src={avatarUrl} alt={targetProfile!.name} className="w-full h-full object-cover" />
+                    <div className="flex flex-col items-center justify-center w-full max-w-4xl mx-auto mt-12 md:mt-20">
+                        {/* Title */}
+                        <h1 className="text-3xl md:text-4xl font-medium tracking-tight text-white mb-16 text-center">
+                            Hi, {targetProfile!.name.split(' ')[0]}. What are we doing today?
+                        </h1>
+
+                        {/* Two Columns Container */}
+                        <div className="flex flex-col md:flex-row w-full items-center justify-center gap-12 md:gap-0">
+
+                            {/* Left Column: Text */}
+                            <div className="flex-1 flex md:justify-end text-center md:text-right md:pr-16 md:border-r border-white/10 w-full h-full items-center">
+                                <p className="text-lg md:text-xl text-slate-400 font-light max-w-xs mx-auto md:mx-0 leading-relaxed">
+                                    Select an agent from the list.
+                                </p>
+                            </div>
+
+                            {/* Right Column: Button */}
+                            <div className="flex-1 flex md:justify-start md:pl-16 w-full h-full items-center">
+                                <div className="w-full max-w-sm mx-auto md:mx-0">
+                                    {hasMessaging ? (
+                                        <a
+                                            href={`/dashboard/${slug}?action=inbox`}
+                                            className="w-full flex items-center justify-between gap-4 px-6 py-5 rounded-2xl bg-white/[0.03] border border-white/10 hover:bg-white/[0.07] hover:border-blue-500/30 transition-all group cursor-pointer"
+                                        >
+                                            <div className="flex items-center gap-4">
+                                                <div className="w-12 h-12 rounded-full bg-blue-500/10 border border-blue-500/30 flex items-center justify-center shrink-0 group-hover:border-blue-400/50 transition-all">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-blue-400">
+                                                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                                                    </svg>
+                                                </div>
+                                                <div className="overflow-hidden text-left">
+                                                    <p className="text-base font-medium text-slate-200 group-hover:text-white transition-colors truncate">Open message inbox</p>
+                                                </div>
+                                            </div>
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-600 group-hover:text-blue-400 transition-colors">
+                                                <polyline points="9 18 15 12 9 6"></polyline>
+                                            </svg>
+                                        </a>
+                                    ) : (
+                                        <p className="text-sm text-slate-500 py-4 text-center w-full">This user has no accessible areas.</p>
+                                    )}
+                                </div>
+                            </div>
                         </div>
-                        <div>
-                            <p className="text-base font-semibold text-white">{targetProfile!.name}</p>
-                            <p className="text-xs text-slate-500">{(targetProfile as any).job_title || targetProfile!.role || 'Member'}</p>
-                        </div>
-                        <p className="ml-auto text-xs text-slate-500 font-semibold uppercase tracking-widest">What do you want to do?</p>
-                    </div>
-
-                    {/* Action grid */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-                        {hasMessaging && (
-                            <a
-                                href={`/dashboard/${slug}?action=inbox`}
-                                className="flex items-center gap-3 px-4 py-4 rounded-xl bg-white/[0.03] border border-white/10 hover:bg-white/[0.07] hover:border-blue-500/30 transition-all group"
-                            >
-                                <div className="w-9 h-9 rounded-full bg-blue-500/10 border border-blue-500/30 flex items-center justify-center shrink-0 group-hover:border-blue-400/50 transition-all">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-blue-400"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
-                                </div>
-                                <div className="overflow-hidden">
-                                    <p className="text-sm font-medium text-slate-200 group-hover:text-white transition-colors truncate">View conversations</p>
-                                    <p className="text-xs text-slate-500 truncate">Open message inbox</p>
-                                </div>
-                            </a>
-                        )}
-
-                        {(accessibleAgents as any[]).map((ag: any) => (
-                            <a
-                                key={ag.id}
-                                href={`/dashboard/${ag.slug}`}
-                                className="flex items-center gap-3 px-4 py-4 rounded-xl bg-white/[0.03] border border-white/10 hover:bg-white/[0.07] hover:border-white/25 transition-all group"
-                            >
-                                <div className="w-9 h-9 rounded-full overflow-hidden border border-white/10 shrink-0 group-hover:border-white/30 transition-all">
-                                    <img src={ag.avatar} alt={ag.name} className="w-full h-full object-cover" />
-                                </div>
-                                <div className="overflow-hidden">
-                                    <p className="text-sm font-medium text-slate-200 group-hover:text-white transition-colors truncate">{ag.name}</p>
-                                    <p className="text-xs text-slate-500 truncate">{ag.description}</p>
-                                </div>
-                            </a>
-                        ))}
-
-                        {!hasMessaging && accessibleAgents.length === 0 && (
-                            <p className="text-xs text-slate-500 col-span-full py-4">This user has no accessible areas.</p>
-                        )}
                     </div>
                 </div>
             </div>
         )
-    }
-
-    if (!agent) {
-        redirect('/dashboard')
     }
 
     // RBAC: Guard direct URL access to agent dashboards.
@@ -673,7 +665,8 @@ export default async function AgentPage({ params, searchParams }: AgentPageProps
             { value: 'setup', label: 'Setup' },
             { value: 'results', label: 'Results' },
             { value: 'import', label: 'Import data' },
-            { value: 'settings', label: 'Settings' }
+            { value: 'settings', label: 'Settings' },
+            { value: 'preview', label: 'Preview' }
         ]
         return (
             <div className="flex-1 min-h-0 bg-black text-white font-sans flex flex-col overflow-hidden">

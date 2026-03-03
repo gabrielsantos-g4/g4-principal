@@ -14,7 +14,7 @@ export async function DashboardHeader({ centerContent }: { centerContent?: React
     if (user) {
         const { data } = await supabaseAdmin
             .from('main_profiles')
-            .select('id, role')
+            .select('id, role, empresa_id')
             .eq('id', user.id)
             .single()
         userProfile = data

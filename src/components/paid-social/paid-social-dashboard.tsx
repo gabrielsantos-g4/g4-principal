@@ -14,6 +14,9 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { DashboardClient } from '@/components/dashboard/dashboard-client'
 import { PaidSocialSettings } from './paid-social-settings'
 import { fetchLinkedInMetrics } from '@/actions/paid-social-mcp-actions'
+import { LinkedInFeedPreview } from './linkedin-feed-preview'
+import { LinkedInCampaignSetup } from './linkedin-campaign-setup'
+import { MetaCampaignSetup } from './meta-campaign-setup'
 
 // --- Schemas ---
 
@@ -159,6 +162,7 @@ export function PaidSocialDashboard({ initialTab = "setup" }: { initialTab?: str
     const [selectedReport, setSelectedReport] = useState<Report | null>(null)
     const [isLoadingMetrics, setIsLoadingMetrics] = useState(false)
     const [realMetrics, setRealMetrics] = useState<any>(null)
+    const [selectedPlatform, setSelectedPlatform] = useState<'LinkedIn' | 'Meta' | 'Reddit' | null>(null)
 
     // Sync activeTab with prop from parent (page.tsx URL state)
     useEffect(() => {
@@ -301,187 +305,153 @@ export function PaidSocialDashboard({ initialTab = "setup" }: { initialTab?: str
             <Tabs defaultValue="setup" value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col overflow-hidden">
 
                 <TabsContent value="setup" className="flex-1 overflow-y-auto pr-2 custom-scrollbar pb-20">
-                    <form onSubmit={handleSubmit(onSubmit)} className="w-full max-w-[1600px] space-y-8">
-
-                        {/* 1. Basic Info */}
-                        <div className="space-y-4 p-5 bg-white/5 rounded-lg border border-white/10">
-                            <h2 className="text-xl font-semibold flex items-center gap-2">
-                                <FileText size={20} className="text-blue-400" />
-                                Campaign Basics
-                            </h2>
-
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div className="space-y-2">
-                                    <label className="text-sm text-gray-400">Channel</label>
-                                    <select
-                                        {...register("channel")}
-                                        className="w-full bg-black border border-white/20 rounded-md p-2 text-white focus:border-blue-500 outline-none"
-                                        onChange={(e) => {
-                                            register("channel").onChange(e);
-                                            // Reset objective when channel changes
-                                            const newChannel = e.target.value;
-                                            const defaultObj = (objectiveOptions[newChannel] || [])[0] || "";
-                                            setValue("channelSpecifics.objective", defaultObj);
-                                        }}
+                    {/* ── Platform Selector ───────────────────────────── */}
+                    {!selectedPlatform ? (
+                        <div className="w-full max-w-2xl space-y-8 pt-4">
+                            <div>
+                                <h2 className="text-2xl font-bold text-white">Select a Platform</h2>
+                                <p className="text-slate-400 text-sm mt-1">Choose where you want to run your paid campaign.</p>
+                            </div>
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                {([
+                                    {
+                                        id: 'LinkedIn',
+                                        label: 'LinkedIn',
+                                        icon: <svg viewBox="0 0 24 24" className="w-8 h-8 fill-white"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" /></svg>,
+                                        bg: 'bg-[#0a66c2]',
+                                        desc: 'B2B campaigns, thought leadership, lead gen',
+                                        available: true,
+                                    },
+                                    {
+                                        id: 'Meta',
+                                        label: 'Meta',
+                                        icon: <svg viewBox="0 0 36 36" className="w-8 h-8" fill="white"><path d="M18 3C9.716 3 3 9.716 3 18s6.716 15 15 15 15-6.716 15-15S26.284 3 18 3zm7.5 10.5h-3c-.828 0-1.5.672-1.5 1.5v2.25h4.5l-.75 4.5H21V30h-4.5v-8.25h-3v-4.5h3V15c0-2.485 2.015-4.5 4.5-4.5h3.75l-.75 3z" /></svg>,
+                                        bg: 'bg-gradient-to-br from-[#1877f2] to-[#e1306c]',
+                                        desc: 'Facebook, Instagram, Reels, Stories',
+                                        available: true,
+                                    },
+                                    {
+                                        id: 'Reddit',
+                                        label: 'Reddit',
+                                        icon: <svg viewBox="0 0 24 24" className="w-8 h-8 fill-white"><path d="M12 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0zm5.01 4.744c.688 0 1.25.561 1.25 1.249a1.25 1.25 0 0 1-2.498.056l-2.597-.547-.8 3.747c1.824.07 3.48.632 4.674 1.488.308-.309.73-.491 1.207-.491.968 0 1.754.786 1.754 1.754 0 .716-.435 1.333-1.01 1.614a3.111 3.111 0 0 1 .042.52c0 2.694-3.13 4.87-7.004 4.87-3.874 0-7.004-2.176-7.004-4.87 0-.183.015-.366.043-.534A1.748 1.748 0 0 1 4.028 12c0-.968.786-1.754 1.754-1.754.463 0 .898.196 1.207.49 1.207-.883 2.878-1.43 4.744-1.487l.885-4.182a.342.342 0 0 1 .14-.197.35.35 0 0 1 .238-.042l2.906.617a1.214 1.214 0 0 1 1.108-.701zM9.25 12C8.561 12 8 12.562 8 13.25c0 .687.561 1.248 1.25 1.248.687 0 1.248-.561 1.248-1.249 0-.688-.561-1.249-1.249-1.249zm5.5 0c-.687 0-1.248.561-1.248 1.25 0 .687.561 1.248 1.249 1.248.688 0 1.249-.561 1.249-1.249 0-.687-.562-1.249-1.25-1.249zm-5.466 3.99a.327.327 0 0 0-.231.094.33.33 0 0 0 0 .463c.842.842 2.484.913 2.961.913.477 0 2.105-.056 2.961-.913a.361.361 0 0 0 .029-.463.33.33 0 0 0-.464 0c-.547.533-1.684.73-2.512.73-.828 0-1.979-.196-2.512-.73a.326.326 0 0 0-.232-.095z" /></svg>,
+                                        bg: 'bg-[#ff4500]',
+                                        desc: 'Community targeting, niche audiences',
+                                        available: true,
+                                    },
+                                ] as const).map(p => (
+                                    <button
+                                        key={p.id}
+                                        onClick={() => setSelectedPlatform(p.id as any)}
+                                        className="flex flex-col gap-4 p-6 rounded-2xl border border-white/10 hover:border-white/25 bg-white/5 hover:bg-white/10 transition-all group text-left"
                                     >
-                                        <option value="Meta">Meta (Facebook/Instagram)</option>
-                                        <option value="LinkedIn">LinkedIn</option>
-                                        <option value="Reddit">Reddit</option>
-                                    </select>
-                                </div>
-
-                                <div className="space-y-2">
-                                    <label className="text-sm text-gray-400">Campaign Name</label>
-                                    <input
-                                        {...register("campaignName")}
-                                        placeholder="e.g., Q1 Awareness Campaign"
-                                        className="w-full bg-black border border-white/20 rounded-md p-2 text-white focus:border-blue-500 outline-none placeholder:text-gray-600"
-                                    />
-                                    {errors.campaignName && <span className="text-red-500 text-xs">{errors.campaignName.message}</span>}
-                                </div>
-                            </div>
-
-                            <div className="space-y-2">
-                                <label className="text-sm text-gray-400">Campaign Objective</label>
-                                <select
-                                    onChange={(e) => setValue('channelSpecifics.objective', e.target.value)}
-                                    // Default value is handled by react-hook-form via setValue, but we can set defaultValue for UI sync
-                                    defaultValue={currentObjectives[0]}
-                                    className="w-full bg-black border border-white/20 rounded-md p-2 text-white focus:border-blue-500 outline-none"
-                                >
-                                    {currentObjectives.map((obj) => (
-                                        <option key={obj} value={obj}>{obj}</option>
-                                    ))}
-                                </select>
+                                        <div className={`w-14 h-14 rounded-xl ${p.bg} flex items-center justify-center shadow-lg group-hover:scale-105 transition-transform`}>
+                                            {p.icon}
+                                        </div>
+                                        <div>
+                                            <p className="font-bold text-white text-base">{p.label}</p>
+                                            <p className="text-slate-400 text-xs mt-1 leading-relaxed">{p.desc}</p>
+                                        </div>
+                                    </button>
+                                ))}
                             </div>
                         </div>
-
-                        {/* 2. Ad Groups */}
-                        <div className="space-y-6">
-                            <div className="flex justify-between items-center">
-                                <h2 className="text-xl font-semibold flex items-center gap-2">
-                                    <BarChart2 size={20} className="text-green-400" />
-                                    Ad Groups
-                                </h2>
+                    ) : (
+                        <div className="space-y-4 pt-4">
+                            {/* Back + Platform badge */}
+                            <div className="flex items-center gap-3">
                                 <button
-                                    type="button"
-                                    onClick={() => appendAdGroup({ name: "", audience: "", budget: "", ads: [{ utmLink: "", primaryText: "", headline: "" }] })}
-                                    className="flex items-center gap-2 text-xs bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-full transition-colors"
+                                    onClick={() => setSelectedPlatform(null)}
+                                    className="flex items-center gap-1.5 text-slate-400 hover:text-white text-sm transition-colors"
                                 >
-                                    <Plus size={14} /> Add Group
+                                    <ArrowLeft size={16} /> Change platform
                                 </button>
+                                <span className="text-slate-700">·</span>
+                                <span className="text-sm font-semibold text-white">{selectedPlatform}</span>
                             </div>
 
-                            {adGroupFields.map((field, index) => (
-                                <AdGroupItem
-                                    key={field.id}
-                                    index={index}
-                                    control={control}
-                                    register={register}
-                                    remove={removeAdGroup}
-                                    errors={errors}
-                                    setValue={setValue}
-                                    watch={watch}
-                                />
-                            ))}
-                        </div>
+                            {/* LinkedIn 3-level hierarchy */}
+                            {selectedPlatform === 'LinkedIn' && <LinkedInCampaignSetup />}
 
-                        <div className="pt-4 pb-12">
-                            <button
-                                type="button"
-                                onClick={handleSubmit(onSubmit, (errors) => {
-                                    console.error("Form errors:", errors)
-                                    // Log explicit errors to help user
-                                    const errorCtx = Object.keys(errors).map(k => {
-                                        if (k === 'adGroups') {
-                                            // Check deep errors if possible, but just generic warning for now
-                                            return 'Ad Groups (check Name, Audience, Budget)'
-                                        }
-                                        return k
-                                    }).join(", ")
-                                    toast.error(`Please fill required fields: ${errorCtx}`)
-                                })}
-                                disabled={isSubmitting}
-                                className="bg-[#1C73E8] hover:bg-blue-600 text-white font-medium py-2.5 px-6 rounded-lg flex items-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                                {isSubmitting ? (
-                                    <>Saving...</>
-                                ) : (
-                                    <>
-                                        <Save size={18} />
-                                        Save & Send Request
-                                    </>
-                                )}
-                            </button>
-                        </div>
+                            {/* Meta: full Campaign → Ad Set → Ad hierarchy */}
+                            {selectedPlatform === 'Meta' && <MetaCampaignSetup />}
 
-                        {/* Submitted Requests List */}
-                        {submittedAds.length > 0 && (
-                            <div className="border-t border-white/10 pt-8 mt-8">
-                                <h3 className="text-lg font-semibold text-white mb-6">Recent Requests</h3>
-                                <div className="space-y-3">
-                                    {/* Header Row */}
-                                    <div className="grid grid-cols-12 gap-4 px-4 py-2 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        <div className="col-span-1">Preview</div>
-                                        <div className="col-span-3">Campaign</div>
-                                        <div className="col-span-3">Caption</div>
-                                        <div className="col-span-2">Submitted</div>
-                                        <div className="col-span-2">Delivery</div>
-                                        <div className="col-span-1 text-right">Link</div>
-                                    </div>
-
-                                    {submittedAds.map((ad) => (
-                                        <div key={ad.id} className="grid grid-cols-12 gap-4 items-center p-4 bg-white/5 rounded-lg border border-white/10 hover:bg-white/10 transition-colors">
-                                            {/* Preview */}
-                                            <div className="col-span-1">
-                                                <div className="w-10 h-10 bg-black/50 rounded flex items-center justify-center overflow-hidden border border-white/10">
-                                                    {ad.media ? (
-                                                        <span className="text-[10px] text-gray-400">IMG</span>
-                                                    ) : (
-                                                        <FileText size={16} className="text-gray-500" />
-                                                    )}
-                                                </div>
+                            {/* Reddit: original form */}
+                            {selectedPlatform === 'Reddit' && (
+                                <form onSubmit={handleSubmit(onSubmit)} className="w-full max-w-[1600px] space-y-8">
+                                    {/* 1. Basic Info */}
+                                    <div className="space-y-4 p-5 bg-white/5 rounded-lg border border-white/10">
+                                        <h2 className="text-xl font-semibold flex items-center gap-2">
+                                            <FileText size={20} className="text-blue-400" />
+                                            Campaign Basics
+                                        </h2>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div className="space-y-2">
+                                                <label className="text-sm text-gray-400">Campaign Name</label>
+                                                <input
+                                                    {...register("campaignName")}
+                                                    placeholder="e.g., Q1 Awareness Campaign"
+                                                    className="w-full bg-black border border-white/20 rounded-md p-2 text-white focus:border-blue-500 outline-none placeholder:text-gray-600"
+                                                />
+                                                {errors.campaignName && <span className="text-red-500 text-xs">{errors.campaignName.message}</span>}
                                             </div>
-
-                                            {/* Campaign */}
-                                            <div className="col-span-3 text-sm font-medium text-white truncate">
-                                                {ad.campaignName}
-                                            </div>
-
-                                            {/* Caption */}
-                                            <div className="col-span-3 text-sm text-gray-400 truncate">
-                                                {ad.primaryText || <span className="italic opacity-50">No caption</span>}
-                                            </div>
-
-                                            {/* Submitted */}
-                                            <div className="col-span-2 text-xs text-gray-400">
-                                                {ad.submittedAt}
-                                            </div>
-
-                                            {/* Delivery */}
-                                            <div className="col-span-2 text-xs text-green-400">
-                                                {ad.deliveredAt}
-                                            </div>
-
-                                            {/* Link */}
-                                            <div className="col-span-1 flex justify-end">
-                                                <a
-                                                    href={ad.previewLink || "#"}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    className="text-blue-400 hover:text-blue-300 p-2 hover:bg-blue-500/10 rounded-full transition-colors"
-                                                    title="View Preview"
+                                            <div className="space-y-2">
+                                                <label className="text-sm text-gray-400">Campaign Objective</label>
+                                                <select
+                                                    onChange={(e) => setValue('channelSpecifics.objective', e.target.value)}
+                                                    defaultValue="Awareness"
+                                                    className="w-full bg-black border border-white/20 rounded-md p-2 text-white focus:border-blue-500 outline-none"
                                                 >
-                                                    <Send size={14} className="transform -rotate-45" />
-                                                </a>
+                                                    {["Brand Awareness", "Traffic", "Conversions", "Video Views", "App Installs"].map((obj) => (
+                                                        <option key={obj} value={obj}>{obj}</option>
+                                                    ))}
+                                                </select>
                                             </div>
                                         </div>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
-                    </form>
+                                    </div>
+                                    {/* Ad Groups */}
+                                    <div className="space-y-6">
+                                        <div className="flex justify-between items-center">
+                                            <h2 className="text-xl font-semibold flex items-center gap-2">
+                                                <BarChart2 size={20} className="text-green-400" />
+                                                Ad Groups
+                                            </h2>
+                                            <button
+                                                type="button"
+                                                onClick={() => appendAdGroup({ name: "", audience: "", budget: "", ads: [{ utmLink: "", primaryText: "", headline: "" }] })}
+                                                className="flex items-center gap-2 text-xs bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-full transition-colors"
+                                            >
+                                                <Plus size={14} /> Add Group
+                                            </button>
+                                        </div>
+                                        {adGroupFields.map((field, index) => (
+                                            <AdGroupItem
+                                                key={field.id}
+                                                index={index}
+                                                control={control}
+                                                register={register}
+                                                remove={removeAdGroup}
+                                                errors={errors}
+                                                setValue={setValue}
+                                                watch={watch}
+                                            />
+                                        ))}
+                                    </div>
+                                    <div className="pt-4 pb-12">
+                                        <button
+                                            type="button"
+                                            onClick={handleSubmit(onSubmit, () => { })}
+                                            disabled={isSubmitting}
+                                            className="bg-[#1C73E8] hover:bg-blue-600 text-white font-medium py-2.5 px-6 rounded-lg flex items-center gap-2 transition-all disabled:opacity-50"
+                                        >
+                                            {isSubmitting ? 'Saving...' : <><Save size={18} /> Save & Send Request</>}
+                                        </button>
+                                    </div>
+                                </form>
+                            )}
+                        </div>
+                    )}
                 </TabsContent>
+
 
                 <TabsContent value="results" className="flex-1 flex flex-col min-h-0 overflow-y-auto custom-scrollbar pb-20">
                     {isLoadingMetrics ? (
@@ -648,8 +618,12 @@ export function PaidSocialDashboard({ initialTab = "setup" }: { initialTab?: str
                 <TabsContent value="settings" className="flex-1 overflow-y-auto pr-2 custom-scrollbar pb-20">
                     <PaidSocialSettings />
                 </TabsContent>
-            </Tabs>
-        </div>
+
+                <TabsContent value="preview" className="flex-1 overflow-y-auto custom-scrollbar">
+                    <LinkedInFeedPreview />
+                </TabsContent>
+            </Tabs >
+        </div >
     )
 }
 

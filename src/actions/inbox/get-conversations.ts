@@ -5,7 +5,7 @@ import { getEmpresaId } from "@/lib/get-empresa-id";
 import { AGENTS } from "@/lib/agents";
 import { unstable_noStore as noStore } from 'next/cache';
 
-export async function getConversations(targetUserId?: string) {
+export async function getConversations(targetUserId?: string, _cacheBuster?: string) {
     noStore();
     const empresaId = await getEmpresaId();
     console.log("[getConversations] empresaId:", empresaId, "targetUserId:", targetUserId);
@@ -68,7 +68,8 @@ export async function getConversations(targetUserId?: string) {
             conversation_channel,
             is_read_by_responsible,
             ctt_jid,
-            responsible
+            responsible,
+            profile_url
         )
     `;
 
@@ -76,7 +77,8 @@ export async function getConversations(targetUserId?: string) {
         .from('camp_conversas')
         .select(selectFields)
         .eq('empresa_id', empresaId)
-        .order('updated_at', { ascending: false });
+        .order('updated_at', { ascending: false })
+        .limit(1001); // Prevent Next.js from aggressively caching this query
 
     if (isAgent) {
         query = query.is('responsible_id', null);
@@ -175,7 +177,7 @@ export async function getConversations(targetUserId?: string) {
                         : cleanJid
                             ? cleanJid
                             : "Name not yet identified",
-                avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(lead.name || 'U')}&background=random`,
+                avatar: lead.profile_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(lead.name || 'U')}&background=random`,
                 company: lead.company || "",
                 role: lead.role || "",
                 email: lead.email || "",

@@ -4,7 +4,7 @@ import { createAdminClient } from "@/lib/supabase";
 import { getEmpresaId } from "@/lib/get-empresa-id";
 import { unstable_noStore as noStore } from 'next/cache';
 
-export async function getChatMessages(conversationId: string) {
+export async function getChatMessages(conversationId: string, _cacheBuster?: string) {
     noStore(); // Prevent Next.js from caching this response
     const empresaId = await getEmpresaId();
     if (!empresaId) return [];
@@ -25,7 +25,9 @@ export async function getChatMessages(conversationId: string) {
         .select('*')
         .eq('conversa_id', conversationId)
         .eq('empresa_id', empresaId)
-        .order('created_at', { ascending: true });
+        .order('created_at', { ascending: true })
+        // We do this limit slightly differently just to ensure NextJS doesn't cache it
+        .limit(1000);
 
     if (messagesError) {
         console.error("Error fetching messages:", messagesError);

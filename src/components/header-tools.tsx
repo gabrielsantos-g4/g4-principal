@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { StickyNote, Settings, Building2, Users2, History, BadgeDollarSign, CreditCard, ArrowUpRight, LogOut, MessageCircle, LayoutGrid, GraduationCap, ListChecks, Waypoints, BarChart3 } from "lucide-react"
 
 import { NotesModal } from "./tools/notes-modal"
+import { MilestoneModal } from "./tools/milestone-modal"
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -20,6 +21,7 @@ interface HeaderToolsProps {
 
 export function HeaderTools({ userProfile }: HeaderToolsProps) {
     const [isNotesOpen, setIsNotesOpen] = useState(false)
+    const [isMilestonesOpen, setIsMilestonesOpen] = useState(false)
     const [mounted, setMounted] = useState(false)
     const router = useRouter()
     const pathname = usePathname()
@@ -49,13 +51,7 @@ export function HeaderTools({ userProfile }: HeaderToolsProps) {
         <div className="flex items-center gap-2">
 
 
-            <button
-                className="p-2 border border-white/20 rounded text-gray-400 hover:text-white hover:bg-white/5 transition-colors flex items-center justify-center h-9 w-9"
-                title="Notes"
-                onClick={() => setIsNotesOpen(true)}
-            >
-                <StickyNote size={16} />
-            </button>
+
 
             <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -67,22 +63,27 @@ export function HeaderTools({ userProfile }: HeaderToolsProps) {
                     </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent className="w-48 bg-[#171717] border-white/10 text-white" align="end">
+
+                    <DropdownMenuSeparator className="bg-white/10" />
+
                     {isAdmin && (
                         <>
-                            <DropdownMenuItem onClick={() => handleNavigation('chats')} className="gap-2 cursor-pointer text-blue-400 focus:text-blue-300 focus:bg-blue-500/10">
-                                <MessageCircle size={14} />
-                                <span>Chats</span>
-                            </DropdownMenuItem>
-
-                            <DropdownMenuSeparator className="bg-white/10" />
 
                             <DropdownMenuItem onClick={() => handleNavigation('company')} className="gap-2 cursor-pointer focus:bg-white/5">
                                 <Building2 size={14} className="text-gray-400" />
-                                <span>Company</span>
+                                <span>Company Info</span>
                             </DropdownMenuItem>
                             <DropdownMenuItem onClick={() => handleNavigation('team')} className="gap-2 cursor-pointer focus:bg-white/5">
                                 <Users2 size={14} className="text-gray-400" />
                                 <span>Team</span>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => setIsNotesOpen(true)} className="gap-2 cursor-pointer focus:bg-white/5">
+                                <StickyNote size={14} className="text-gray-400" />
+                                <span>Notes</span>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => setIsMilestonesOpen(true)} className="gap-2 cursor-pointer focus:bg-white/5">
+                                <Waypoints size={14} className="text-gray-400" />
+                                <span>Milestones</span>
                             </DropdownMenuItem>
                             <DropdownMenuItem onClick={() => handleNavigation('history')} className="gap-2 cursor-pointer focus:bg-white/5">
                                 <History size={14} className="text-gray-400" />
@@ -102,6 +103,18 @@ export function HeaderTools({ userProfile }: HeaderToolsProps) {
                         <ArrowUpRight size={14} className="text-gray-400" />
                         <span>Support</span>
                     </DropdownMenuItem>
+                    {!isAdmin && (
+                        <>
+                            <DropdownMenuItem onClick={() => setIsNotesOpen(true)} className="gap-2 cursor-pointer focus:bg-white/5">
+                                <StickyNote size={14} className="text-gray-400" />
+                                <span>Notes</span>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => setIsMilestonesOpen(true)} className="gap-2 cursor-pointer focus:bg-white/5">
+                                <Waypoints size={14} className="text-gray-400" />
+                                <span>Milestones</span>
+                            </DropdownMenuItem>
+                        </>
+                    )}
 
                     <DropdownMenuSeparator className="bg-white/10" />
 
@@ -117,6 +130,7 @@ export function HeaderTools({ userProfile }: HeaderToolsProps) {
             </DropdownMenu>
 
             <NotesModal open={isNotesOpen} onOpenChange={setIsNotesOpen} />
+            <MilestoneModal open={isMilestonesOpen} onOpenChange={setIsMilestonesOpen} userProfile={userProfile} />
         </div>
     )
 }

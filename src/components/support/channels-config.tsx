@@ -78,7 +78,7 @@ export function ChannelsConfig({ companyId, showWebChat = true }: ChannelsConfig
     const fetchInstances = async (silent = false) => {
         if (!silent) setLoading(true);
         const [waInstances, settings] = await Promise.all([
-            getWhatsAppInstances(companyId),
+            getWhatsAppInstances(companyId, Date.now().toString()),
             getCompanySettings(companyId)
         ]);
         setInstances(waInstances);
@@ -174,7 +174,7 @@ export function ChannelsConfig({ companyId, showWebChat = true }: ChannelsConfig
                 setNewInstanceOpen(false);
                 setNewInstanceName("");
                 // Refresh manually to be safe
-                const waInstances = await getWhatsAppInstances(companyId);
+                const waInstances = await getWhatsAppInstances(companyId, Date.now().toString());
                 setInstances(waInstances);
             }
         } catch (error) {

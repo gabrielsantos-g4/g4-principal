@@ -8,6 +8,7 @@ export type Conversation = {
     contact_id: string
     contact_name: string
     contact_phone: string
+    contact_profile_url?: string | null
     instance_id: string
     last_message?: string
     last_message_at?: string
@@ -48,7 +49,8 @@ export async function getConversations() {
             created_at,
             main_crm!camp_conversas_contact_id_fkey (
                 name,
-                phone
+                phone,
+                profile_url
             )
         `)
         .eq('empresa_id', profile.empresa_id)
@@ -74,6 +76,7 @@ export async function getConversations() {
             contact_id: conv.contact_id,
             contact_name: conv.main_crm?.name || conv.main_crm?.phone || 'Desconhecido',
             contact_phone: conv.main_crm?.phone || '',
+            contact_profile_url: conv.main_crm?.profile_url || null,
             instance_id: conv.instance_id,
             last_message: lastMsg?.body || (lastMsg ? 'Mídia' : ''),
             last_message_at: lastMsg?.created_at,

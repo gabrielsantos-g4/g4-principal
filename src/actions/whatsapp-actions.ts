@@ -15,14 +15,15 @@ export type WhatsAppInstance = {
 import { revalidatePath } from "next/cache";
 import { randomUUID } from "crypto";
 
-export async function getWhatsAppInstances(companyId: string): Promise<WhatsAppInstance[]> {
+export async function getWhatsAppInstances(companyId: string, _cacheBuster?: string): Promise<WhatsAppInstance[]> {
     const supabase = await createClient();
 
     const { data, error } = await supabase
         .from("instance_wa_chaterly")
         .select("*")
         .eq("empresa", companyId)
-        .order('created_at', { ascending: true });
+        .order('created_at', { ascending: true })
+        .limit(100); // Prevent aggressive Next.js caching
 
     if (error) {
         console.error("Error fetching WhatsApp instances:", error);

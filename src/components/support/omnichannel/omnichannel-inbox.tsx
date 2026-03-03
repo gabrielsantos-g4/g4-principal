@@ -289,22 +289,25 @@ export function OmnichannelInbox({
 
     // Ref to track current selectedConversationId for Realtime callbacks
     const selectedConversationIdRef = useRef<string | null>(null);
-    selectedConversationIdRef.current = selectedConversationId;
+    useEffect(() => {
+        selectedConversationIdRef.current = selectedConversationId;
+    }, [selectedConversationId]);
 
     // Silent reload: fetches messages without showing loading indicator
-    const silentReloadMessages = useCallback(async () => {
+    const silentReloadMessages = async () => {
         const convId = selectedConversationIdRef.current;
         console.log('[silentReload] Called for conversation:', convId);
         if (!convId) return;
         try {
-            const dbMessages = await getChatMessages(convId);
+            const dbMessages = await getChatMessages(convId, Date.now().toString());
+            console.log(`[silentReload] fetched ${dbMessages?.length || 0} messages`);
             if (dbMessages && dbMessages.length > 0) {
                 setMessages(dbMessages as Message[]);
             }
         } catch (error) {
             console.error('[silentReload] Failed:', error);
         }
-    }, []);
+    };
 
     // Polling fallback when Realtime fails (Forced to always run due to Supabase Replication Slot bug)
     useEffect(() => {
@@ -341,7 +344,7 @@ export function OmnichannelInbox({
 
             try {
                 const [convData, usersData] = await Promise.all([
-                    getConversations(targetUserId),
+                    getConversations(targetUserId, Date.now().toString()),
                     getMessagingUsers()
                 ]);
 
@@ -394,8 +397,9 @@ export function OmnichannelInbox({
         async function loadMessages() {
             setIsMessagesLoading(true);
             try {
-                const dbMessages = await getChatMessages(selectedConversationId!);
+                const dbMessages = await getChatMessages(selectedConversationId!, Date.now().toString());
                 if (isMounted) {
+                    console.log(`[loadMessages] fetched ${dbMessages?.length || 0} messages`);
                     if (dbMessages && dbMessages.length > 0) {
                         setMessages(dbMessages as Message[]);
                     } else {
