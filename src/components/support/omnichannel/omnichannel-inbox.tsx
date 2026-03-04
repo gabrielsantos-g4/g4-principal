@@ -168,9 +168,6 @@ export function OmnichannelInbox({
         const channelLeadsId = `omnichannel-leads-${empresaId}-${mountId}`;
         const channelMsgsId = `omnichannel-messages-${empresaId}-${mountId}`;
 
-        console.log('[OmnichannelInbox] 🔄 Attempting Realtime connection for empresa:', empresaId);
-        console.log('[OmnichannelInbox] Channel IDs:', { channelLeadsId, channelMsgsId });
-
         // Clean up any existing channels first
         if (channelsRef.current.leads) {
             supabase.removeChannel(channelsRef.current.leads);
@@ -199,17 +196,14 @@ export function OmnichannelInbox({
                     filter: `empresa_id=eq.${empresaId}`
                 },
                 (payload: any) => {
-                    console.log('[OmnichannelInbox] 🔥 Realtime: CRM update detected!', payload);
                     setRefreshTrigger(prev => prev + 1);
                 }
             )
             .subscribe((status: string, err?: Error) => {
                 if (status === 'SUBSCRIBED') {
-                    console.log('[OmnichannelInbox] ✅ Realtime connected successfully');
                     setUsePolling(false);
                 }
                 if (status === 'CHANNEL_ERROR') {
-                    console.warn('[OmnichannelInbox] ⚠️ Realtime failed, enabling polling fallback');
                     realtimeFailed = true;
                     setUsePolling(true);
                 }
@@ -227,7 +221,6 @@ export function OmnichannelInbox({
                     filter: `empresa_id=eq.${empresaId}`
                 },
                 (payload: any) => {
-                    console.log('[OmnichannelInbox] 🔥 Realtime: New message detected!', payload);
                     silentReloadMessages();
                     setRefreshTrigger(prev => prev + 1);
                 }
@@ -239,7 +232,7 @@ export function OmnichannelInbox({
                 }
             });
 
-        // Realtime: Coversas updates
+        // Realtime: Conversas updates
         const channelConversasId = `omnichannel-conversas-${empresaId}-${mountId}`;
         channelsRef.current.conversas = supabase
             .channel(channelConversasId)
@@ -252,20 +245,17 @@ export function OmnichannelInbox({
                     filter: `empresa_id=eq.${empresaId}`
                 },
                 (payload: any) => {
-                    console.log('[OmnichannelInbox] 🔥 Realtime: Conversa update detected!', payload);
                     setRefreshTrigger(prev => prev + 1);
                 }
             )
             .subscribe((status: string) => {
                 if (status === 'CHANNEL_ERROR') {
-                    console.warn('[OmnichannelInbox] ⚠️ Realtime failed for conversas');
                     realtimeFailed = true;
                     setUsePolling(true);
                 }
             });
 
         return () => {
-            console.log('[OmnichannelInbox] Cleaning up realtime channels');
             isSubscribingRef.current = false;
 
             if (channelsRef.current.leads) {
@@ -294,13 +284,12 @@ export function OmnichannelInbox({
     }, [selectedConversationId]);
 
     // Silent reload: fetches messages without showing loading indicator
+    const silentReloadRef = useRef<() => Promise<void>>(async () => {});
     const silentReloadMessages = async () => {
         const convId = selectedConversationIdRef.current;
-        console.log('[silentReload] Called for conversation:', convId);
         if (!convId) return;
         try {
             const dbMessages = await getChatMessages(convId, Date.now().toString());
-            console.log(`[silentReload] fetched ${dbMessages?.length || 0} messages`);
             if (dbMessages && dbMessages.length > 0) {
                 setMessages(dbMessages as Message[]);
             }
@@ -308,17 +297,16 @@ export function OmnichannelInbox({
             console.error('[silentReload] Failed:', error);
         }
     };
+    silentReloadRef.current = silentReloadMessages;
 
-    // Polling fallback when Realtime fails (Forced to always run due to Supabase Replication Slot bug)
+    // Polling fallback — 5s interval (Realtime disabled due to Supabase bug)
     useEffect(() => {
         if (!targetUserId) return;
 
-        console.log('[OmnichannelInbox] 🔄 Polling mode ALWAYS ENFORCED (refreshing every 8 seconds)');
-
         pollingIntervalRef.current = setInterval(() => {
             setRefreshTrigger(prev => prev + 1);
-            silentReloadMessages(); // Ensure messages in the active chat are also refreshed during polling
-        }, 8000); // Poll every 8 seconds
+            silentReloadRef.current?.();
+        }, 5000);
 
         return () => {
             if (pollingIntervalRef.current) {
@@ -326,14 +314,19 @@ export function OmnichannelInbox({
                 pollingIntervalRef.current = null;
             }
         };
-    }, [targetUserId, silentReloadMessages]);
+    }, [targetUserId]);
+
+    // Load messaging users once on mount
+    useEffect(() => {
+        getMessagingUsers().then(users => {
+            setMessagingUsers(users);
+        });
+    }, []);
 
     useEffect(() => {
         let isMounted = true;
         async function fetchData() {
-            console.log("[OmnichannelInbox] fetchData called. targetUserId:", targetUserId, "empresaId:", crmSettings?.empresa_id);
             if (!targetUserId || !crmSettings?.empresa_id) {
-                console.log("[OmnichannelInbox] fetchData early return - missing IDs");
                 if (isInitialLoad.current) setIsLoading(false);
                 return;
             }
@@ -343,15 +336,10 @@ export function OmnichannelInbox({
             if (showLoading) setIsLoading(true);
 
             try {
-                const [convData, usersData] = await Promise.all([
-                    getConversations(targetUserId, Date.now().toString()),
-                    getMessagingUsers()
-                ]);
+                const convData = await getConversations(targetUserId, Date.now().toString());
 
                 if (isMounted) {
                     setConversations(convData as Conversation[]);
-                    setMessagingUsers(usersData);
-                    console.log("[OmnichannelInbox] Messaging users loaded:", usersData.length, usersData.map(u => u.name));
 
                     // Fetch instance avatar if targetUserId is an agent
                     const agent = AGENTS.find(a => a.id === targetUserId);
@@ -399,7 +387,6 @@ export function OmnichannelInbox({
             try {
                 const dbMessages = await getChatMessages(selectedConversationId!, Date.now().toString());
                 if (isMounted) {
-                    console.log(`[loadMessages] fetched ${dbMessages?.length || 0} messages`);
                     if (dbMessages && dbMessages.length > 0) {
                         setMessages(dbMessages as Message[]);
                     } else {
