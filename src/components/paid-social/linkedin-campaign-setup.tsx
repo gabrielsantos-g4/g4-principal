@@ -1,13 +1,16 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import {
     Layers, Zap, Image as ImageIcon, Plus, Trash2, Edit2,
     ChevronRight, Check, X, ArrowLeft, AlignLeft, Type,
     MousePointerClick, Settings2, MoreHorizontal, Circle,
-    Film, FileText, LayoutGrid, Upload, ChevronLeft
+    Film, FileText, LayoutGrid, Upload, ChevronLeft, ChevronDown,
+    Loader2, Share2, Clock
 } from 'lucide-react'
 import { toast } from 'sonner'
+import { getPlatformConfig, saveCampaignSetup } from '@/actions/paid-social-config-actions'
+import { createAdShare, getAdShareLogs, AdShareLog } from '@/actions/ads-share-actions'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -114,6 +117,40 @@ function AdEditorPanel({ ad, onSave, onClose }: {
     const fileRef = useRef<HTMLInputElement>(null)
     const upd = (p: Partial<AdCreative>) => setLocal(prev => ({ ...prev, ...p }))
 
+    // ── Share state ──
+    const [sharing, setSharing] = useState(false)
+    const [shareToken, setShareToken] = useState<string | null>(null)
+    const [showLog, setShowLog] = useState(false)
+    const [logs, setLogs] = useState<AdShareLog[]>([])
+    const [loadingLogs, setLoadingLogs] = useState(false)
+
+    const handleShare = async () => {
+        setSharing(true)
+        const res = await createAdShare({
+            id: local.id, name: local.name, text: local.text,
+            headline: local.headline, cta: local.ctaButton,
+            imageUrl: local.imageUrl, videoUrl: local.videoUrl,
+            mediaType: local.mediaType ?? 'image',
+        })
+        setSharing(false)
+        if (!res.success) { toast.error('Failed to generate share link'); return }
+        const url = `${window.location.origin}/ad-preview/${res.token}`
+        navigator.clipboard.writeText(url).catch(() => { })
+        setShareToken(res.token!)
+        toast.success('Preview link copied to clipboard!')
+    }
+
+    const handleShowLog = async () => {
+        const next = !showLog
+        setShowLog(next)
+        if (next && shareToken) {
+            setLoadingLogs(true)
+            const res = await getAdShareLogs(shareToken)
+            if (res.success) setLogs(res.logs ?? [])
+            setLoadingLogs(false)
+        }
+    }
+
     return (
         <div className="flex flex-col w-full rounded-2xl overflow-hidden border border-white/10 bg-[#0f0f0f]">
             {/* Header */}
@@ -130,15 +167,25 @@ function AdEditorPanel({ ad, onSave, onClose }: {
                     </div>
                 </div>
                 <div className="flex items-center gap-2">
-                    <select
-                        value={local.status}
-                        onChange={e => upd({ status: e.target.value as AdStatus })}
-                        className="bg-[#1a1a1a] border border-white/10 text-white text-sm rounded-lg px-3 py-1.5 focus:outline-none"
+                    {/* Share Preview */}
+                    <button
+                        onClick={handleShare}
+                        disabled={sharing}
+                        className="flex items-center gap-1.5 bg-white/5 hover:bg-white/10 border border-white/10 text-slate-300 text-sm font-medium px-3 py-1.5 rounded-lg transition-colors"
                     >
-                        <option value="draft">Draft</option>
-                        <option value="review">In Review</option>
-                        <option value="approved">Approved</option>
-                    </select>
+                        {sharing ? <Loader2 size={13} className="animate-spin" /> : <Share2 size={13} />}
+                        Share Preview
+                    </button>
+                    {/* Revision Log button (only after sharing) */}
+                    {shareToken && (
+                        <button
+                            onClick={handleShowLog}
+                            className="flex items-center gap-1.5 bg-white/5 hover:bg-white/10 border border-white/10 text-slate-300 text-sm font-medium px-3 py-1.5 rounded-lg transition-colors"
+                        >
+                            <Clock size={13} />
+                            Log {logs.length > 0 ? `(${logs.length})` : ''}
+                        </button>
+                    )}
                     <button
                         onClick={() => { onSave(local); toast.success('Ad saved!') }}
                         className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold px-4 py-1.5 rounded-lg"
@@ -147,6 +194,38 @@ function AdEditorPanel({ ad, onSave, onClose }: {
                     </button>
                 </div>
             </div>
+
+            {/* Revision Log Panel */}
+            {showLog && (
+                <div className="px-6 py-4 border-b border-white/10 bg-[#0d0d0d] space-y-3 max-h-60 overflow-y-auto">
+                    <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 flex items-center gap-1.5"><Clock size={10} /> Copy Revision History</p>
+                    {loadingLogs ? (
+                        <div className="flex justify-center py-4"><Loader2 size={16} className="animate-spin text-slate-500" /></div>
+                    ) : logs.length === 0 ? (
+                        <p className="text-xs text-slate-600 py-2 text-center">No edits yet. Share the preview link with a team member.</p>
+                    ) : (
+                        <div className="space-y-3">
+                            {logs.map(log => (
+                                <div key={log.id} className="flex gap-3">
+                                    <div className="w-6 h-6 rounded-full bg-blue-500/20 flex items-center justify-center shrink-0 text-[9px] font-bold text-blue-400 uppercase">
+                                        {log.user_name.slice(0, 2)}
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <p className="text-xs text-slate-300">
+                                            <span className="font-semibold text-white">{log.user_name}</span> edited <span className="text-blue-400">{log.field}</span>
+                                        </p>
+                                        <p className="text-[11px] text-slate-600 line-through truncate">"{log.old_value}"</p>
+                                        <p className="text-[11px] text-slate-400 truncate">"{log.new_value}"</p>
+                                        <p className="text-[10px] text-slate-700 mt-0.5">
+                                            {new Date(log.edited_at).toLocaleString()}
+                                        </p>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            )}
 
             {/* Body */}
             <div className="flex flex-1 min-h-0">
@@ -446,22 +525,7 @@ function Checkbox({ checked, indeterminate, onChange }: {
     )
 }
 
-// ─── Status Select ─────────────────────────────────────────────────────────────
 
-function GroupStatusSelect({ value, onChange }: { value: GroupStatus; onChange: (v: GroupStatus) => void }) {
-    return (
-        <select
-            value={value}
-            onChange={e => onChange(e.target.value as GroupStatus)}
-            onClick={e => e.stopPropagation()}
-            className={`bg-[#1a1a1a] border border-white/10 text-sm rounded-lg px-2 py-1 focus:outline-none ${GROUP_STATUS_COLOR[value]}`}
-        >
-            <option value="active">Active</option>
-            <option value="paused">Paused</option>
-            <option value="archived">Archived</option>
-        </select>
-    )
-}
 
 // ─── Tab: Campaign Groups ─────────────────────────────────────────────────────
 
@@ -488,8 +552,7 @@ function GroupsTab({ groups, campaigns, selected, onSelect, onAdd, onDelete, onU
                         onChange={() => groups.forEach(g => onSelect(g.id, !allChecked))}
                     />
                     <span className="text-xs text-slate-500 font-semibold uppercase tracking-wider flex-1">Campaign Group</span>
-                    <span className="text-xs text-slate-500 font-semibold uppercase tracking-wider w-24 text-center">Status</span>
-                    <span className="text-xs text-slate-500 font-semibold uppercase tracking-wider w-24 text-center">Campaigns</span>
+                    <span className="text-xs text-slate-500 font-semibold uppercase tracking-wider w-32 text-center">Campaigns</span>
                     <div className="w-8" />
                 </div>
             )}
@@ -525,16 +588,18 @@ function GroupsTab({ groups, campaigns, selected, onSelect, onAdd, onDelete, onU
                             />
                         </div>
 
-                        {/* Status */}
-                        <div className="w-28 flex justify-center" onClick={e => e.stopPropagation()}>
-                            <GroupStatusSelect value={g.status} onChange={v => onUpdate({ ...g, status: v })} />
-                        </div>
+
 
                         {/* Campaign count */}
                         <span className="w-24 text-center text-sm text-slate-400">{campCount} campaign{campCount !== 1 ? 's' : ''}</span>
 
                         {/* Delete */}
-                        <button onClick={e => { e.stopPropagation(); onDelete(g.id) }} className="w-8 flex justify-center text-slate-700 hover:text-red-400 transition-colors">
+                        <button onClick={e => {
+                            e.stopPropagation();
+                            if (window.confirm('Are you sure you want to delete this Campaign Group?')) {
+                                onDelete(g.id);
+                            }
+                        }} className="w-8 flex justify-center text-slate-700 hover:text-red-400 transition-colors">
                             <Trash2 size={14} />
                         </button>
                     </div>
@@ -565,6 +630,9 @@ function CampaignsTab({ groups, campaigns, selectedGroups, selected, onSelect, o
     onDelete: (id: string) => void
     onUpdate: (c: Campaign) => void
 }) {
+    const [isAdding, setIsAdding] = useState(false)
+    const [newCampGroupId, setNewCampGroupId] = useState('')
+
     // If no groups selected → show all; otherwise filter
     const showingAll = selectedGroups.size === 0 || selectedGroups.size === groups.length
     const activeGroups = showingAll ? groups : groups.filter(g => selectedGroups.has(g.id))
@@ -633,10 +701,6 @@ function CampaignsTab({ groups, campaigns, selectedGroups, selected, onSelect, o
                         </div>
                         <div className="flex items-center gap-2">
                             <span className="text-xs font-bold text-white">{groupName(gid)}</span>
-                            <span className={`text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded-full ${groupStatus(gid) === 'active' ? 'bg-emerald-500/15 text-emerald-400'
-                                : groupStatus(gid) === 'paused' ? 'bg-amber-500/15 text-amber-400'
-                                    : 'bg-slate-700 text-slate-400'
-                                }`}>{groupStatus(gid)}</span>
                         </div>
                         <div className="flex-1 h-px bg-white/5" />
                     </div>
@@ -664,13 +728,6 @@ function CampaignsTab({ groups, campaigns, selectedGroups, selected, onSelect, o
                                     <input value={c.audience} onChange={e => onUpdate({ ...c, audience: e.target.value })}
                                         placeholder="Audience…"
                                         className="bg-transparent text-xs text-slate-500 focus:outline-none border-b border-transparent focus:border-blue-500/30 w-36 placeholder:text-slate-700" />
-                                    <div className="flex gap-1 items-center">
-                                        <input type="date" value={c.startDate} onChange={e => onUpdate({ ...c, startDate: e.target.value })}
-                                            className="bg-transparent text-xs text-slate-500 focus:outline-none" />
-                                        <span className="text-slate-700 text-xs">→</span>
-                                        <input type="date" value={c.endDate} onChange={e => onUpdate({ ...c, endDate: e.target.value })}
-                                            className="bg-transparent text-xs text-slate-500 focus:outline-none" />
-                                    </div>
                                 </div>
                             </div>
 
@@ -693,25 +750,67 @@ function CampaignsTab({ groups, campaigns, selectedGroups, selected, onSelect, o
                             <span className="w-20 text-center text-xs text-slate-400">{c.ads.length} ad{c.ads.length !== 1 ? 's' : ''}</span>
 
                             {/* Delete */}
-                            <button onClick={() => onDelete(c.id)} className="w-8 flex justify-center text-slate-700 hover:text-red-400 transition-colors"><Trash2 size={13} /></button>
+                            <button onClick={() => {
+                                if (window.confirm('Are you sure you want to delete this Campaign?')) {
+                                    onDelete(c.id);
+                                }
+                            }} className="w-8 flex justify-center text-slate-700 hover:text-red-400 transition-colors"><Trash2 size={13} /></button>
                         </div>
                     ))}
-                    <button onClick={() => onAdd(gid)}
-                        className="w-full flex items-center justify-center gap-2 py-2.5 border border-dashed border-white/10 hover:border-[#0a66c2]/50 rounded-xl text-xs text-slate-600 hover:text-[#0a66c2] transition-colors">
-                        <Plus size={13} /> Add Campaign to {groupName(gid)}
-                    </button>
                 </div>
             ))}
 
-            {/* Empty-state Add buttons per group */}
-            {visible.length === 0 && groups.length > 0 && (
-                <div className="space-y-2 pt-2">
-                    {activeGroups.map(g => (
-                        <button key={g.id} onClick={() => onAdd(g.id)}
-                            className="w-full flex items-center justify-center gap-2 py-3 border border-dashed border-white/10 hover:border-[#0a66c2]/50 rounded-xl text-xs text-slate-600 hover:text-[#0a66c2] transition-colors">
-                            <Plus size={13} /> Add Campaign to {g.name}
+            {/* Global Add Campaign with Group Selection */}
+            {groups.length > 0 && (
+                <div className="pt-4">
+                    {!isAdding ? (
+                        <button onClick={() => {
+                            // If exactly one group is selected, skip the dropdown and create immediately
+                            const singleGroup = !showingAll && activeGroups.length === 1
+                            if (singleGroup) {
+                                onAdd(activeGroups[0].id)
+                            } else {
+                                setIsAdding(true)
+                            }
+                        }}
+                            className="w-full flex items-center justify-center gap-2 py-3 border border-dashed border-white/10 hover:border-[#0a66c2]/50 rounded-xl text-xs font-semibold text-slate-400 hover:text-[#0a66c2] transition-colors">
+                            <Plus size={14} /> Add New Campaign{(!showingAll && activeGroups.length === 1) ? ` to ${activeGroups[0].name}` : ''}
                         </button>
-                    ))}
+                    ) : (
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 p-4 border border-[#0a66c2]/30 bg-[#0a66c2]/5 rounded-xl">
+                            <Layers size={16} className="text-[#0a66c2] hidden sm:block" />
+                            <span className="text-sm text-slate-200 whitespace-nowrap">Select target Campaign Group:</span>
+                            <select
+                                value={newCampGroupId}
+                                onChange={e => setNewCampGroupId(e.target.value)}
+                                className="flex-1 w-full bg-[#1a1a1a] border border-white/10 text-white text-sm rounded-lg px-3 py-2 mb-2 sm:mb-0 focus:outline-none focus:border-[#0a66c2]"
+                            >
+                                <option value="" disabled>Select a group...</option>
+                                {groups.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
+                            </select>
+                            <div className="flex items-center gap-2 w-full sm:w-auto">
+                                <button
+                                    onClick={() => {
+                                        if (newCampGroupId) {
+                                            onAdd(newCampGroupId);
+                                            setIsAdding(false);
+                                            setNewCampGroupId('');
+                                        }
+                                    }}
+                                    disabled={!newCampGroupId}
+                                    className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 bg-[#0a66c2] hover:bg-[#004182] disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors"
+                                >
+                                    <Check size={14} /> Create
+                                </button>
+                                <button
+                                    onClick={() => { setIsAdding(false); setNewCampGroupId(''); }}
+                                    className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 bg-white/5 hover:bg-white/10 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors"
+                                >
+                                    Cancel
+                                </button>
+                            </div>
+                        </div>
+                    )}
                 </div>
             )}
         </div>
@@ -730,6 +829,8 @@ function AdsTab({ groups, campaigns, selectedGroups, selectedCampaigns, onUpdate
     onDeleteAd: (campaignId: string, adId: string) => void
 }) {
     const [editingAd, setEditingAd] = useState<{ campaignId: string; ad: AdCreative } | null>(null)
+    const [isAddingAd, setIsAddingAd] = useState(false)
+    const [newAdCampaignId, setNewAdCampaignId] = useState('')
 
     // Filter campaigns
     const showingAllGroups = selectedGroups.size === 0 || selectedGroups.size === groups.length
@@ -783,7 +884,6 @@ function AdsTab({ groups, campaigns, selectedGroups, selectedCampaigns, onUpdate
                             <div className="w-10 h-10 shrink-0" />
                             <span className="text-xs text-slate-500 font-semibold uppercase tracking-wider flex-1">Ad Creative</span>
                             <span className="text-xs text-slate-500 font-semibold uppercase tracking-wider w-36">Campaign</span>
-                            <span className="text-xs text-slate-500 font-semibold uppercase tracking-wider w-24 text-center">Status</span>
                             <div className="w-24" />
                             <div className="w-8" />
                         </div>
@@ -797,10 +897,13 @@ function AdsTab({ groups, campaigns, selectedGroups, selectedCampaigns, onUpdate
                         </div>
                     )}
 
-                    {/* Group ads by campaign, with group section header */}
-                    {[...new Set(visibleCampaigns.map(c => c.groupId))].map(gid => {
+                    {/* Group ads by campaign, only showing campaigns with ads */}
+                    {[...new Set(visibleCampaigns.filter(c => c.ads.length > 0).map(c => c.groupId))].map(gid => {
                         const grp = groupOf(visibleCampaigns.find(c => c.groupId === gid)!)
-                        const groupCampaigns = visibleCampaigns.filter(c => c.groupId === gid)
+                        const groupCampaigns = visibleCampaigns.filter(c => c.groupId === gid && c.ads.length > 0)
+
+                        if (groupCampaigns.length === 0) return null;
+
                         return (
                             <div key={gid} className="space-y-2">
                                 {/* Group header */}
@@ -809,10 +912,6 @@ function AdsTab({ groups, campaigns, selectedGroups, selectedCampaigns, onUpdate
                                         <Layers size={12} className="text-[#0a66c2]" />
                                     </div>
                                     <span className="text-xs font-bold text-white">{grp?.name ?? '—'}</span>
-                                    <span className={`text-[10px] font-semibold uppercase px-1.5 py-0.5 rounded-full ${grp?.status === 'active' ? 'bg-emerald-500/15 text-emerald-400'
-                                        : grp?.status === 'paused' ? 'bg-amber-500/15 text-amber-400'
-                                            : 'bg-slate-700 text-slate-400'
-                                        }`}>{grp?.status}</span>
                                     <div className="flex-1 h-px bg-white/5" />
                                 </div>
 
@@ -834,27 +933,77 @@ function AdsTab({ groups, campaigns, selectedGroups, selectedCampaigns, onUpdate
                                                     <p className="text-xs text-slate-500 truncate">{ad.headline || ad.text || 'Empty — click Edit'}</p>
                                                 </div>
                                                 <span className="w-36 text-xs text-slate-500 truncate">{cmp.name}</span>
-                                                <div className="w-24 flex justify-center">
-                                                    <span className={`text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full ${STATUS_COLORS[ad.status]}`}>{ad.status}</span>
-                                                </div>
                                                 <button
                                                     onClick={() => setEditingAd({ campaignId: cmp.id, ad })}
                                                     className="w-24 flex items-center justify-center gap-1.5 text-xs font-semibold text-blue-400 bg-blue-500/10 hover:bg-blue-500/20 px-3 py-1.5 rounded-lg transition-colors"
                                                 >
                                                     <Edit2 size={11} /> Edit
                                                 </button>
-                                                <button onClick={() => onDeleteAd(cmp.id, ad.id)} className="w-8 flex justify-center text-slate-700 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all"><Trash2 size={13} /></button>
+                                                <button onClick={() => {
+                                                    if (window.confirm('Are you sure you want to delete this Ad?')) {
+                                                        onDeleteAd(cmp.id, ad.id)
+                                                    }
+                                                }} className="w-8 flex justify-center text-slate-700 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all"><Trash2 size={13} /></button>
                                             </div>
                                         ))}
-                                        <button onClick={() => onAddAd(cmp.id)}
-                                            className="w-full flex items-center justify-center gap-2 py-2.5 border border-dashed border-white/10 hover:border-blue-500/50 rounded-xl text-xs text-slate-600 hover:text-blue-400 transition-colors">
-                                            <Plus size={13} /> Add Ad to {cmp.name}
-                                        </button>
                                     </div>
                                 ))}
                             </div>
                         )
                     })}
+
+                    {/* Global Add Ad with Campaign Selection */}
+                    {visibleCampaigns.length > 0 && (
+                        <div className="pt-4">
+                            {!isAddingAd ? (
+                                <button onClick={() => {
+                                    // If exactly one campaign is visible (selected), skip the dropdown
+                                    if (visibleCampaigns.length === 1) {
+                                        onAddAd(visibleCampaigns[0].id)
+                                    } else {
+                                        setIsAddingAd(true)
+                                    }
+                                }}
+                                    className="w-full flex items-center justify-center gap-2 py-3 border border-dashed border-white/10 hover:border-[#0a66c2]/50 rounded-xl text-xs font-semibold text-slate-400 hover:text-[#0a66c2] transition-colors">
+                                    <Plus size={14} /> Add New Ad{visibleCampaigns.length === 1 ? ` to ${visibleCampaigns[0].name}` : ''}
+                                </button>
+                            ) : (
+                                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 p-4 border border-[#0a66c2]/30 bg-[#0a66c2]/5 rounded-xl">
+                                    <Zap size={16} className="text-[#0a66c2] hidden sm:block" />
+                                    <span className="text-sm text-slate-200 whitespace-nowrap">Select target Campaign:</span>
+                                    <select
+                                        value={newAdCampaignId}
+                                        onChange={e => setNewAdCampaignId(e.target.value)}
+                                        className="flex-1 w-full bg-[#1a1a1a] border border-white/10 text-white text-sm rounded-lg px-3 py-2 mb-2 sm:mb-0 focus:outline-none focus:border-[#0a66c2]"
+                                    >
+                                        <option value="" disabled>Select a campaign...</option>
+                                        {visibleCampaigns.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                                    </select>
+                                    <div className="flex items-center gap-2 w-full sm:w-auto">
+                                        <button
+                                            onClick={() => {
+                                                if (newAdCampaignId) {
+                                                    onAddAd(newAdCampaignId);
+                                                    setIsAddingAd(false);
+                                                    setNewAdCampaignId('');
+                                                }
+                                            }}
+                                            disabled={!newAdCampaignId}
+                                            className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 bg-[#0a66c2] hover:bg-[#004182] disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors"
+                                        >
+                                            <Check size={14} /> Create
+                                        </button>
+                                        <button
+                                            onClick={() => { setIsAddingAd(false); setNewAdCampaignId(''); }}
+                                            className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 bg-white/5 hover:bg-white/10 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors"
+                                        >
+                                            Cancel
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    )}
                 </div>
             )}
         </>
@@ -865,32 +1014,69 @@ function AdsTab({ groups, campaigns, selectedGroups, selectedCampaigns, onUpdate
 
 type TabId = 'groups' | 'campaigns' | 'ads'
 
-const TABS: { id: TabId; label: string; sub: string; icon: React.ReactNode }[] = [
-    { id: 'groups', label: 'Campaign Group', sub: '', icon: <Layers size={14} /> },
-    { id: 'campaigns', label: 'Campaign', sub: 'objective, audience, budget', icon: <Zap size={14} /> },
-    { id: 'ads', label: 'Ad Creative', sub: 'text, image, headline, CTA', icon: <ImageIcon size={14} /> },
+const TABS: { id: TabId; label: string; icon: React.ReactNode }[] = [
+    { id: 'groups', label: 'Campaign Group', icon: <Layers size={14} /> },
+    { id: 'campaigns', label: 'Campaign', icon: <Zap size={14} /> },
+    { id: 'ads', label: 'Ad Creative', icon: <ImageIcon size={14} /> },
 ]
 
 export function LinkedInCampaignSetup() {
     const [activeTab, setActiveTab] = useState<TabId>('groups')
-    const [groups, setGroups] = useState<CampaignGroup[]>([defaultGroup(1)])
-    const [campaigns, setCampaigns] = useState<Campaign[]>([defaultCampaign(defaultGroup(1).id, 1)])
+    const [loading, setLoading] = useState(true)
+    const [groups, setGroups] = useState<CampaignGroup[]>([])
+    const [campaigns, setCampaigns] = useState<Campaign[]>([])
     const [selectedGroups, setSelectedGroups] = useState<Set<string>>(new Set())
     const [selectedCampaigns, setSelectedCampaigns] = useState<Set<string>>(new Set())
 
+    useEffect(() => {
+        const loadConfig = async () => {
+            setLoading(true)
+            const res = await getPlatformConfig('linkedin')
+            if (res.success && res.data?.config?.campaignSetup) {
+                const setup = res.data.config.campaignSetup
+                if (setup.groups?.length > 0) setGroups(setup.groups)
+                else setGroups([defaultGroup(1)])
+
+                if (setup.campaigns?.length > 0) setCampaigns(setup.campaigns)
+                else setCampaigns([defaultCampaign(setup.groups?.[0]?.id || defaultGroup(1).id, 1)])
+            } else {
+                setGroups([defaultGroup(1)])
+                setCampaigns([defaultCampaign(defaultGroup(1).id, 1)])
+            }
+            setLoading(false)
+        }
+        loadConfig()
+    }, [])
+
+    const handleSaveBackend = async (g: CampaignGroup[], c: Campaign[]) => {
+        await saveCampaignSetup('linkedin', { groups: g, campaigns: c })
+    }
+
     // ── Group ops ──────────────────────────────────────────────────────────────
-    const addGroup = () => {
+    const addGroup = async () => {
         const g = defaultGroup(groups.length + 1)
-        setGroups(prev => [...prev, g])
+        const updatedGroups = [...groups, g]
+        setGroups(updatedGroups)
+        await handleSaveBackend(updatedGroups, campaigns)
+        toast.success("Campaign Group saved successfully", {
+            className: 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20'
+        })
     }
 
-    const deleteGroup = (id: string) => {
-        setGroups(prev => prev.filter(g => g.id !== id))
-        setCampaigns(prev => prev.filter(c => c.groupId !== id))
+    const deleteGroup = async (id: string) => {
+        const updatedGroups = groups.filter(g => g.id !== id)
+        const updatedCampaigns = campaigns.filter(c => c.groupId !== id)
+        setGroups(updatedGroups)
+        setCampaigns(updatedCampaigns)
         setSelectedGroups(prev => { const s = new Set(prev); s.delete(id); return s })
+        await handleSaveBackend(updatedGroups, updatedCampaigns)
     }
 
-    const updateGroup = (g: CampaignGroup) => setGroups(prev => prev.map(x => x.id === g.id ? g : x))
+    const updateGroup = async (g: CampaignGroup) => {
+        const updatedGroups = groups.map(x => x.id === g.id ? g : x)
+        setGroups(updatedGroups)
+        await handleSaveBackend(updatedGroups, campaigns)
+    }
 
     const selectGroup = (id: string, checked: boolean) => {
         setSelectedGroups(prev => {
@@ -959,27 +1145,16 @@ export function LinkedInCampaignSetup() {
         else toast.success('Campaign submitted for approval!')
     }
 
+    if (loading) {
+        return (
+            <div className="w-full max-w-[920px] flex items-center justify-center p-12">
+                <Loader2 className="w-8 h-8 animate-spin text-[#0a66c2]" />
+            </div>
+        )
+    }
+
     return (
         <div className="w-full max-w-[920px] space-y-5">
-            {/* Header bar */}
-            <div className="flex items-center justify-between gap-4">
-                <div className="flex items-center gap-2">
-                    <div className="w-7 h-7 bg-[#0a66c2] rounded flex items-center justify-center shrink-0">
-                        <svg viewBox="0 0 24 24" className="w-4 h-4 fill-white">
-                            <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" />
-                        </svg>
-                    </div>
-                    <span className="font-bold text-white text-base">LinkedIn Ads</span>
-                    <span className="text-xs text-slate-500 bg-white/5 border border-white/10 px-2 py-0.5 rounded-full">Manual Setup</span>
-                </div>
-                <button
-                    onClick={submitForApproval}
-                    className="flex items-center gap-2 bg-[#0a66c2] hover:bg-blue-500 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors shadow-lg shadow-blue-900/30"
-                >
-                    <Check size={14} /> Submit for Approval
-                </button>
-            </div>
-
             {/* Tab bar — exact LinkedIn Ads Manager style */}
             <div className="flex items-center gap-0 bg-[#0d1117] border border-white/10 rounded-xl overflow-hidden">
                 {TABS.map((tab, i) => {
@@ -994,7 +1169,6 @@ export function LinkedInCampaignSetup() {
                         >
                             <span className={isActive ? 'text-[#0a66c2]' : 'text-slate-600'}>{tab.icon}</span>
                             <span className="font-semibold text-sm">{tab.label}</span>
-                            {tab.sub && <span className="text-slate-600 text-xs hidden md:block">({tab.sub})</span>}
                             <span className={`ml-auto text-[10px] font-bold min-w-[18px] h-[18px] rounded-full flex items-center justify-center px-1 ${isActive ? 'bg-[#0a66c2] text-white' : 'bg-white/10 text-slate-400'}`}>
                                 {badges[tab.id]}
                             </span>

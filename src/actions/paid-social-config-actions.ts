@@ -87,3 +87,18 @@ export async function savePlatformConfig(platform: string, config: any) {
         return { success: false, error: error.message }
     }
 }
+
+export async function saveCampaignSetup(platform: string, setupData: any) {
+    try {
+        const existing = await getPlatformConfig(platform)
+        if (!existing.success) return existing
+
+        const currentConfig = existing.data?.config || {}
+        const newConfig = { ...currentConfig, campaignSetup: setupData }
+
+        return await savePlatformConfig(platform, newConfig)
+    } catch (error: any) {
+        console.error(`Error saving campaign setup for ${platform}:`, error)
+        return { success: false, error: error.message }
+    }
+}

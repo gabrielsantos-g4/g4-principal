@@ -701,19 +701,6 @@ export function MetaCampaignSetup() {
 
     return (
         <div className="w-full space-y-4">
-            {/* Tab bar */}
-            <div className="flex items-center gap-1 bg-white/[0.03] border border-white/5 rounded-2xl p-1.5">
-                {TABS.map((tab, i) => (
-                    <button key={tab.id} onClick={() => setActiveTab(tab.id)}
-                        className={`flex-1 flex items-center justify-center gap-2.5 py-2.5 px-4 rounded-xl text-sm font-semibold transition-all
-                            ${activeTab === tab.id ? 'bg-[#1877f2] text-white shadow' : 'text-slate-400 hover:text-white hover:bg-white/5'}`}>
-                        {tab.icon}
-                        <span>{tab.label}</span>
-                        {i < TABS.length - 1 && <ChevronRight size={12} className={`ml-auto ${activeTab === tab.id ? 'text-white/50' : 'text-slate-700'}`} />}
-                    </button>
-                ))}
-            </div>
-
             {/* Tab content */}
             <div className="rounded-2xl border border-white/5 bg-white/[0.02] p-5">
 

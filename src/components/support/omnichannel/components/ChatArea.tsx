@@ -242,7 +242,7 @@ export function ChatArea({
                                     className="flex items-center gap-2 w-full text-left px-2 py-1.5 text-xs text-gray-400 hover:bg-white/8 rounded transition-colors"
                                 >
                                     <div className="w-1.5 h-1.5 rounded-full bg-gray-600" />
-                                    Keep Status
+                                    Close
                                 </button>
                             </div>
                         </PopoverContent>

@@ -1,6 +1,6 @@
 'use client'
 
-import { LogOut, User, CreditCard, Ban, ArrowUpRight, LayoutDashboard, BadgeDollarSign, MoreHorizontal, Plus, MessageCircle } from 'lucide-react'
+import { LogOut, User, CreditCard, Ban, ArrowUpRight, LayoutDashboard, BadgeDollarSign, MoreHorizontal, Plus, MessageCircle, Crown } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Agent } from '@/lib/agents'
@@ -316,15 +316,22 @@ function AgentLink({ agent, pathname, isCollapsed }: { agent: Agent, pathname: s
                                 : 'text-slate-300 hover:text-white hover:bg-slate-800'
                                 }`}
                         >
-                            <div className={`w-8 h-8 rounded-full overflow-hidden flex-shrink-0 border transition-all ${isActive
+                            <div className={`w-8 h-8 rounded-full flex-shrink-0 border transition-all relative ${isActive
                                 ? 'border-[#1C73E8] scale-105 shadow-sm'
                                 : 'border-white/10 group-hover:border-white/30'
                                 }`}>
-                                <img
-                                    src={agent.avatar}
-                                    alt={agent.name}
-                                    className="w-full h-full object-cover"
-                                />
+                                <div className="w-full h-full rounded-full overflow-hidden">
+                                    <img
+                                        src={agent.avatar}
+                                        alt={agent.name}
+                                        className="w-full h-full object-cover"
+                                    />
+                                </div>
+                                {agent.id === 'crm-emily' && (
+                                    <div className="absolute -top-1.5 -left-1.5 z-10 bg-[#111] rounded-full p-0.5 border border-amber-500 shadow-sm shadow-amber-500/20">
+                                        <Crown size={12} className="text-amber-400 fill-amber-400" />
+                                    </div>
+                                )}
                             </div>
                         </Link>
                     </TooltipTrigger>
@@ -345,15 +352,22 @@ function AgentLink({ agent, pathname, isCollapsed }: { agent: Agent, pathname: s
                 : 'text-slate-300 hover:text-white hover:bg-slate-800'
                 }`}
         >
-            <div className={`w-8 h-8 rounded-full overflow-hidden flex-shrink-0 border transition-all ${isActive
+            <div className={`w-8 h-8 rounded-full flex-shrink-0 border transition-all relative ${isActive
                 ? 'border-[#1C73E8] scale-105 shadow-sm'
                 : 'border-white/10 group-hover:border-white/30'
                 }`}>
-                <img
-                    src={agent.avatar}
-                    alt={agent.name}
-                    className="w-full h-full object-cover"
-                />
+                <div className="w-full h-full rounded-full overflow-hidden">
+                    <img
+                        src={agent.avatar}
+                        alt={agent.name}
+                        className="w-full h-full object-cover"
+                    />
+                </div>
+                {agent.id === 'crm-emily' && (
+                    <div className="absolute -top-1.5 -left-1.5 z-10 bg-[#111] rounded-full p-0.5 border border-amber-500 shadow-sm shadow-amber-500/20">
+                        <Crown size={12} className="text-amber-400 fill-amber-400" />
+                    </div>
+                )}
             </div>
             <div className="flex flex-col overflow-hidden">
                 <span className={`truncate text-sm font-medium transition-colors ${isActive ? 'text-white' : 'text-slate-200'

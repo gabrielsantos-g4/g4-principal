@@ -68,6 +68,8 @@ interface ConversationListProps {
     setStatusFilter: (status: string | null) => void;
     manuallyUnreadIds: Set<string>;
     setManuallyUnreadIds: React.Dispatch<React.SetStateAction<Set<string>>>;
+    manuallyReadIds: Set<string>;
+    setManuallyReadIds: React.Dispatch<React.SetStateAction<Set<string>>>;
     mode: 'individual' | 'global';
     targetUser: any;
     targetUserId?: string;
@@ -112,6 +114,8 @@ export function ConversationList({
     setStatusFilter,
     manuallyUnreadIds,
     setManuallyUnreadIds,
+    manuallyReadIds,
+    setManuallyReadIds,
     mode,
     targetUser,
     targetUserId,
@@ -123,8 +127,6 @@ export function ConversationList({
 
     const availableStatuses = Array.from(new Set(conversations.map(c => c.status))).filter(Boolean).sort();
 
-    // Local state to instantly update visual "read" status without waiting for server refresh
-    const [manuallyReadIds, setManuallyReadIds] = useState<Set<string>>(new Set());
     // Local state to track which conversation is currently being deleted or already deleted
     const [deletingIds, setDeletingIds] = useState<Set<string>>(new Set());
 

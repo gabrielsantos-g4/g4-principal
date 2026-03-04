@@ -358,15 +358,43 @@ export function PaidSocialDashboard({ initialTab = "setup" }: { initialTab?: str
                     ) : (
                         <div className="space-y-4 pt-4">
                             {/* Back + Platform badge */}
-                            <div className="flex items-center gap-3">
-                                <button
-                                    onClick={() => setSelectedPlatform(null)}
-                                    className="flex items-center gap-1.5 text-slate-400 hover:text-white text-sm transition-colors"
-                                >
-                                    <ArrowLeft size={16} /> Change platform
-                                </button>
-                                <span className="text-slate-700">·</span>
-                                <span className="text-sm font-semibold text-white">{selectedPlatform}</span>
+                            <div className="flex items-center justify-between mb-2">
+                                <div className="flex items-center gap-4">
+                                    <button
+                                        onClick={() => setSelectedPlatform(null)}
+                                        className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/20 flex items-center justify-center text-slate-400 hover:text-white transition-all shadow-sm shrink-0"
+                                        title="Change platform"
+                                    >
+                                        <ArrowLeft size={16} />
+                                    </button>
+
+                                    <div className="flex items-center gap-3">
+                                        {selectedPlatform === 'LinkedIn' && (
+                                            <>
+                                                <div className="w-8 h-8 bg-[#0a66c2] rounded flex items-center justify-center shadow-lg shadow-[#0a66c2]/20">
+                                                    <svg viewBox="0 0 24 24" className="w-4 h-4 fill-white"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" /></svg>
+                                                </div>
+                                                <h1 className="text-xl font-bold text-white tracking-tight">LinkedIn Ads</h1>
+                                            </>
+                                        )}
+                                        {selectedPlatform === 'Meta' && (
+                                            <>
+                                                <div className="w-8 h-8 bg-gradient-to-br from-[#1877f2] to-[#e1306c] rounded flex items-center justify-center shadow-lg shadow-[#1877f2]/20">
+                                                    <svg viewBox="0 0 36 36" className="w-4 h-4" fill="white"><path d="M18 3C9.716 3 3 9.716 3 18s6.716 15 15 15 15-6.716 15-15S26.284 3 18 3zm7.5 10.5h-3c-.828 0-1.5.672-1.5 1.5v2.25h4.5l-.75 4.5H21V30h-4.5v-8.25h-3v-4.5h3V15c0-2.485 2.015-4.5 4.5-4.5h3.75l-.75 3z" /></svg>
+                                                </div>
+                                                <h1 className="text-xl font-bold text-white tracking-tight">Meta Ads</h1>
+                                            </>
+                                        )}
+                                        {selectedPlatform === 'Reddit' && (
+                                            <>
+                                                <div className="w-8 h-8 bg-[#ff4500] rounded flex items-center justify-center shadow-lg shadow-[#ff4500]/20">
+                                                    <svg viewBox="0 0 24 24" className="w-4 h-4 fill-white"><path d="M12 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0zm5.01 4.744c.688 0 1.25.561 1.25 1.249a1.25 1.25 0 0 1-2.498.056l-2.597-.547-.8 3.747c1.824.07 3.48.632 4.674 1.488.308-.309.73-.491 1.207-.491.968 0 1.754.786 1.754 1.754 0 .716-.435 1.333-1.01 1.614a3.111 3.111 0 0 1 .042.52c0 2.694-3.13 4.87-7.004 4.87-3.874 0-7.004-2.176-7.004-4.87 0-.183.015-.366.043-.534A1.748 1.748 0 0 1 4.028 12c0-.968.786-1.754 1.754-1.754.463 0 .898.196 1.207.49 1.207-.883 2.878-1.43 4.744-1.487l.885-4.182a.342.342 0 0 1 .14-.197.35.35 0 0 1 .238-.042l2.906.617a1.214 1.214 0 0 1 1.108-.701zM9.25 12C8.561 12 8 12.562 8 13.25c0 .687.561 1.248 1.25 1.248.687 0 1.248-.561 1.248-1.249 0-.688-.561-1.249-1.249-1.249zm5.5 0c-.687 0-1.248.561-1.248 1.25 0 .687.561 1.248 1.249 1.248.688 0 1.249-.561 1.249-1.249 0-.687-.562-1.249-1.25-1.249zm-5.466 3.99a.327.327 0 0 0-.231.094.33.33 0 0 0 0 .463c.842.842 2.484.913 2.961.913.477 0 2.105-.056 2.961-.913a.361.361 0 0 0 .029-.463.33.33 0 0 0-.464 0c-.547.533-1.684.73-2.512.73-.828 0-1.979-.196-2.512-.73a.326.326 0 0 0-.232-.095z" /></svg>
+                                                </div>
+                                                <h1 className="text-xl font-bold text-white tracking-tight">Reddit Ads</h1>
+                                            </>
+                                        )}
+                                    </div>
+                                </div>
                             </div>
 
                             {/* LinkedIn 3-level hierarchy */}

@@ -9,7 +9,7 @@ import { format } from "date-fns";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { CrmProductSelect } from "@/components/crm/crm-product-select";
 import { LeadHistoryModal } from "@/components/crm/lead-history-modal";
-import { LeadAmountModal } from "@/components/crm/lead-amount-modal";
+
 import { toast } from "sonner";
 import { useState } from "react";
 import { Conversation } from "./ConversationList";
@@ -66,7 +66,6 @@ export function LeadDetails({
     onNavigate
 }: LeadDetailsProps) {
     const [historyLead, setHistoryLead] = useState<any | null>(null);
-    const [amountLead, setAmountLead] = useState<any | null>(null);
     const [editingField, setEditingField] = useState<string | null>(null);
     const [editValues, setEditValues] = useState<Record<string, string>>({});
     const [historyExpanded, setHistoryExpanded] = useState(false);
@@ -163,17 +162,31 @@ export function LeadDetails({
         await updateLead(id, { product: JSON.stringify(products), amount: total });
     };
 
-    const handleSaveAmount = async (amount: string) => {
+    const handleAmountSave = async () => {
         if (!selectedConversation) return;
         const id = ensureId(selectedConversation.leadId);
-        if (!id) return;
+        if (!id) {
+            toast.error('Invalid lead ID');
+            return;
+        }
 
-        const numAmount = parseFloat(amount.replace(/[^0-9.-]+/g, ""));
-        onUpdateLead({ amount: amount });
-        setAmountLead(null);
-        toast.success(`Amount saved`);
+        const rawValue = editValues['amount'] || '';
+        const numAmount = parseFloat(rawValue.replace(/[^0-9.-]+/g, ''));
+        const amountStr = isNaN(numAmount) ? '0' : rawValue;
 
-        await updateLead(id, { amount: numAmount });
+        onUpdateLead({ amount: amountStr });
+
+        toast.promise(
+            updateLead(id, { amount: isNaN(numAmount) ? 0 : numAmount }),
+            {
+                loading: 'Updating...',
+                success: () => {
+                    setEditingField(null);
+                    return 'Amount updated';
+                },
+                error: 'Failed to update'
+            }
+        );
     };
 
     const handleAddHistoryMessage = async (msg: string) => {
@@ -713,21 +726,50 @@ export function LeadDetails({
                                     {/* @ts-ignore */}
                                     <CrmProductSelect value={selectedConversation.product || "[]"} options={crmSettings?.products || []} onChange={handleProductChange} />
                                 </div>
-                                <div className="space-y-1.5">
-                                    <span className="text-xs text-gray-400">Amount</span>
-                                    <button
-                                        className="w-full text-left font-mono text-xs bg-white/5 hover:bg-white/10 border border-white/10 px-3 rounded-md text-gray-200 h-9 flex items-center"
-                                        onClick={() => setAmountLead(selectedConversation)}
-                                    >
-                                        {/* @ts-ignore */}
-                                        {selectedConversation.amount ? (
-                                            <span>
-                                                {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(parseFloat(selectedConversation.amount))}
-                                            </span>
-                                        ) : (
-                                            <span className="text-gray-500">Set Amount</span>
+                                <div className="space-y-1">
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-xs text-gray-400">Amount</span>
+                                        {editingField !== 'amount' && (
+                                            <button
+                                                onClick={() => handleFieldEdit('amount', selectedConversation.amount || '')}
+                                                className="text-gray-600 hover:text-white transition-colors"
+                                            >
+                                                <Edit2 size={11} />
+                                            </button>
                                         )}
-                                    </button>
+                                    </div>
+                                    {editingField === 'amount' ? (
+                                        <div className="flex gap-1">
+                                            <Input
+                                                value={editValues.amount || ''}
+                                                onChange={(e) => setEditValues({ ...editValues, amount: e.target.value })}
+                                                className="h-7 text-xs bg-white/5 border-white/10 text-white font-mono"
+                                                placeholder="0.00"
+                                                autoFocus
+                                                onKeyDown={(e) => {
+                                                    if (e.key === 'Enter') handleAmountSave();
+                                                    if (e.key === 'Escape') handleFieldCancel();
+                                                }}
+                                            />
+                                            <Button size="icon" className="h-7 w-7 shrink-0 bg-green-600 hover:bg-green-700" onClick={handleAmountSave}>
+                                                <Check size={12} />
+                                            </Button>
+                                            <Button size="icon" variant="ghost" className="h-7 w-7 shrink-0" onClick={handleFieldCancel}>
+                                                <X size={12} />
+                                            </Button>
+                                        </div>
+                                    ) : (
+                                        <p
+                                            className="text-xs text-gray-200 font-mono cursor-pointer hover:text-white transition-colors"
+                                            onClick={() => handleFieldEdit('amount', selectedConversation.amount || '')}
+                                        >
+                                            {/* @ts-ignore */}
+                                            {selectedConversation.amount
+                                                ? new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(parseFloat(selectedConversation.amount))
+                                                : <span className="text-gray-500 italic">Set amount...</span>
+                                            }
+                                        </p>
+                                    )}
                                 </div>
                             </div>
 
@@ -877,7 +919,7 @@ export function LeadDetails({
                             <div className="space-y-1.5 pt-2">
                                 <span className="text-xs text-gray-400">Status/Action</span>
                                 <Select
-                                    value={selectedConversation.status}
+                                    value={selectedConversation.status || (STATUSES[0]?.label)}
                                     onValueChange={handleStatusChange}
                                 >
                                     <SelectTrigger className="w-full bg-white/5 border-white/10 text-white h-9 px-3 rounded-md">
@@ -951,12 +993,7 @@ export function LeadDetails({
                 messagingUsers={messagingUsers}
             />
 
-            <LeadAmountModal
-                isOpen={!!amountLead}
-                onClose={() => setAmountLead(null)}
-                currentAmount={amountLead?.amount || ""}
-                onSave={handleSaveAmount}
-            />
+
         </div>
     );
 }

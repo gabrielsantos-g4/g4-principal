@@ -62,39 +62,26 @@ const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d'
 
 const CustomYAxisTick = ({ x, y, payload, width, ...props }: { x?: number, y?: number, payload?: { value: string | number }, width?: number, [key: string]: any }) => {
     const value = payload?.value ? payload.value.toString() : "";
-    const limit = 20; // approximate chars per line
-    const words = value.split(' ');
-    const lines: string[] = [];
-    let currentLine = words[0];
-
-    for (let i = 1; i < words.length; i++) {
-        if (currentLine.length + words[i].length + 1 <= limit) {
-            currentLine += ' ' + words[i];
-        } else {
-            lines.push(currentLine);
-            currentLine = words[i];
-        }
-    }
-    lines.push(currentLine);
+    const maxLength = 18;
+    const truncatedValue = value.length > maxLength ? value.substring(0, maxLength) + "..." : value;
 
     // Filter out invalid props for DOM element
     const { verticalAnchor, visibleTicksCount, tickFormatter, ...validProps } = props;
 
     return (
         <g transform={`translate(${x},${y})`}>
-            {lines.map((line, index) => (
-                <text
-                    key={index}
-                    x={0}
-                    y={0}
-                    dy={(index - (lines.length - 1) / 2) * 12 + 4}
-                    textAnchor="end"
-                    fill="#9ca3af"
-                    fontSize={11}
-                >
-                    {line}
-                </text>
-            ))}
+            <text
+                x={0}
+                y={0}
+                dy={4}
+                textAnchor="end"
+                fill="#9ca3af"
+                fontSize={11}
+                className="cursor-default"
+            >
+                {truncatedValue}
+                <title>{value}</title>
+            </text>
         </g>
     );
 };
@@ -150,10 +137,10 @@ export function CrmReportsModal({ isOpen, onClose, leads, settings, filters, onF
         const filteredLeads = leads.filter(l => {
             // Contact Date Range filter
             if (date?.from) {
-                const leadDateStr = l.created_at || l.date;
+                const leadDateStr = l.contact_date || l.date;
                 if (!leadDateStr || leadDateStr === 'Pending') return false;
 
-                const leadDate = new Date(leadDateStr);
+                const leadDate = parseDateStr(leadDateStr);
                 const from = startOfDay(date.from);
                 const to = date.to ? endOfDay(date.to) : endOfDay(date.from);
 
@@ -172,8 +159,15 @@ export function CrmReportsModal({ isOpen, onClose, leads, settings, filters, onF
                 if (!isWithinInterval(createdAtDate, { start: from, end: to })) return false;
             }
 
-            // Status filter
-            if (filters.status && l.status !== filters.status) return false;
+            // Multi-select Filters (Status, Source, Responsible, Category)
+            if (filters.status?.length > 0 && !filters.status.includes(l.status)) return false;
+
+            const leadSource = typeof l.source === 'string' ? l.source : l.source?.label || l.source;
+            if (filters.source?.length > 0 && !filters.source.includes(leadSource)) return false;
+
+            if (filters.responsible?.length > 0 && !filters.responsible.includes(l.responsible)) return false;
+
+            if (filters.customField?.length > 0 && !filters.customField.includes(l.custom_field)) return false;
 
             // Product filter
             if (filters.product && filters.product.length > 0) {
@@ -187,28 +181,21 @@ export function CrmReportsModal({ isOpen, onClose, leads, settings, filters, onF
                 } catch {
                     if (l.product) leadProducts = [l.product];
                 }
-                const hasProduct = filters.product.some(p => leadProducts.includes(p));
-                if (!hasProduct) return false;
+                if (!filters.product.some(p => leadProducts.includes(p))) return false;
             }
 
-            // Source filter
-            if (filters.source) {
-                const leadSource = typeof l.source === 'string' ? l.source : l.source?.label;
-                if (leadSource !== filters.source) return false;
-            }
-
-            // Responsible filter
-            if (filters.responsible && l.responsible !== filters.responsible) return false;
-
-            // Custom Field filter
-            if (filters.customField && l.custom !== filters.customField) return false;
+            // Tab Filter (Active/Won/Lost)
+            if (filters.tab === 'active' && l.status === 'DEAL_LOST') return false;
+            if (filters.tab === 'earned' && l.status !== 'DEAL_WON') return false;
+            if (filters.tab === 'lost' && l.status !== 'DEAL_LOST') return false;
 
             return true;
         });
 
+        // Current filtered stats
         const total = filteredLeads.length;
-        const won = filteredLeads.filter(l => l.status === 'Won').length;
-        const lost = filteredLeads.filter(l => l.status === 'Lost').length;
+        const won = filteredLeads.filter(l => l.status === 'DEAL_WON').length;
+        const lost = filteredLeads.filter(l => l.status === 'DEAL_LOST').length;
         const winRate = total > 0 ? (won / total) * 100 : 0;
 
         // --- Status Distribution ---
@@ -362,12 +349,18 @@ export function CrmReportsModal({ isOpen, onClose, leads, settings, filters, onF
         const leadsWithDate = filteredLeads.filter(l => (l.created_at || l.date) && (l.created_at || l.date) !== 'Pending');
 
         // Dynamic timeline interval based on selection
-        let intervalStart = startOfMonth(new Date());
-        let intervalEnd = endOfMonth(new Date());
+        let intervalStart: Date;
+        let intervalEnd: Date;
 
-        if (date?.from) {
-            intervalStart = date.from;
-            intervalEnd = date.to || date.from;
+        if (createdDate?.from) {
+            intervalStart = startOfDay(createdDate.from);
+            intervalEnd = createdDate.to ? endOfDay(createdDate.to) : endOfDay(createdDate.from);
+        } else if (date?.from) {
+            intervalStart = startOfDay(date.from);
+            intervalEnd = date.to ? endOfDay(date.to) : endOfDay(date.from);
+        } else {
+            intervalStart = startOfMonth(new Date());
+            intervalEnd = endOfMonth(new Date());
         }
 
         const daysDiff = Math.max(1, differenceInDays(intervalEnd, intervalStart) + 1);
@@ -378,7 +371,7 @@ export function CrmReportsModal({ isOpen, onClose, leads, settings, filters, onF
             end: intervalEnd
         });
         const timelineData = days.map(day => {
-            const count = leadsWithDate.filter(l => isSameDay(new Date(l.created_at || l.date), day)).length;
+            const count = leadsWithDate.filter(l => isSameDay(parseDateStr(l.contact_date || l.date), day)).length;
             return {
                 date: day.toISOString(), // Store as ISO string for parsing
                 displayDate: format(day, 'MMM dd'),
@@ -388,7 +381,7 @@ export function CrmReportsModal({ isOpen, onClose, leads, settings, filters, onF
 
         // --- Lost Reasons ---
         const lostReasonsCount: Record<string, number> = {};
-        filteredLeads.filter(l => l.status === 'Lost' && l.lost_reason).forEach(l => {
+        filteredLeads.filter(l => l.status === 'DEAL_LOST' && l.lost_reason).forEach(l => {
             const r = l.lost_reason!;
             lostReasonsCount[r] = (lostReasonsCount[r] || 0) + 1;
         });
@@ -467,8 +460,8 @@ export function CrmReportsModal({ isOpen, onClose, leads, settings, filters, onF
             const nextStepDate = parseDateStr(lead.nextStep?.date || lead.next_step?.date);
 
             // Stats checks
-            if (lead.status === 'Won') globalWon++;
-            else if (lead.status === 'Lost') globalLost++;
+            if (lead.status === 'DEAL_WON') globalWon++;
+            else if (lead.status === 'DEAL_LOST') globalLost++;
 
             // Ignore Pending or far future for date-based stats
             if (nextStepDate.getFullYear() > 3000) return;
@@ -557,7 +550,7 @@ export function CrmReportsModal({ isOpen, onClose, leads, settings, filters, onF
                     <div className="flex flex-wrap items-center gap-2">
                         {/* Contact Date */}
                         <div className="flex items-center gap-1.5">
-                            <span className="text-[10px] text-gray-500 font-medium uppercase">Contact:</span>
+                            <span className="text-[10px] text-gray-500 font-medium uppercase">Contact Date:</span>
                             <Popover>
                                 <PopoverTrigger asChild>
                                     <Button
@@ -956,9 +949,9 @@ export function CrmReportsModal({ isOpen, onClose, leads, settings, filters, onF
                                     <Award size={100} />
                                 </div>
                                 <div className="text-gray-400 text-sm font-medium mb-2">Won Deals</div>
-                                <div className="text-4xl font-bold text-green-400 mb-2">{stats.globalStats.won}</div>
+                                <div className="text-4xl font-bold text-green-400 mb-2">{stats.won}</div>
                                 <div className="flex items-center text-sm text-gray-400">
-                                    Great job! Keep it up.
+                                    Total in current filter.
                                 </div>
                             </motion.div>
 
@@ -968,13 +961,11 @@ export function CrmReportsModal({ isOpen, onClose, leads, settings, filters, onF
                                     <PieChart size={100} />
                                 </div>
                                 <div className="text-gray-400 text-sm font-medium mb-2">Win Rate</div>
-                                <div className="text-4xl font-bold text-purple-400 mb-2">{stats.globalStats.winRate.toFixed(1)}%</div>
+                                <div className="text-4xl font-bold text-purple-400 mb-2">{stats.winRate.toFixed(1)}%</div>
                                 <div className="flex items-center text-sm text-gray-400">
                                     Percentage of won deals.
                                 </div>
                             </motion.div>
-
-
 
                             {/* 8. Lost Leads */}
                             <motion.div variants={itemVariants} className="bg-[#141414] p-6 rounded-2xl border border-white/5 relative overflow-hidden group hover:border-white/10 transition-all">
@@ -982,7 +973,7 @@ export function CrmReportsModal({ isOpen, onClose, leads, settings, filters, onF
                                     <TrendingDown size={100} />
                                 </div>
                                 <div className="text-gray-400 text-sm font-medium mb-2">Lost Leads</div>
-                                <div className="text-4xl font-bold text-red-400 mb-2">{stats.globalStats.lost}</div>
+                                <div className="text-4xl font-bold text-red-400 mb-2">{stats.lost}</div>
                                 <div className="flex items-center text-sm text-gray-400">
                                     {stats.mainLostReason && (
                                         <>Main reason: <span className="text-white ml-1">{stats.mainLostReason.name}</span></>

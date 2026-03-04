@@ -131,8 +131,12 @@ export function OmnichannelInbox({
         return () => { isMounted = false; };
     }, [accessibleInboxes]);
 
+    // Manual read/unread states lifted from ConversationList
+    const [manuallyReadIds, setManuallyReadIds] = useState<Set<string>>(new Set());
+    const [manuallyUnreadIds, setManuallyUnreadIds] = useState<Set<string>>(new Set());
+
     // Browser Notification Logic
-    const hasUnread = conversations.some(c => c.unreadCount > 0);
+    const hasUnread = conversations.some(c => (c.unreadCount > 0 && !manuallyReadIds.has(c.id)) || manuallyUnreadIds.has(c.id));
     useBrowserNotification(hasUnread);
 
     // Use singleton Supabase client for Realtime
@@ -284,7 +288,7 @@ export function OmnichannelInbox({
     }, [selectedConversationId]);
 
     // Silent reload: fetches messages without showing loading indicator
-    const silentReloadRef = useRef<() => Promise<void>>(async () => {});
+    const silentReloadRef = useRef<() => Promise<void>>(async () => { });
     const silentReloadMessages = async () => {
         const convId = selectedConversationIdRef.current;
         if (!convId) return;
@@ -574,7 +578,7 @@ export function OmnichannelInbox({
         // if we want 'onUpdateLead' to be the single handler. 
         // Logic for amount/history was in LeadDetails specific modals in original code.
     };
-    const [manuallyUnreadIds, setManuallyUnreadIds] = useState<Set<string>>(new Set());
+
 
 
 
@@ -626,6 +630,8 @@ export function OmnichannelInbox({
                 setStatusFilter={setStatusFilter}
                 manuallyUnreadIds={manuallyUnreadIds}
                 setManuallyUnreadIds={setManuallyUnreadIds}
+                manuallyReadIds={manuallyReadIds}
+                setManuallyReadIds={setManuallyReadIds}
                 mode={mode}
                 targetUser={targetUser}
                 targetUserId={targetUserId}
