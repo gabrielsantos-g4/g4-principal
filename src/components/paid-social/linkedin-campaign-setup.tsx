@@ -38,6 +38,8 @@ interface AdCreative {
 interface Campaign {
     id: string; groupId: string; name: string
     objective: CampaignObjective; audience: string
+    adFormat: string; urlTracking: string
+    placements: string; conversionTracking: string
     budgetType: 'daily' | 'total'; budget: string
     startDate: string; endDate: string; ads: AdCreative[]
 }
@@ -78,6 +80,7 @@ function detectVideoRatio(url: string): Promise<number> {
 const defaultCampaign = (groupId: string, n = 1): Campaign => ({
     id: uid(), groupId, name: `New Campaign ${n}`,
     objective: 'Website Visits', audience: '',
+    adFormat: '', urlTracking: '', placements: '', conversionTracking: '',
     budgetType: 'daily', budget: '', startDate: '', endDate: '',
     ads: [defaultAd()],
 })
@@ -667,98 +670,137 @@ function CampaignsTab({ groups, campaigns, selectedGroups, selected, onSelect, o
                 )}
             </div>
 
-            {/* Column header */}
-            {visible.length > 0 && (
-                <div className="flex items-center gap-3 px-4 py-2 rounded-lg bg-white/[0.03] border border-white/5">
-                    <Checkbox
-                        checked={allChecked}
-                        indeterminate={someChecked && !allChecked}
-                        onChange={() => visible.forEach(c => onSelect(c.id, !allChecked))}
-                    />
-                    <span className="text-xs text-slate-500 font-semibold uppercase tracking-wider flex-1">Campaign</span>
-                    <span className="text-xs text-slate-500 font-semibold uppercase tracking-wider w-32 text-center">Objective</span>
-                    <span className="text-xs text-slate-500 font-semibold uppercase tracking-wider w-20 text-center">Budget</span>
-                    <span className="text-xs text-slate-500 font-semibold uppercase tracking-wider w-20 text-center">Ads</span>
-                    <div className="w-8" />
-                </div>
-            )}
-
-            {visible.length === 0 && (
+            {visible.length === 0 ? (
                 <div className="flex flex-col items-center justify-center gap-2 py-16 text-slate-600">
                     <Zap size={28} />
                     <p className="text-sm">No campaigns yet</p>
                     <p className="text-xs text-slate-700">Select a Campaign Group first, then add campaigns below</p>
                 </div>
-            )}
-
-            {/* Grouped by group with prominent section header */}
-            {[...new Set(visible.map(c => c.groupId))].map(gid => (
-                <div key={gid} className="space-y-2">
-                    {/* Prominent group section header */}
-                    <div className="flex items-center gap-2 mt-2 mb-1 px-1">
-                        <div className="w-6 h-6 rounded bg-[#0a66c2]/20 border border-[#0a66c2]/30 flex items-center justify-center shrink-0">
-                            <Layers size={12} className="text-[#0a66c2]" />
+            ) : (
+                <div className="overflow-x-auto pb-4 scrollbar-hide">
+                    <div className="min-w-[1100px] space-y-2">
+                        {/* Column header */}
+                        <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/[0.03] border border-white/5">
+                            <Checkbox
+                                checked={allChecked}
+                                indeterminate={someChecked && !allChecked}
+                                onChange={() => visible.forEach(c => onSelect(c.id, !allChecked))}
+                            />
+                            <div className="w-8 shrink-0" /> {/* Spacer for the icon */}
+                            <span className="text-[11px] text-slate-500 font-semibold uppercase tracking-wider flex-1 min-w-[160px]">Campaign</span>
+                            <span className="text-[11px] text-slate-500 font-semibold uppercase tracking-wider w-[130px]">Objective</span>
+                            <span className="text-[11px] text-slate-500 font-semibold uppercase tracking-wider w-[120px]">Audience</span>
+                            <span className="text-[11px] text-slate-500 font-semibold uppercase tracking-wider w-[100px]">Ad format</span>
+                            <span className="text-[11px] text-slate-500 font-semibold uppercase tracking-wider w-[100px]">URL tracking</span>
+                            <span className="text-[11px] text-slate-500 font-semibold uppercase tracking-wider w-[100px]">Placements</span>
+                            <span className="text-[11px] text-slate-500 font-semibold uppercase tracking-wider w-[80px]">Budget</span>
+                            <span className="text-[11px] text-slate-500 font-semibold uppercase tracking-wider w-[120px]">Conv. tracking</span>
+                            <span className="text-[11px] text-slate-500 font-semibold uppercase tracking-wider w-[40px] text-center">Ads</span>
+                            <div className="w-8 shrink-0" />
                         </div>
-                        <div className="flex items-center gap-2">
-                            <span className="text-xs font-bold text-white">{groupName(gid)}</span>
-                        </div>
-                        <div className="flex-1 h-px bg-white/5" />
-                    </div>
 
-                    {visible.filter(c => c.groupId === gid).map(c => (
-                        <div
-                            key={c.id}
-                            className={`flex items-center gap-3 px-4 py-3 rounded-xl border transition-colors
-                                ${selected.has(c.id) ? 'bg-[#0a66c2]/10 border-[#0a66c2]/30' : 'bg-[#0d0d0d] border-white/10 hover:border-white/20'}`}
-                        >
-                            <Checkbox checked={selected.has(c.id)} onChange={() => onSelect(c.id, !selected.has(c.id))} />
-
-                            <div className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center shrink-0">
-                                <Zap size={13} className="text-blue-400" />
-                            </div>
-
-                            {/* Name */}
-                            <div className="flex-1 min-w-0">
-                                <input
-                                    value={c.name}
-                                    onChange={e => onUpdate({ ...c, name: e.target.value })}
-                                    className="bg-transparent text-white font-medium text-sm focus:outline-none w-full border-b border-transparent focus:border-blue-500/50"
-                                />
-                                <div className="flex gap-3 mt-1 flex-wrap">
-                                    <input value={c.audience} onChange={e => onUpdate({ ...c, audience: e.target.value })}
-                                        placeholder="Audience…"
-                                        className="bg-transparent text-xs text-slate-500 focus:outline-none border-b border-transparent focus:border-blue-500/30 w-36 placeholder:text-slate-700" />
+                        {/* Grouped by group with prominent section header */}
+                        {[...new Set(visible.map(c => c.groupId))].map(gid => (
+                            <div key={gid} className="space-y-2">
+                                {/* Prominent group section header */}
+                                <div className="flex items-center gap-2 mt-2 mb-1 px-1">
+                                    <div className="w-6 h-6 rounded bg-[#0a66c2]/20 border border-[#0a66c2]/30 flex items-center justify-center shrink-0">
+                                        <Layers size={12} className="text-[#0a66c2]" />
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-xs font-bold text-white">{groupName(gid)}</span>
+                                    </div>
+                                    <div className="flex-1 h-px bg-white/5" />
                                 </div>
+
+                                {visible.filter(c => c.groupId === gid).map(c => (
+                                    <div
+                                        key={c.id}
+                                        className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border transition-colors
+                                            ${selected.has(c.id) ? 'bg-[#0a66c2]/10 border-[#0a66c2]/30' : 'bg-[#0d0d0d] border-white/10 hover:border-white/20'}`}
+                                    >
+                                        <Checkbox checked={selected.has(c.id)} onChange={() => onSelect(c.id, !selected.has(c.id))} />
+
+                                        <div className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center shrink-0">
+                                            <Zap size={13} className="text-blue-400" />
+                                        </div>
+
+                                        {/* Name */}
+                                        <div className="flex-1 min-w-[160px]">
+                                            <input
+                                                value={c.name}
+                                                onChange={e => onUpdate({ ...c, name: e.target.value })}
+                                                className="bg-transparent text-white font-medium text-sm focus:outline-none w-full border-b border-transparent focus:border-blue-500/50"
+                                                placeholder="Campaign Name"
+                                            />
+                                        </div>
+
+                                        {/* Objective */}
+                                        <div className="w-[130px] shrink-0">
+                                            <select value={c.objective} onChange={e => onUpdate({ ...c, objective: e.target.value as CampaignObjective })}
+                                                className="bg-[#1a1a1a] border border-white/10 text-white text-[11px] rounded-lg px-2 py-1.5 focus:outline-none w-full truncate">
+                                                {OBJECTIVES.map(o => <option key={o}>{o}</option>)}
+                                            </select>
+                                        </div>
+
+                                        {/* Audience */}
+                                        <div className="w-[120px] shrink-0">
+                                            <input value={c.audience || ''} onChange={e => onUpdate({ ...c, audience: e.target.value })}
+                                                placeholder="Audience…"
+                                                className="bg-[#1a1a1a] border border-white/10 text-white text-[11px] rounded-lg px-2 py-1.5 focus:outline-none focus:border-blue-500 w-full placeholder:text-slate-700" />
+                                        </div>
+
+                                        {/* Ad format */}
+                                        <div className="w-[100px] shrink-0">
+                                            <input value={c.adFormat || ''} onChange={e => onUpdate({ ...c, adFormat: e.target.value })}
+                                                placeholder="Format…"
+                                                className="bg-[#1a1a1a] border border-white/10 text-white text-[11px] rounded-lg px-2 py-1.5 focus:outline-none focus:border-blue-500 w-full placeholder:text-slate-700" />
+                                        </div>
+
+                                        {/* URL tracking */}
+                                        <div className="w-[100px] shrink-0">
+                                            <input value={c.urlTracking || ''} onChange={e => onUpdate({ ...c, urlTracking: e.target.value })}
+                                                placeholder="UTM…"
+                                                className="bg-[#1a1a1a] border border-white/10 text-white text-[11px] rounded-lg px-2 py-1.5 focus:outline-none focus:border-blue-500 w-full placeholder:text-slate-700" />
+                                        </div>
+
+                                        {/* Placements */}
+                                        <div className="w-[100px] shrink-0">
+                                            <input value={c.placements || ''} onChange={e => onUpdate({ ...c, placements: e.target.value })}
+                                                placeholder="Placements…"
+                                                className="bg-[#1a1a1a] border border-white/10 text-white text-[11px] rounded-lg px-2 py-1.5 focus:outline-none focus:border-blue-500 w-full placeholder:text-slate-700" />
+                                        </div>
+
+                                        {/* Budget */}
+                                        <div className="w-[80px] shrink-0">
+                                            <input value={c.budget || ''} onChange={e => onUpdate({ ...c, budget: e.target.value })}
+                                                placeholder="$50"
+                                                className="bg-[#1a1a1a] border border-white/10 text-white text-[11px] rounded-lg px-2 py-1.5 focus:outline-none focus:border-blue-500 w-full text-center placeholder:text-slate-700" />
+                                        </div>
+
+                                        {/* Conversion tracking */}
+                                        <div className="w-[120px] shrink-0">
+                                            <input value={c.conversionTracking || ''} onChange={e => onUpdate({ ...c, conversionTracking: e.target.value })}
+                                                placeholder="Tracking ID…"
+                                                className="bg-[#1a1a1a] border border-white/10 text-white text-[11px] rounded-lg px-2 py-1.5 focus:outline-none focus:border-blue-500 w-full placeholder:text-slate-700" />
+                                        </div>
+
+                                        {/* Ad count */}
+                                        <span className="w-[40px] shrink-0 text-center text-[11px] text-slate-400">{c.ads.length} ad{c.ads.length !== 1 ? 's' : ''}</span>
+
+                                        {/* Delete */}
+                                        <button onClick={() => {
+                                            if (window.confirm('Are you sure you want to delete this Campaign?')) {
+                                                onDelete(c.id);
+                                            }
+                                        }} className="w-8 flex justify-center text-slate-700 hover:text-red-400 transition-colors shrink-0"><Trash2 size={13} /></button>
+                                    </div>
+                                ))}
                             </div>
-
-                            {/* Objective */}
-                            <div className="w-32 flex justify-center">
-                                <select value={c.objective} onChange={e => onUpdate({ ...c, objective: e.target.value as CampaignObjective })}
-                                    className="bg-[#1a1a1a] border border-white/10 text-white text-xs rounded-lg px-2 py-1 focus:outline-none w-full">
-                                    {OBJECTIVES.map(o => <option key={o}>{o}</option>)}
-                                </select>
-                            </div>
-
-                            {/* Budget */}
-                            <div className="w-20 flex items-center gap-1">
-                                <input value={c.budget} onChange={e => onUpdate({ ...c, budget: e.target.value })}
-                                    placeholder="$50"
-                                    className="bg-[#1a1a1a] border border-white/10 text-white text-xs rounded-lg px-2 py-1 focus:outline-none focus:border-blue-500 w-full text-center placeholder:text-slate-700" />
-                            </div>
-
-                            {/* Ad count */}
-                            <span className="w-20 text-center text-xs text-slate-400">{c.ads.length} ad{c.ads.length !== 1 ? 's' : ''}</span>
-
-                            {/* Delete */}
-                            <button onClick={() => {
-                                if (window.confirm('Are you sure you want to delete this Campaign?')) {
-                                    onDelete(c.id);
-                                }
-                            }} className="w-8 flex justify-center text-slate-700 hover:text-red-400 transition-colors"><Trash2 size={13} /></button>
-                        </div>
-                    ))}
+                        ))}
+                    </div>
                 </div>
-            ))}
+            )}
 
             {/* Global Add Campaign with Group Selection */}
             {groups.length > 0 && (
@@ -1147,14 +1189,14 @@ export function LinkedInCampaignSetup() {
 
     if (loading) {
         return (
-            <div className="w-full max-w-[920px] flex items-center justify-center p-12">
+            <div className="w-full max-w-[1200px] flex items-center justify-center p-12">
                 <Loader2 className="w-8 h-8 animate-spin text-[#0a66c2]" />
             </div>
         )
     }
 
     return (
-        <div className="w-full max-w-[920px] space-y-5">
+        <div className="w-full max-w-[1200px] space-y-5">
             {/* Tab bar — exact LinkedIn Ads Manager style */}
             <div className="flex items-center gap-0 bg-[#0d1117] border border-white/10 rounded-xl overflow-hidden">
                 {TABS.map((tab, i) => {

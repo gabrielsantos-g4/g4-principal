@@ -52,6 +52,7 @@ export interface Conversation {
     custom?: string;
     quem_atende?: string;
     responsibleId?: string | null;
+    responsibleName?: string | null;
     permission?: string;
 }
 
@@ -77,6 +78,7 @@ interface ConversationListProps {
     onInboxChange?: (id: string) => void;
     instanceAvatar?: string;
     viewerProfile?: any;
+    phoneNumber?: string | null;
 }
 
 const CHANNEL_ICONS: Record<string, string> = {
@@ -122,7 +124,8 @@ export function ConversationList({
     accessibleInboxes = [],
     onInboxChange,
     instanceAvatar,
-    viewerProfile
+    viewerProfile,
+    phoneNumber
 }: ConversationListProps) {
 
     const availableStatuses = Array.from(new Set(conversations.map(c => c.status))).filter(Boolean).sort();
@@ -133,7 +136,7 @@ export function ConversationList({
     const handleDelete = async (convId: string, e: React.MouseEvent) => {
         e.stopPropagation();
 
-        if (!confirm("Are you sure you want to delete this conversation? This cannot be undone.")) {
+        if (!confirm("Are you SURE you want to delete this conversation? This will PERMANENTLY delete the conversation, all its messages, AND the associated Lead from the CRM. This action CANNOT be undone.")) {
             return;
         }
 
@@ -191,7 +194,9 @@ export function ConversationList({
             return newSet;
         });
 
-        await markAsRead(convId, isCurrentlyUnread);
+        if (conversation.leadId) {
+            await markAsRead(conversation.leadId, isCurrentlyUnread);
+        }
     };
 
     const filteredConversations = conversations.filter(conv => {
@@ -200,6 +205,7 @@ export function ConversationList({
             const query = searchQuery.toLowerCase();
             matchesSearch = (
                 conv.contact.name.toLowerCase().includes(query) ||
+                (conv.contact.phone || '').toLowerCase().includes(query) ||
                 conv.lastMessage.toLowerCase().includes(query)
             );
         }
@@ -250,7 +256,14 @@ export function ConversationList({
                                             <AvatarFallback className="text-xs font-bold">{targetUser?.name?.[0] || '?'}</AvatarFallback>
                                         </Avatar>
                                         <div className="flex-1 min-w-0">
-                                            <p className="text-[10px] text-gray-500 font-medium uppercase tracking-wider leading-tight">Conversations of</p>
+                                            <div className="flex items-center justify-between">
+                                                <p className="text-[10px] text-gray-500 font-medium uppercase tracking-wider leading-tight">Conversations of</p>
+                                                {phoneNumber && (
+                                                    <Badge variant="outline" className="text-[9px] h-4 px-1 border-white/10 text-gray-400 font-normal">
+                                                        {phoneNumber}
+                                                    </Badge>
+                                                )}
+                                            </div>
                                             <h3 className="text-sm text-white font-bold truncate leading-tight">{targetUser?.name || 'Select User'}</h3>
                                         </div>
                                     </div>
@@ -278,7 +291,14 @@ export function ConversationList({
                                 <AvatarFallback className="text-xs font-bold">{targetUser.name ? targetUser.name[0] : '?'}</AvatarFallback>
                             </Avatar>
                             <div className="flex-1 min-w-0">
-                                <p className="text-[10px] text-gray-500 font-medium uppercase tracking-wider leading-tight">Conversations of</p>
+                                <div className="flex items-center justify-between">
+                                    <p className="text-[10px] text-gray-500 font-medium uppercase tracking-wider leading-tight">Conversations of</p>
+                                    {phoneNumber && (
+                                        <span className="text-[10px] text-[#25D366] font-semibold opacity-80">
+                                            {phoneNumber}
+                                        </span>
+                                    )}
+                                </div>
                                 <h3 className="text-sm text-white font-bold truncate leading-tight">{targetUser.name || 'Agent'}</h3>
                             </div>
                         </div>
@@ -305,23 +325,29 @@ export function ConversationList({
                     />
                 </div>
 
-                {/* Filter row */}
-                <div className="flex items-center justify-between">
-                    <div className="flex gap-1.5">
-                        {(['all', 'unread', 'read'] as const).map((status) => (
-                            <button
-                                key={status}
-                                onClick={() => setFilterStatus(status)}
-                                className={cn(
-                                    "text-[11px] px-2.5 py-1 rounded-full font-medium capitalize transition-all",
-                                    filterStatus === status
-                                        ? "bg-[#1C73E8]/20 text-[#6ea8fe] border border-[#1C73E8]/30"
-                                        : "text-gray-600 hover:text-gray-400 border border-transparent"
-                                )}
-                            >
-                                {status}
-                            </button>
-                        ))}
+                <div className="flex items-center justify-between mt-2">
+                    <div className="flex items-center gap-2">
+                        <div className="flex gap-1.5">
+                            {(['all', 'unread', 'read'] as const).map((status) => (
+                                <button
+                                    key={status}
+                                    onClick={() => setFilterStatus(status)}
+                                    className={cn(
+                                        "text-[11px] px-2.5 py-1 rounded-full font-medium capitalize transition-all",
+                                        filterStatus === status
+                                            ? "bg-[#1C73E8]/20 text-[#6ea8fe] border border-[#1C73E8]/30"
+                                            : "text-gray-600 hover:text-gray-400 border border-transparent"
+                                    )}
+                                >
+                                    {status}
+                                </button>
+                            ))}
+                        </div>
+                        {unreadTotal > 0 && (
+                            <div className="flex items-center gap-1.5 bg-red-500/10 text-red-500 px-2 py-0.5 rounded-full text-[10px] font-bold border border-red-500/20" title={`${unreadTotal} unread conversations`}>
+                                {unreadTotal} msg
+                            </div>
+                        )}
                     </div>
 
                     <DropdownMenu>
@@ -362,8 +388,8 @@ export function ConversationList({
             </div>
 
             {/* Conversation List */}
-            <ScrollArea className="flex-1">
-                <div className="flex flex-col">
+            <div className="flex-1 overflow-y-auto overflow-x-hidden min-h-0">
+                <div className="flex flex-col w-full overflow-x-hidden">
                     {isLoading ? (
                         // Loading skeletons
                         <div className="flex flex-col gap-0">
@@ -410,47 +436,18 @@ export function ConversationList({
                                                     return newSet;
                                                 });
                                             }
-                                            markAsRead(conv.id, true);
+                                            if (conv.leadId) {
+                                                markAsRead(conv.leadId, true);
+                                            }
                                         }
                                     }}
                                     className={cn(
-                                        "flex items-start gap-3 px-4 py-3.5 text-left border-b border-white/5 relative group cursor-pointer transition-all duration-150",
+                                        "flex items-start gap-2 px-3 py-3 text-left border-b border-white/5 group cursor-pointer transition-all duration-150 w-full overflow-hidden",
                                         isSelected
-                                            ? "bg-[#1C73E8]/8 border-l-2 border-l-[#1C73E8] pl-[14px]"
+                                            ? "bg-[#1C73E8]/8 border-l-2 border-l-[#1C73E8] pl-[10px]"
                                             : "hover:bg-white/[0.025] border-l-2 border-l-transparent"
                                     )}
                                 >
-                                    {/* Context menu (hover) */}
-                                    <div className="absolute right-2 top-2 z-20 opacity-0 group-hover:opacity-100 transition-opacity">
-                                        <DropdownMenu>
-                                            <DropdownMenuTrigger asChild>
-                                                <Button
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    className="h-6 w-6 rounded-full bg-[#2a2a2a] hover:bg-[#333] text-gray-400 hover:text-white"
-                                                    onClick={(e) => e.stopPropagation()}
-                                                >
-                                                    <ChevronDown size={12} />
-                                                </Button>
-                                            </DropdownMenuTrigger>
-                                            <DropdownMenuContent align="end" className="bg-[#2a2a2a] border-white/10 text-white w-40">
-                                                <DropdownMenuItem
-                                                    onClick={(e) => toggleUnread(conv.id, e)}
-                                                    className="hover:bg-white/10 cursor-pointer text-xs"
-                                                >
-                                                    {isUnread ? "✓  Mark as read" : "●  Mark as unread"}
-                                                </DropdownMenuItem>
-                                                <DropdownMenuItem
-                                                    onClick={(e) => handleDelete(conv.id, e)}
-                                                    className="hover:bg-red-500/20 text-red-400 focus:text-red-300 focus:bg-red-500/20 cursor-pointer text-xs"
-                                                >
-                                                    <Trash size={12} className="mr-2" />
-                                                    Delete chat
-                                                </DropdownMenuItem>
-                                            </DropdownMenuContent>
-                                        </DropdownMenu>
-                                    </div>
-
                                     {/* Avatar + channel icon */}
                                     <div className="relative shrink-0">
                                         <Avatar className={cn("h-10 w-10", isUnread ? "border-2 border-[#25D366]/60" : "border border-white/10")}>
@@ -462,32 +459,91 @@ export function ConversationList({
                                         <span className="absolute -bottom-0.5 -right-0.5 text-[10px] leading-none">{channelIcon}</span>
                                     </div>
 
-                                    {/* Content (Name, Message, Timestamp, Badge in Flex layout) */}
-                                    <div className="flex-1 min-w-0 flex items-start justify-between gap-3">
-                                        <div className="flex-1 min-w-0">
-                                            <h4 className={cn("text-sm truncate leading-tight mb-0.5", isUnread ? "text-white font-semibold" : "text-gray-300 font-medium")}>
+                                    {/* Content: 2-row layout (name+time / message+badge) */}
+                                    <div className="flex-1 min-w-0 overflow-hidden">
+                                        {/* Row 1: Name + Timestamp */}
+                                        <div className="flex items-center justify-between gap-1 mb-0.5">
+                                            <h4 className={cn("text-sm truncate leading-tight flex-1 min-w-0", isUnread ? "text-white font-semibold" : "text-gray-300 font-medium")}>
                                                 {conv.contact.name}
                                             </h4>
-                                            <p className={cn("text-[12px] line-clamp-1 leading-tight break-all", isUnread ? "text-gray-300" : "text-gray-600")}>
-                                                {conv.permission === 'assigned' && <span className="text-[#1C73E8] font-medium mr-1">You: </span>}
-                                                {conv.lastMessage}
-                                            </p>
-                                        </div>
-
-                                        {/* Right actions/info column */}
-                                        <div className="shrink-0 flex flex-col items-end gap-1.5 pt-[2px]">
-                                            <span className={cn("text-[11px] whitespace-nowrap", isUnread ? "text-[#25D366] font-semibold" : "text-gray-600")}>
+                                            <span className={cn("text-[10px] whitespace-nowrap shrink-0 w-10 text-right leading-tight", isUnread ? "text-[#25D366] font-semibold" : "text-gray-600")}>
                                                 {conv.lastMessageAt
                                                     ? new Date(conv.lastMessageAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })
                                                     : ""}
                                             </span>
-                                            {isUnread && (
-                                                <div className="min-w-[20px] h-[20px] bg-[#25D366] rounded-full flex items-center justify-center px-1.5 shadow-[0_0_8px_rgba(37,211,102,0.4)]">
-                                                    <span className="text-[10px] font-bold text-white leading-none">
-                                                        {conv.unreadCount > 0 ? conv.unreadCount : ""}
-                                                    </span>
-                                                </div>
-                                            )}
+                                        </div>
+                                        {/* Row 2: Message preview + Unread badge / Context menu */}
+                                        <div className="flex items-center justify-between gap-1">
+                                            <p className={cn("text-[11px] truncate leading-tight flex-1 min-w-0", isUnread ? "text-gray-300" : "text-gray-600")}>
+                                                {conv.permission === 'assigned' && <span className="text-[#1C73E8] font-medium mr-1">You: </span>}
+                                                {conv.lastMessage}
+                                            </p>
+                                            <div className="shrink-0 w-10 flex items-center justify-end">
+                                                {isUnread ? (
+                                                    <div className="min-w-[18px] h-[18px] bg-[#25D366] rounded-full flex items-center justify-center px-1 shadow-[0_0_8px_rgba(37,211,102,0.4)]">
+                                                        <span className="text-[9px] font-bold text-white leading-none">
+                                                            {conv.unreadCount > 0 ? conv.unreadCount : "●"}
+                                                        </span>
+                                                    </div>
+                                                ) : (
+                                                    <DropdownMenu>
+                                                        <DropdownMenuTrigger asChild>
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="icon"
+                                                                className="h-5 w-5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity bg-transparent hover:bg-white/10 text-gray-500 hover:text-white"
+                                                                onClick={(e) => e.stopPropagation()}
+                                                            >
+                                                                <ChevronDown size={11} />
+                                                            </Button>
+                                                        </DropdownMenuTrigger>
+                                                        <DropdownMenuContent align="end" className="bg-[#2a2a2a] border-white/10 text-white w-40">
+                                                            <DropdownMenuItem
+                                                                onClick={(e) => toggleUnread(conv.id, e)}
+                                                                className="hover:bg-white/10 cursor-pointer text-xs"
+                                                            >
+                                                                ●  Mark as unread
+                                                            </DropdownMenuItem>
+                                                            <DropdownMenuItem
+                                                                onClick={(e) => handleDelete(conv.id, e)}
+                                                                className="hover:bg-red-500/20 text-red-400 focus:text-red-300 focus:bg-red-500/20 cursor-pointer text-xs"
+                                                            >
+                                                                <Trash size={12} className="mr-2" />
+                                                                Delete chat
+                                                            </DropdownMenuItem>
+                                                        </DropdownMenuContent>
+                                                    </DropdownMenu>
+                                                )}
+                                                {isUnread && (
+                                                    <DropdownMenu>
+                                                        <DropdownMenuTrigger asChild>
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="icon"
+                                                                className="h-4 w-4 rounded-full opacity-0 group-hover:opacity-100 transition-opacity bg-transparent hover:bg-white/10 text-gray-500 hover:text-white ml-0.5"
+                                                                onClick={(e) => e.stopPropagation()}
+                                                            >
+                                                                <ChevronDown size={9} />
+                                                            </Button>
+                                                        </DropdownMenuTrigger>
+                                                        <DropdownMenuContent align="end" className="bg-[#2a2a2a] border-white/10 text-white w-40">
+                                                            <DropdownMenuItem
+                                                                onClick={(e) => toggleUnread(conv.id, e)}
+                                                                className="hover:bg-white/10 cursor-pointer text-xs"
+                                                            >
+                                                                ✓  Mark as read
+                                                            </DropdownMenuItem>
+                                                            <DropdownMenuItem
+                                                                onClick={(e) => handleDelete(conv.id, e)}
+                                                                className="hover:bg-red-500/20 text-red-400 focus:text-red-300 focus:bg-red-500/20 cursor-pointer text-xs"
+                                                            >
+                                                                <Trash size={12} className="mr-2" />
+                                                                Delete chat
+                                                            </DropdownMenuItem>
+                                                        </DropdownMenuContent>
+                                                    </DropdownMenu>
+                                                )}
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -495,7 +551,7 @@ export function ConversationList({
                         })
                     )}
                 </div>
-            </ScrollArea>
+            </div>
         </div>
     );
 }

@@ -78,7 +78,7 @@ export async function getConversations(targetUserId?: string, _cacheBuster?: str
         .select(selectFields)
         .eq('empresa_id', empresaId)
         .order('updated_at', { ascending: false })
-        .limit(1001); // Prevent Next.js from aggressively caching this query
+        .limit(100); // Reduced from 1001 — prevents excessive load
 
     if (isAgent) {
         query = query.is('responsible_id', null);
@@ -97,22 +97,29 @@ export async function getConversations(targetUserId?: string, _cacheBuster?: str
 
     console.log("[getConversations] Found conversations:", conversations?.length || 0);
 
-    if (!conversations) return [];
+    if (!conversations || conversations.length === 0) return [];
 
-    // Helper to fetch last message
-    const fetchLastMessage = async (conversationId: string) => {
-        const { data: lastMsg } = await supabaseAdmin
-            .from('camp_mensagens_n')
-            .select('body, created_at, status, media_url, direction')
-            .eq('conversa_id', conversationId)
-            .order('created_at', { ascending: false })
-            .limit(1)
-            .single();
-        return lastMsg;
-    };
+    // 3. Batch-fetch last messages — ONE query for ALL conversations (eliminates N+1)
+    const conversationIds = conversations.map((c: any) => c.id);
 
-    // 3. Transform to Conversation objects
-    const payload = await Promise.all(conversations.map(async (conv: any) => {
+    const { data: lastMessages } = await supabaseAdmin
+        .from('camp_mensagens_n')
+        .select('conversa_id, body, created_at, status, media_url, direction')
+        .in('conversa_id', conversationIds)
+        .order('created_at', { ascending: false });
+
+    // Build a map: conversationId -> last message (first result per conversation since ordered desc)
+    const lastMsgMap = new Map<string, any>();
+    if (lastMessages) {
+        for (const msg of lastMessages) {
+            if (!lastMsgMap.has(msg.conversa_id)) {
+                lastMsgMap.set(msg.conversa_id, msg);
+            }
+        }
+    }
+
+    // 4. Transform to Conversation objects
+    const payload = conversations.map((conv: any) => {
         const lead = conv.main_crm;
         if (!lead) return null;
 
@@ -123,9 +130,9 @@ export async function getConversations(targetUserId?: string, _cacheBuster?: str
 
         let lastMessage = "New conversation";
         let lastMessageAt = conv.updated_at || "";
-
-        const lastMsg = await fetchLastMessage(conv.id);
         const messages = [];
+
+        const lastMsg = lastMsgMap.get(conv.id);
 
         if (lastMsg) {
             lastMessage = lastMsg.body || (lastMsg.media_url ? '[Media]' : 'Message');
@@ -199,9 +206,10 @@ export async function getConversations(targetUserId?: string, _cacheBuster?: str
             history: Array.isArray(lead.history_log) ? lead.history_log : [],
             custom: lead.custom_field || "",
             quem_atende: lead.quem_atende,
-            responsibleId: conv.responsible_id || null
+            responsibleId: conv.responsible_id || null,
+            responsibleName: lead.responsible || null
         };
-    }));
+    });
 
     return payload.filter(Boolean);
 }

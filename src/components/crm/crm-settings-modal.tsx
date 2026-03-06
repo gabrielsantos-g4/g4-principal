@@ -335,6 +335,7 @@ export function CrmSettingsModal({ isOpen, onClose, settings, leads = [] }: CrmS
 
         const updatedProducts = [...products];
         updatedProducts[editingProductIndex] = {
+            ...products[editingProductIndex],
             name: editingProductData.name,
             price: editingProductData.price
         };
@@ -988,7 +989,7 @@ export function CrmSettingsModal({ isOpen, onClose, settings, leads = [] }: CrmS
                                                     {(() => {
                                                         const neededCustomers = avgTicket > 0 ? Math.ceil(revenueGoal / avgTicket) : 0;
                                                         const neededWarmHot = avgTicket > 0 && closeRate > 0 ? Math.ceil(neededCustomers / (closeRate / 100)) : 0;
-                                                        
+
                                                         // Count current Warm/Hot leads
                                                         const statusMap = new Map<string, { temperature?: string }>();
                                                         statuses.forEach(s => {
@@ -999,9 +1000,9 @@ export function CrmSettingsModal({ isOpen, onClose, settings, leads = [] }: CrmS
                                                             const temperature = statusInfo?.temperature;
                                                             return temperature === 'Warm' || temperature === 'Hot';
                                                         }).length;
-                                                        
+
                                                         const isHealthy = currentWarmHot >= neededWarmHot;
-                                                        
+
                                                         return (
                                                             <>
                                                                 {isHealthy ? (
@@ -1048,12 +1049,12 @@ export function CrmSettingsModal({ isOpen, onClose, settings, leads = [] }: CrmS
                     <DialogHeader>
                         <DialogTitle className="text-xl font-bold text-white">Pipeline Health Summary</DialogTitle>
                     </DialogHeader>
-                    
+
                     <div className="space-y-6 py-4">
                         {(() => {
                             const neededCustomers = avgTicket > 0 ? Math.ceil(revenueGoal / avgTicket) : 0;
                             const neededWarmHot = avgTicket > 0 && closeRate > 0 ? Math.ceil(neededCustomers / (closeRate / 100)) : 0;
-                            
+
                             // Count current Warm/Hot leads
                             const statusMap = new Map<string, { temperature?: string }>();
                             statuses.forEach(s => {
@@ -1064,10 +1065,10 @@ export function CrmSettingsModal({ isOpen, onClose, settings, leads = [] }: CrmS
                                 const temperature = statusInfo?.temperature;
                                 return temperature === 'Warm' || temperature === 'Hot';
                             }).length;
-                            
+
                             const shortfall = neededWarmHot - currentWarmHot;
                             const isHealthy = currentWarmHot >= neededWarmHot;
-                            
+
                             return (
                                 <div className="space-y-4">
                                     <div className="p-6 bg-gradient-to-br from-blue-500/10 to-purple-500/10 border border-white/10 rounded-lg">
@@ -1075,27 +1076,26 @@ export function CrmSettingsModal({ isOpen, onClose, settings, leads = [] }: CrmS
                                             You want to close{" "}
                                             <span className="font-bold text-emerald-400">{neededCustomers} customers</span>{" "}
                                             this month at an average ticket of{" "}
-                                            <span className="font-bold text-blue-400">${avgTicket.toLocaleString()}</span>, 
+                                            <span className="font-bold text-blue-400">${avgTicket.toLocaleString()}</span>,
                                             reaching a revenue of{" "}
                                             <span className="font-bold text-purple-400">${revenueGoal.toLocaleString()}</span>.
                                         </p>
                                     </div>
-                                    
+
                                     <div className="p-6 bg-gradient-to-br from-orange-500/10 to-red-500/10 border border-white/10 rounded-lg">
                                         <p className="text-base leading-relaxed text-gray-200">
                                             With a close rate of{" "}
-                                            <span className="font-bold text-orange-400">{closeRate}%</span>, 
+                                            <span className="font-bold text-orange-400">{closeRate}%</span>,
                                             you need{" "}
                                             <span className="font-bold text-red-400">{neededWarmHot} leads</span>{" "}
                                             with Warm or Hot status in your pipeline.
                                         </p>
                                     </div>
-                                    
-                                    <div className={`p-6 border rounded-lg ${
-                                        isHealthy 
-                                            ? 'bg-gradient-to-br from-emerald-500/10 to-green-500/10 border-emerald-500/20' 
+
+                                    <div className={`p-6 border rounded-lg ${isHealthy
+                                            ? 'bg-gradient-to-br from-emerald-500/10 to-green-500/10 border-emerald-500/20'
                                             : 'bg-gradient-to-br from-red-500/10 to-rose-500/10 border-red-500/20'
-                                    }`}>
+                                        }`}>
                                         <p className="text-base leading-relaxed text-gray-200">
                                             Currently, you have{" "}
                                             <span className={`font-bold ${isHealthy ? 'text-emerald-400' : 'text-red-400'}`}>
@@ -1117,7 +1117,7 @@ export function CrmSettingsModal({ isOpen, onClose, settings, leads = [] }: CrmS
                             );
                         })()}
                     </div>
-                    
+
                     <div className="flex justify-end">
                         <Button onClick={() => setShowPipelineSummary(false)} variant="ghost" className="text-gray-400 hover:text-white">
                             Close

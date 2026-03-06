@@ -944,10 +944,12 @@ export function LeadDetails({
 
                             <div className="space-y-1.5">
                                 <div className="flex flex-col gap-1">
-                                    {selectedConversation.responsibleId && (
+                                    {(selectedConversation.responsibleId || selectedConversation.responsibleName || selectedConversation.quem_atende) && (
                                         <span className="text-[10px] text-gray-500 italic">
                                             Conversation is with <span className="text-gray-300">
-                                                {messagingUsers.find(u => u.id === selectedConversation.responsibleId)?.name || 'Unknown'}
+                                                {selectedConversation.responsibleId
+                                                    ? (messagingUsers.find(u => u.id === selectedConversation.responsibleId)?.name || selectedConversation.responsibleName || selectedConversation.quem_atende || 'Unknown')
+                                                    : (selectedConversation.responsibleName || selectedConversation.quem_atende)}
                                             </span>. Transfer to:
                                         </span>
                                     )}

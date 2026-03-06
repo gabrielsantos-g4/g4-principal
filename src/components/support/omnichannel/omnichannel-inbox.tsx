@@ -14,6 +14,7 @@ import { signout } from "@/app/login/actions";
 import { useBrowserNotification } from "@/hooks/use-browser-notification";
 import { getMessagingUsers, MessagingUser } from "@/actions/users/get-messaging-users";
 import { getInstanceAvatarByAgent } from "@/actions/inbox/get-instance-avatar";
+import { getWhatsAppInstanceDetailsByAgent } from "@/actions/inbox/get-instance-details";
 import { LostLeadModal } from "@/components/crm/lost-lead-modal";
 import { RealtimeDiagnostics } from "./realtime-diagnostics";
 import { getSupabaseRealtimeClient } from "@/lib/supabase-realtime";
@@ -96,8 +97,15 @@ export function OmnichannelInbox({
     const [messagingUsers, setMessagingUsers] = useState<MessagingUser[]>([]);
     const [currentUserId, setCurrentUserId] = useState<string | null>(null);
     const [instanceAvatar, setInstanceAvatar] = useState<string | undefined>(undefined);
+    const [phoneNumber, setPhoneNumber] = useState<string | null>(null);
 
     const [inboxesWithAvatars, setInboxesWithAvatars] = useState<any[]>(accessibleInboxes || []);
+
+    // Derived: the avatar for whoever's inbox is currently selected
+    const currentInboxAvatar = instanceAvatar
+        || inboxesWithAvatars.find(i => i.id === targetUserId)?.avatar
+        || targetUser?.avatar_url
+        || targetUser?.avatar;
 
     // Fetch avatars for all accessible inboxes that are agents
     useEffect(() => {
@@ -303,14 +311,14 @@ export function OmnichannelInbox({
     };
     silentReloadRef.current = silentReloadMessages;
 
-    // Polling fallback — 5s interval (Realtime disabled due to Supabase bug)
+    // Polling fallback — 30s interval (reduced from 5s to avoid Supabase usage limits)
     useEffect(() => {
         if (!targetUserId) return;
 
         pollingIntervalRef.current = setInterval(() => {
             setRefreshTrigger(prev => prev + 1);
             silentReloadRef.current?.();
-        }, 5000);
+        }, 30000);
 
         return () => {
             if (pollingIntervalRef.current) {
@@ -345,16 +353,20 @@ export function OmnichannelInbox({
                 if (isMounted) {
                     setConversations(convData as Conversation[]);
 
-                    // Fetch instance avatar if targetUserId is an agent
-                    const agent = AGENTS.find(a => a.id === targetUserId);
-                    if (agent) {
-                        getInstanceAvatarByAgent(agent.name).then(avatar => {
-                            if (isMounted && avatar) setInstanceAvatar(avatar);
+                    // Fetch instance details for both human and AI agents
+                    const agentNameForInstance = targetUser?.name || AGENTS.find(a => a.id === targetUserId)?.name;
+                    if (agentNameForInstance) {
+                        getWhatsAppInstanceDetailsByAgent(agentNameForInstance).then(details => {
+                            if (isMounted) {
+                                if (details.avatar) setInstanceAvatar(details.avatar);
+                                setPhoneNumber(details.phoneNumber || null);
+                            }
                         }).catch(err => {
-                            console.error("[OmnichannelInbox] Instance avatar fetch failed:", err);
+                            console.error("[OmnichannelInbox] Instance details fetch failed:", err);
                         });
                     } else {
                         setInstanceAvatar(undefined);
+                        setPhoneNumber(null);
                     }
 
                     if (convData.length > 0 && !selectedConversationId && convData[0]) {
@@ -679,7 +691,8 @@ export function OmnichannelInbox({
                     onInboxChange?.(val);
                     setSearchQuery("");
                 }}
-                instanceAvatar={instanceAvatar}
+                instanceAvatar={currentInboxAvatar}
+                phoneNumber={phoneNumber}
             />
 
             <ChatArea
@@ -694,9 +707,9 @@ export function OmnichannelInbox({
                 onToggleQuemAtende={handleToggleQuemAtende}
                 isTogglingQuemAtende={isTogglingQuemAtende}
                 isAgentInbox={!!AGENTS.find(a => a.id === targetUserId)}
-                agentAvatar={instanceAvatar || targetUser?.avatar || targetUser?.avatar_url}
+                agentAvatar={currentInboxAvatar}
                 agentName={targetUser?.name}
-                instanceAvatar={instanceAvatar}
+                instanceAvatar={currentInboxAvatar}
             />
 
             <LeadDetails

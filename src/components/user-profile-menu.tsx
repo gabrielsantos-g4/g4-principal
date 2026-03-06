@@ -69,13 +69,9 @@ export function UserProfileMenu({ userName, companyName, initials }: UserProfile
 
                 <DropdownMenuSeparator className="bg-white/10" />
 
-                <DropdownMenuItem asChild className="cursor-pointer focus:bg-white/10 focus:text-white group text-red-400 focus:text-red-400">
-                    <form action={signout} className="w-full flex items-center">
-                        <button type="submit" className="flex items-center w-full">
-                            <LogOut className="mr-2 h-4 w-4" />
-                            <span>Logout</span>
-                        </button>
-                    </form>
+                <DropdownMenuItem onClick={() => signout()} className="cursor-pointer focus:bg-white/10 focus:text-white group text-red-400 focus:text-red-400 w-full flex items-center">
+                    <LogOut className="mr-2 h-4 w-4" />
+                    <span>Logout</span>
                 </DropdownMenuItem>
 
                 <DropdownMenuItem className="cursor-pointer focus:bg-white/10 focus:text-white group text-red-500 focus:text-red-500">

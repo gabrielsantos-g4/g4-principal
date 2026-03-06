@@ -118,14 +118,13 @@ export function HeaderTools({ userProfile }: HeaderToolsProps) {
 
                     <DropdownMenuSeparator className="bg-white/10" />
 
-                    <form action={signout} className="w-full">
-                        <DropdownMenuItem asChild className="gap-2 cursor-pointer text-red-400 focus:text-red-300 focus:bg-red-500/10 w-full">
-                            <button type="submit" className="w-full flex items-center">
-                                <LogOut size={14} className="mr-2" />
-                                <span>Logout</span>
-                            </button>
-                        </DropdownMenuItem>
-                    </form>
+                    <DropdownMenuItem
+                        onClick={() => signout()}
+                        className="gap-2 cursor-pointer text-red-400 focus:text-red-300 focus:bg-red-500/10 w-full"
+                    >
+                        <LogOut size={14} className="mr-2" />
+                        <span>Logout</span>
+                    </DropdownMenuItem>
                 </DropdownMenuContent>
             </DropdownMenu>
 
