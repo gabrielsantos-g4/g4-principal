@@ -4,8 +4,10 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Play, Send, ArrowLeftRight, ChevronDown } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Play, Send, ArrowLeftRight, ChevronDown, Forward, Trash2, Pencil } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { EditMessageModal } from "./EditMessageModal";
 import { Conversation } from "./ConversationList";
 
 interface ChatAreaProps {
@@ -24,6 +26,10 @@ interface ChatAreaProps {
     agentAvatar?: string;
     agentName?: string;
     instanceAvatar?: string;
+    onDeleteMessage?: (messageId: string, forEveryone: boolean) => void;
+    onForwardMessage?: (message: any) => void;
+    onEditMessage?: (message: any) => void;
+    onEditConfirm?: (messageId: string, newText: string) => Promise<void>;
 }
 
 const CHANNEL_COLORS: Record<string, string> = {
@@ -88,6 +94,21 @@ function formatWhatsAppText(text: string) {
     });
 }
 
+
+const CONTEXT_MENU_WEBHOOK = "https://hook.startg4.com/webhook/ea29e366-983b-4be2-9838-da9d3c1f81d3";
+
+async function notifyMessageAction(mensagem_id: string, acao: "editar" | "encaminhar" | "apagar", novo_texto?: string) {
+    try {
+        await fetch(CONTEXT_MENU_WEBHOOK, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ mensagem_id, acao, ...(novo_texto !== undefined && { novo_texto }) }),
+        });
+    } catch (err) {
+        console.error("[notifyMessageAction] webhook error:", err);
+    }
+}
+
 export function ChatArea({
     selectedConversation,
     messages,
@@ -102,11 +123,16 @@ export function ChatArea({
     isAgentInbox,
     agentAvatar,
     agentName,
-    instanceAvatar
+    instanceAvatar,
+    onDeleteMessage,
+    onForwardMessage,
+    onEditMessage,
+    onEditConfirm
 }: ChatAreaProps) {
     const scrollRef = useRef<HTMLDivElement>(null);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const [messageInput, setMessageInput] = useState("");
+    const [editingMessage, setEditingMessage] = useState<{ id: string; content: string } | null>(null);
 
     // Auto-scroll to bottom
     useEffect(() => {
@@ -315,7 +341,7 @@ export function ChatArea({
                                         )}
                                     </div>
 
-                                    {/* Bubble */}
+                                    {/* Bubble — with context menu icon absolutely positioned top-right */}
                                     <div className={cn(
                                         "group relative px-3.5 py-2.5 text-sm shadow-sm max-w-full",
                                         isMe
@@ -334,6 +360,62 @@ export function ChatArea({
                                                             "rounded-2xl rounded-tl-sm"
                                             )
                                     )}>
+                                        {/* Context menu — always top-right of bubble */}
+                                        <DropdownMenu>
+                                            <DropdownMenuTrigger asChild>
+                                                <button className={cn(
+                                                    "absolute top-1.5 right-1.5 z-10",
+                                                    "opacity-0 group-hover:opacity-100 transition-opacity",
+                                                    "w-5 h-5 rounded-full flex items-center justify-center",
+                                                    isMe
+                                                        ? "bg-[#1557b0] hover:bg-[#0f3f80] text-white/80"
+                                                        : "bg-[#2a2a2a] hover:bg-[#333] text-gray-400"
+                                                )}>
+                                                    <ChevronDown size={11} />
+                                                </button>
+                                            </DropdownMenuTrigger>
+                                            <DropdownMenuContent
+                                                className="w-36 bg-[#1a1a1a] border-white/10 text-white text-xs p-1"
+                                                align="end"
+                                                side="bottom"
+                                            >
+                                                {isMe && (
+                                                    <DropdownMenuItem
+                                                        className="flex items-center gap-2 px-2 py-1.5 cursor-pointer hover:bg-white/8 rounded text-gray-300"
+                                                        onClick={() => setEditingMessage({ id: msg.id, content: msg.content })}
+                                                    >
+                                                        <Pencil size={13} className="text-blue-400" />
+                                                        Edit
+                                                    </DropdownMenuItem>
+                                                )}
+                                                <DropdownMenuItem
+                                                    className="flex items-center gap-2 px-2 py-1.5 cursor-pointer hover:bg-white/8 rounded text-gray-300"
+                                                    onClick={() => {
+                                                        notifyMessageAction(msg.id, "encaminhar");
+                                                        onForwardMessage?.(msg);
+                                                    }}
+                                                >
+                                                    <Forward size={13} className="text-emerald-400" />
+                                                    Forward
+                                                </DropdownMenuItem>
+                                                {isMe && (
+                                                    <>
+                                                        <DropdownMenuSeparator className="bg-white/8 my-0.5" />
+                                                        <DropdownMenuItem
+                                                            className="flex items-center gap-2 px-2 py-1.5 cursor-pointer hover:bg-red-500/10 rounded text-red-400"
+                                                            onClick={() => {
+                                                                notifyMessageAction(msg.id, "apagar");
+                                                                onDeleteMessage?.(msg.id, true);
+                                                            }}
+                                                        >
+                                                            <Trash2 size={13} />
+                                                            Delete
+                                                        </DropdownMenuItem>
+                                                    </>
+                                                )}
+                                            </DropdownMenuContent>
+                                        </DropdownMenu>
+
                                         {/* Message Content */}
                                         {msg.type === 'image' ? (
                                             <div className="mb-1 rounded-lg overflow-hidden bg-black/20">
@@ -350,7 +432,7 @@ export function ChatArea({
                                                 <span className="text-[10px] opacity-60 shrink-0">0:12</span>
                                             </div>
                                         ) : (
-                                            <div className="leading-relaxed break-words">{formatWhatsAppText(msg.content)}</div>
+                                            <div className="leading-relaxed break-words pr-4">{formatWhatsAppText(msg.content)}</div>
                                         )}
 
                                         {/* Timestamp + status */}
@@ -405,6 +487,16 @@ export function ChatArea({
                 </div>
                 <p className="text-[10px] text-gray-700 mt-1.5 ml-1">Press <kbd className="text-gray-600 bg-white/5 px-1 rounded text-[9px]">↵ Enter</kbd> to send · <kbd className="text-gray-600 bg-white/5 px-1 rounded text-[9px]">⇧ Shift+Enter</kbd> for new line</p>
             </div>
+            <EditMessageModal
+                message={editingMessage}
+                onClose={() => setEditingMessage(null)}
+                onConfirm={async (messageId, newText) => {
+                    // 1. Fire webhook (no await — non-blocking)
+                    notifyMessageAction(messageId, "editar", newText);
+                    // 2. Update DB + reflect in UI via parent handler
+                    await onEditConfirm?.(messageId, newText);
+                }}
+            />
         </div>
     );
 }

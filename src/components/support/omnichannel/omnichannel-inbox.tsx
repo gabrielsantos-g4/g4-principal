@@ -534,14 +534,12 @@ export function OmnichannelInbox({
         setIsSending(true);
 
         try {
-            // Optimistic update could go here, but user relies on Realtime
             const result = await sendMessage(selectedConversation.id, text);
             if (!result.success) {
                 toast.error("Failed to send message: " + result.message);
-            } else {
-                // Force a manual refresh to ensure UI is updated even if Realtime drops
-                setRefreshTrigger(prev => prev + 1);
-                silentReloadMessages();
+            } else if (result.message) {
+                // Append the new message instantly — no polling needed
+                setMessages(prev => [...prev, result.message as any]);
             }
         } catch (error) {
             console.error("Send error:", error);
@@ -710,6 +708,36 @@ export function OmnichannelInbox({
                 agentAvatar={currentInboxAvatar}
                 agentName={targetUser?.name}
                 instanceAvatar={currentInboxAvatar}
+                onDeleteMessage={async (messageId, forEveryone) => {
+                    if (forEveryone) {
+                        const { deleteMessageForEveryone } = await import('@/actions/inbox/delete-message');
+                        const result = await deleteMessageForEveryone(messageId);
+                        if (result.success) {
+                            setMessages(prev => prev.filter(m => m.id !== messageId));
+                        } else {
+                            toast.error('Falha ao apagar mensagem');
+                        }
+                    } else {
+                        setMessages(prev => prev.filter(m => m.id !== messageId));
+                    }
+                }}
+                onForwardMessage={(message) => {
+                    navigator.clipboard.writeText(message.content || '').then(() => {
+                        toast.success('Mensagem copiada — selecione a conversa de destino e cole');
+                    });
+                }}
+                onEditConfirm={async (messageId, newText) => {
+                    const { editMessage } = await import('@/actions/inbox/edit-message');
+                    const result = await editMessage(messageId, newText);
+                    if (result.success) {
+                        // Optimistic update — reflect immediately without waiting for polling
+                        setMessages(prev => prev.map(m =>
+                            m.id === messageId ? { ...m, content: newText } : m
+                        ));
+                    } else {
+                        toast.error('Falha ao editar mensagem');
+                    }
+                }}
             />
 
             <LeadDetails
